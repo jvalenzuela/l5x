@@ -193,8 +193,9 @@ class TestREAL(Tag, unittest.TestCase):
 
 
 class TestArray1(Tag, unittest.TestCase):
-    """ """
+    """Single-dimensional array tests."""
     name = 'array1'
+    output_value = range(10)
 
     def test_len(self):
         """Ensure length is a positive integer."""
@@ -234,6 +235,16 @@ class TestArray1(Tag, unittest.TestCase):
             self.value = v
             self.assertEqual(self.value, v)
 
+    def test_element_description(self):
+        """Test setting and getting element descriptions."""
+        for i in range(len(self.tag)):
+            # Test project should begin with no description.
+            self.assertIsNone(self.tag[i].description)
+            
+            new_desc = ' '.join(('element', str(i)))
+            self.tag[i].description = new_desc
+            self.assertEqual(self.tag[i].description, new_desc)
+            
 
 def setUpModule():
     """Opens the test project."""

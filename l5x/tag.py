@@ -145,7 +145,11 @@ class Data(ElementAccess):
     """Base class for objects providing access to tag values and comments."""
     description = Comment()
 
-    operand_attributes = ['Name', 'Index']
+    # XML attribute names that contain the string used to build the operand.
+    # The type of attribute also determines the separator character used
+    # to concentate the operand with the parent's: array indices use nothing
+    # and everything else uses a dot.
+    operand_attributes = {'Name':'.', 'Index':''}
 
     def __new__(cls, *args, **kwds):
         """
@@ -188,12 +192,13 @@ class Data(ElementAccess):
         if self.parent is None:
             self.operand = ''
         else:
-            for attr in self.operand_attributes:
+            for attr in self.operand_attributes.keys():
                 if self.element.hasAttribute(attr):
+                    sep = self.operand_attributes[attr]
                     name = self.element.getAttribute(attr).upper()
                     break
-
-            self.operand = '.'.join((self.parent.operand, name))
+                
+            self.operand = sep.join((self.parent.operand, name))
 
 
 class IntegerValue(object):
@@ -398,6 +403,7 @@ class ArrayDescription(Comment):
     """
     e = TypeError
     msg = 'Descriptions for subarrays are not supported'
+
     def __get__(self, array, owner=None):
         raise self.e(self.msg)
 
