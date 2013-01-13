@@ -24,10 +24,17 @@ class Value(object):
         tag.data.value = value
 
 
+class Shape(object):
+    """Descriptor class for accessing array tags' shape attribute."""
+    def __get__(self, tag, owner=None):
+        return tag.data.shape
+
+
 class Tag(ElementAccess):
     """Base class for a single tag."""
     description = ElementDescription()
     value = Value()
+    shape = Shape()
     data_type = AttributeDescriptor('DataType', True)
 
     def __init__(self, element):
@@ -125,7 +132,8 @@ class Comment(object):
         """Creates a new Comments container element.
 
         Used if the top-level tag element did not contain a Comments element.
-        The Comments element must be located immediately before any Data elements.
+        The Comments element must be located immediately before any Data
+        elements.
         """
         new = instance.create_element('Comments')
         data = instance.tag.get_child_element('Data')
@@ -385,7 +393,7 @@ class ArrayValue(object):
     def __set__(self, array, value):
         if not isinstance(value, list):
             raise TypeError('Value must be a list')
-        if len(value) > len(array):
+        if len(value) > array.shape[len(array.address)]:
             raise IndexError('Source list is too large')
 
         for i in range(len(value)):
@@ -411,17 +419,25 @@ class ArrayDescription(Comment):
         raise self.e(self.msg)
 
 
+class ArrayShape(object):
+    """Descriptor class to acquire an array's dimensions."""
+    def __get__(self, array, owner=None):
+        return tuple(array.dims)
+
+
 class Array(Data):
     """Access object for arrays of any data type.
 
     """
     value = ArrayValue()
     description = ArrayDescription()
+    shape = ArrayShape()
 
     def __init__(self, data_class, element, tag, parent=None, address=[]):
         Data.__init__(self, element, tag, parent)
         self.data_class = data_class
-        self.dims = [int(d) for d in element.getAttribute('Dimensions').split(',')]
+        self.dims = [int(d) for d in
+                     element.getAttribute('Dimensions').split(',')]
         self.address = address
         self.members = ElementDict(element, 'Index', data_class,
                                    member_args=[tag, self])
@@ -458,10 +474,6 @@ class Array(Data):
             return self.data_class(self.element, self.tag, self.parent,
                                    new_address)
 
-    def __len__(self):
-        """ """
-        return self.dims[len(self.address)]
-        
     
 base_data_types = {'SINT':SINT,
                    'INT':INT,

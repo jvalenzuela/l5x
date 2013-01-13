@@ -197,10 +197,21 @@ class TestArray1(Tag, unittest.TestCase):
     name = 'array1'
     output_value = range(10)
 
-    def test_len(self):
-        """Ensure length is a positive integer."""
-        self.assertIsInstance(len(self.tag), int)
-        self.assertGreater(len(self.tag), 0)
+    def test_shape_type(self):
+        """Ensure shape is a tuple."""
+        self.assertIsInstance(self.tag.shape, tuple)
+
+    def test_shape_size(self):
+        """Verify shape length is equal to the number of dimensions."""
+        self.assertEqual(len(self.tag.shape), 1)
+
+    def test_shape_value_type(self):
+        """Shape members must be integers."""
+        self.assertIsInstance(self.tag.shape[0], int)
+
+    def test_shape_value(self):
+        """Verify correct dimension value."""
+        self.assertEqual(self.tag.shape[0], 10)
 
     def test_index_type(self):
         """Ensure non-integer indices raise an exception."""
@@ -209,14 +220,14 @@ class TestArray1(Tag, unittest.TestCase):
             
     def test_index_range(self):
         """Ensure negative and indices beyond the end raise exceptions."""
-        for i in [-1, len(self.tag)]:
+        for i in [-1, self.tag.shape[0]]:
             with self.assertRaises(IndexError):
                 self.tag[i]
 
     def test_value_type(self):
         """Verify value is a list of correct length."""
         self.assertIsInstance(self.tag.value, list)
-        self.assertEqual(len(self.tag.value), len(self.tag))
+        self.assertEqual(len(self.tag.value), self.tag.shape[0])
 
     def test_invalid_value_type(self):
         """Test setting value to a non-list raises an exception."""
@@ -225,19 +236,19 @@ class TestArray1(Tag, unittest.TestCase):
 
     def test_invalid_value_size(self):
         """Test setting value with an oversize source raises an exception."""
-        x = [0] * (len(self.tag) + 1)
+        x = [0] * (self.tag.shape[0] + 1)
         with self.assertRaises(IndexError):
             self.tag.value = x
 
     def test_value(self):
         """Test setting and getting list values."""
-        for v in [[0] * len(self.tag), range(len(self.tag))]:
+        for v in [[0] * self.tag.shape[0], range(self.tag.shape[0])]:
             self.value = v
             self.assertEqual(self.value, v)
 
     def test_element_description(self):
         """Test setting and getting element descriptions."""
-        for i in range(len(self.tag)):
+        for i in range(self.tag.shape[0]):
             # Test project should begin with no description.
             self.assertIsNone(self.tag[i].description)
             
