@@ -192,10 +192,39 @@ class TestREAL(Tag, unittest.TestCase):
                 self.tag.value = float(value)
 
 
+class ArrayOutputValue(object):
+    """Descriptor class to generate n-dimensional array output values.
+
+    Creates unique values for each element by incrementing an accumulator
+    while iterating through members of each dimension.
+    """
+    def __get__(self, instance, owner=None):
+        self.tag = doc.controller.tags[owner.name]
+        self.acc = 0
+        return self.build_dim(len(self.tag.shape) - 1)
+        
+    def build_dim(self, dim):
+        """Generates a set of values for elements of a single dimension."""
+        elements = range(self.tag.shape[dim])
+
+        # The lowest order dimension results in integer values for each
+        # element.
+        if dim == 0:
+            value = [x + self.acc for x in elements]
+            self.acc = value[-1] + 1
+
+        # All other higher order dimensions recursively build a list for each
+        # element.
+        else:
+            value = [self.build_dim(dim - 1) for x in elements]
+
+        return value
+
+
 class TestArray1(Tag, unittest.TestCase):
     """Single-dimensional array tests."""
     name = 'array1'
-    output_value = range(10)
+    output_value = ArrayOutputValue()
 
     def test_shape_type(self):
         """Ensure shape is a tuple."""
@@ -255,6 +284,22 @@ class TestArray1(Tag, unittest.TestCase):
             new_desc = ' '.join(('element', str(i)))
             self.tag[i].description = new_desc
             self.assertEqual(self.tag[i].description, new_desc)
+
+
+class TestArray3(Tag, unittest.TestCase):
+    """Multidimensional array tests"""
+    name = 'array3'
+    output_value = ArrayOutputValue()
+
+    def test_shape_size(self):
+        """Verify shape length is equal to the number of dimensions."""
+        self.assertEqual(len(self.tag.shape), 3)
+
+    def test_shape_values(self):
+        """Verify correct dimension values."""
+        self.assertEqual(self.tag.shape[0], 2)
+        self.assertEqual(self.tag.shape[1], 3)
+        self.assertEqual(self.tag.shape[2], 4)
             
 
 def setUpModule():
