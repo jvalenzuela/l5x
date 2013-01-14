@@ -438,6 +438,7 @@ class Array(Data):
         self.data_class = data_class
         self.dims = [int(d) for d in
                      element.getAttribute('Dimensions').split(',')]
+        self.dims.reverse()
         self.address = address
         self.members = ElementDict(element, 'Index', data_class,
                                    member_args=[tag, self])
