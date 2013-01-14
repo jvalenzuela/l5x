@@ -393,7 +393,7 @@ class ArrayValue(object):
     def __set__(self, array, value):
         if not isinstance(value, list):
             raise TypeError('Value must be a list')
-        if len(value) > array.shape[len(array.address)]:
+        if len(value) > array.shape[len(array.shape) - len(array.address) - 1]:
             raise IndexError('Source list is too large')
 
         for i in range(len(value)):
@@ -454,8 +454,8 @@ class Array(Data):
             raise TypeError('Array indices must be integers')
 
         # Append the given index to the current accumulated address.
-        indices = len(self.address)
-        if (index < 0) or (index >= self.dims[indices]):
+        dim = len(self.dims) - len(self.address) - 1
+        if (index < 0) or (index >= self.dims[dim]):
             raise IndexError('Array index out of range')
         new_address = list(self.address)
         new_address.append(index)
