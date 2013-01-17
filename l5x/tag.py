@@ -387,7 +387,7 @@ class Structure(Data):
 class ArrayValue(object):
     """Descriptor class for accessing multiple values in an array."""
     def __get__(self, array, owner=None):
-        dim = len(array.address)
+        dim = len(array.dims) - len(array.address) - 1
         return [array[i].value for i in range(array.dims[dim])]
 
     def __set__(self, array, value):
@@ -453,25 +453,28 @@ class Array(Data):
         if not isinstance(index, int):
             raise TypeError('Array indices must be integers')
 
-        # Append the given index to the current accumulated address.
+        # Add the given index to the current accumulated address.
         dim = len(self.dims) - len(self.address) - 1
         if (index < 0) or (index >= self.dims[dim]):
             raise IndexError('Array index out of range')
         new_address = list(self.address)
-        new_address.append(index)
+        new_address.insert(0, index)
 
-        key = "[{0}]".format(','.join([str(i) for i in new_address]))
+        # If the newly formed address set satisifies all dimensions
+        # return an access object for the member.
+        if len(new_address) == len(self.dims):
+            # Address values are reversed because the display order is
+            # most-significant first.
+            new_address.reverse()
 
-        # Attempt to return an access object for the element selected
-        # by the newly compiled address.
-        try:
+            key = "[{0}]".format(','.join([str(i) for i in new_address]))
             return self.members[key]
 
         # The new address does not yet specify a single element if the key
         # was not found. Return a new array access object to handle
         # access to the new address by instantiating the data type,
         # which will result in an Array instance through Data.__new__().
-        except KeyError:
+        else:
             return self.data_class(self.element, self.tag, self.parent,
                                    new_address)
 

@@ -300,6 +300,13 @@ class TestArray3(Tag, unittest.TestCase):
         self.assertEqual(self.tag.shape[0], 2)
         self.assertEqual(self.tag.shape[1], 3)
         self.assertEqual(self.tag.shape[2], 4)
+
+    def test_dim_value(self):
+        """Verify values for each dimension are lists."""
+        value = self.tag.value
+        for dim in range(len(self.tag.shape) - 1):
+            self.assertIsInstance(value, list)
+            value = value[0]
             
 
 def setUpModule():
