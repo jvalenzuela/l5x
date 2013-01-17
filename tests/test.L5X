@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="20.00" TargetName="L5X_test" TargetType="Controller" ContainsContext="false" Owner="VM, Office" ExportDate="Mon Jan 14 10:38:39 2013" ExportOptions="DecoratedData ForceProtectedEncoding AllProjDocTrans">
-<Controller Use="Target" Name="L5X_test" ProcessorType="1769-L32E" MajorRev="20" MinorRev="11" TimeSlice="20" ShareUnusedTimeSlice="1" ProjectCreationDate="Mon Jan 14 10:16:30 2013" LastModifiedDate="Mon Jan 14 10:16:31 2013" SFCExecutionControl="CurrentActive" SFCRestartPosition="MostRecent"
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="20.00" TargetName="L5X_test" TargetType="Controller" ContainsContext="false" Owner="VM, Office" ExportDate="Thu Jan 17 10:52:44 2013" ExportOptions="DecoratedData ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Target" Name="L5X_test" ProcessorType="1769-L32E" MajorRev="20" MinorRev="11" TimeSlice="20" ShareUnusedTimeSlice="1" ProjectCreationDate="Thu Jan 17 10:49:57 2013" LastModifiedDate="Thu Jan 17 10:49:59 2013" SFCExecutionControl="CurrentActive" SFCRestartPosition="MostRecent"
  SFCLastScan="DontScan" ProjectSN="16#0000_0000" MatchProjectToController="false" CanUseRPIFromProducer="false" InhibitAutomaticFirmwareUpdate="0">
 <RedundancyInfo Enabled="false" KeepTestEditsOnSwitchOver="false" IOMemoryPadPercentage="90" DataTablePadPercentage="50"/>
 <Security Code="0" ChangesToDetect="16#ffff_ffff_ffff_ffff"/>
@@ -127,6 +127,18 @@
 <Data>00</Data>
 <Data Format="Decorated">
 <DataValue DataType="SINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="timer" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00 00 00 00 00 00 00 00 00</Data>
+<Data Format="Decorated">
+<Structure DataType="TIMER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="EN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="TT" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+</Structure>
 </Data>
 </Tag>
 </Tags>

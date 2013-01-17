@@ -320,6 +320,26 @@ class TestArray3(Tag, unittest.TestCase):
                 dim.description = 'test'
 
 
+class Structure(Tag, unittest.TestCase):
+    """Structured data tag tests."""
+    name = 'timer'
+    output_value = {'PRE':-1, 'ACC':-2, 'EN':1, 'TT':1, 'DN':1}
+
+    def test_value_type(self):
+        """Verify value is returned as a dict."""
+        self.assertIsInstance(self.tag.value, dict)
+
+    def test_invalid_value_type(self):
+        """Test setting value to a non-dict raises an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.value = 'not a dict'
+
+    def test_member_names_type(self):
+        """Verify keys for value dict are strings."""
+        for member in self.tag.value.keys():
+            self.assertIsInstance(member, str)
+
+
 def setUpModule():
     """Opens the test project."""
     global doc
