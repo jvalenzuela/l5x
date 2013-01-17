@@ -364,7 +364,7 @@ class StructureValue(object):
             raise TypeError('Value must be a dictionary')
         for m in value.keys():
             struct[m].value = value[m]
-        instance.tag.clear_raw_data()
+        struct.tag.clear_raw_data()
 
 
 class Structure(Data):
