@@ -302,12 +302,23 @@ class TestArray3(Tag, unittest.TestCase):
         self.assertEqual(self.tag.shape[2], 4)
 
     def test_dim_value(self):
-        """Verify values for each dimension are lists."""
+        """Verify values for each dimension are correctly sized lists."""
         value = self.tag.value
-        for dim in range(len(self.tag.shape) - 1):
+        for dim in range(len(self.tag.shape) - 1, -1):
             self.assertIsInstance(value, list)
+            self.assertEqual(len(value), self.tag.shape[dim])
             value = value[0]
-            
+
+    def test_dim_description(self):
+        """Confirm descriptions are not permitted for whole dimensions."""
+        dim = self.tag
+        for i in range(len(self.tag.shape) - 1):
+            dim = dim[0]
+            with self.assertRaises(TypeError):
+                dim.description
+            with self.assertRaises(TypeError):
+                dim.description = 'test'
+
 
 def setUpModule():
     """Opens the test project."""
