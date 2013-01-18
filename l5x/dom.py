@@ -103,15 +103,31 @@ class ElementDescription(object):
         return str(cdata)
 
     def __set__(self, instance, value):
-        """Sets the description text, creating the element if necessary."""
-        try:
-            element = instance.get_child_element('Description')
-        except KeyError:
-            cdata = self.create(instance)
-        else:
-            cdata = CDATAElement(element)
+        """Modifies the description text."""
+        # Set a new description if given a string value, creating a new
+        # element if necessary.
+        if isinstance(value, str):
+            try:
+                element = instance.get_child_element('Description')
+            except KeyError:
+                cdata = self.create(instance)
+            else:
+                cdata = CDATAElement(element)
 
-        cdata.set(value)
+            cdata.set(value)
+
+        # A value of None removes any existing description.
+        elif value is None:
+            try:
+                element = instance.get_child_element('Description')
+            except KeyError:
+                pass
+            else:
+                instance.element.removeChild(element)
+                element.unlink()
+
+        else:
+            raise TypeError('Description must be a string or None')
 
     def create(self, instance):
         """Creates a new Description element as the instance's first child."""

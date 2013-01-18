@@ -15,17 +15,27 @@ class Tag(object):
 
     def test_desc(self):
         """Test reading and writing tag's description."""
-        # Test project should begin with no description.
-        self.assertIsNone(self.tag.description)
-
-        desc = ' '.join((self.name, 'description'))
+        desc = 'description'
         self.tag.description = desc
         self.assertEqual(self.tag.description, desc)
+
+    def test_del_desc(self):
+        """Test removing a tag's description."""
+        self.tag.description = 'description'
+        self.tag.description = None
+        self.assertIsNone(self.tag.description)
+
+    def test_invalid_desc(self):
+        """Ensure non-string types raise an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.description = 0
 
     @classmethod
     def tearDownClass(cls):
         """Sets tag's final value for the output project."""
-        doc.controller.tags[cls.name].value = cls.output_value
+        tag = doc.controller.tags[cls.name]
+        tag.description = ' '.join((cls.name, 'description'))
+        tag.value = cls.output_value
 
 
 class Integer(Tag):
