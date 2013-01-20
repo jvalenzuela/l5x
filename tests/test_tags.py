@@ -1,5 +1,5 @@
 """
-Unittests for tag accesss.
+Unittests for tag access.
 """
 
 import ctypes
@@ -336,19 +336,48 @@ class Structure(Tag, unittest.TestCase):
     output_value = {'PRE':-1, 'ACC':-2, 'EN':1, 'TT':1, 'DN':1}
 
     def test_value_type(self):
-        """Verify value is returned as a dict."""
+        """Verify value is returned as a non-empty dict."""
         self.assertIsInstance(self.tag.value, dict)
+        self.assertGreater(len(self.tag.value), 0)
 
     def test_invalid_value_type(self):
         """Test setting value to a non-dict raises an exception."""
         with self.assertRaises(TypeError):
             self.tag.value = 'not a dict'
 
+    def test_value(self):
+        """Test setting and getting dict values."""
+        x = {'PRE':42, 'ACC':142, 'EN':1, 'TT':0, 'DN':1}
+        self.tag.value = x
+        self.assertDictEqual(self.tag.value, x)
+
     def test_member_names_type(self):
         """Verify keys for value dict are strings."""
         for member in self.tag.value.keys():
             self.assertIsInstance(member, str)
 
+    def test_index_type(self):
+        """Verify non-string indices raise an exception."""
+        with self.assertRaises(TypeError):
+            self.tag[0].value
+
+    def test_invalid_index(self):
+        """Verify indices for nonexistent members raise an exception."""
+        with self.assertRaises(KeyError):
+            self.tag['foo'].value
+
+    def test_indices(self):
+        """Test indices of valid members."""
+        for member in self.output_value.keys():
+            self.tag[member].value
+
+    def test_member_values(self):
+        """Test setting and getting member values."""
+        for member in self.output_value.keys():
+            for x in range(2):
+                self.tag[member].value = x
+                self.assertEqual(self.tag[member].value, x)
+                
 
 def setUpModule():
     """Opens the test project."""
