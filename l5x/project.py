@@ -50,15 +50,5 @@ def append_child_element(name, parent):
 
 
 class Controller(Scope):
-    """Accessor object for the controller device.
-
-    Controller-scoped tags are available via the tags attribute.
-        controller.tags.names() - List of tag names.
-        controller.tags[tag_name] - Accessor object to read or modify tag
-                                    properties. See Tag class.
-
-    Communication path may be accessed through the comm_path attribute.
-        current_path = controller.comm_path
-        controller.comm_path = a_new_path
-    """
+    """Accessor object for the controller device."""
     comm_path = AttributeDescriptor('CommPath')

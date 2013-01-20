@@ -156,6 +156,10 @@ class ElementDictNames(object):
     def __get__(self, instance, owner=None):
         return instance.members.keys()
 
+    def __set__(self, instance, owner=None):
+        """Raises an exception upon an attempt to modify; this is read-only."""
+        raise AttributeError('Read-only attribute.')
+
 
 class ElementDict(ElementAccess):
     """Container which provides access to a group of XML elements.
@@ -170,7 +174,6 @@ class ElementDict(ElementAccess):
 
     def __init__(self, parent, key_attr, types, type_attr=None, dfl_type=None,
                  key_type=str, member_args=[]):
-        """."""
         ElementAccess.__init__(self, parent)
         self.types = types
         self.type_attr = type_attr

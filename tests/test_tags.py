@@ -8,6 +8,34 @@ import math
 import unittest
 
 
+class Scope(unittest.TestCase):
+    """Tests for a tag scope."""
+    def setUp(self):
+        self.scope = doc.controller.tags
+
+    def test_names(self):
+        """Test names attribute returns a non-empty list of strings."""
+        self.assertIsInstance(self.scope.names, list)
+        self.assertGreater(len(self.scope.names), 0)
+        for name in self.scope.names:
+            self.assertIsInstance(name, str)
+
+    def test_name_index(self):
+        """Ensure tags can be indexed by name."""
+        for name in self.scope.names:
+            self.scope[name]
+
+    def test_name_read_only(self):
+        """Verify list of names cannot be directly modified."""
+        with self.assertRaises(AttributeError):
+            self.scope.names = 'foo'
+
+    def test_invalid_index(self):
+        """Verify accessing a nonexistent tag raises an exception."""
+        with self.assertRaises(KeyError):
+            self.scope['not_a_tag']
+
+
 class Tag(object):
     """Base class for testing a tag."""
     def setUp(self):
