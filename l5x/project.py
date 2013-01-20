@@ -62,13 +62,3 @@ class Controller(Scope):
         controller.comm_path = a_new_path
     """
     comm_path = AttributeDescriptor('CommPath')
-
-
-if __name__ == '__main__':
-    prj = Project('l5x1.L5X')
-    print(prj.controller.tags.names)
-    print(len(prj.controller.tags['ar2']))
-    print(len(prj.controller.tags['ar2'][0]))
-    print(len(prj.controller.tags['ar2'][0][0]))
-    print(len(prj.controller.tags['ar2'][0][0][0]))
-    #prj.write('out.L5X')
