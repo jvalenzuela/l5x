@@ -412,6 +412,15 @@ class Structure(Tag, unittest.TestCase):
             for x in range(2):
                 self.tag[member].value = x
                 self.assertEqual(self.tag[member].value, x)
+
+    def test_names(self):
+        """Verify names attributes returns a read-only list of strings."""
+        self.assertIsInstance(self.tag.names, list)
+        self.assertGreater(len(self.tag.names), 0)
+        for member in self.tag.names:
+            self.assertIsInstance(member, str)
+        with self.assertRaises(AttributeError):
+            self.tag.names = 'fail'
                 
 
 def setUpModule():

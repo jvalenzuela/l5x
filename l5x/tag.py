@@ -15,27 +15,29 @@ class Scope(ElementAccess):
         self.tags = ElementDict(tag_element, 'Name', Tag)
 
 
-class Value(object):
-    """Descriptor class for accessing a tag's top-level value."""
+class TagDataDescriptor(object):
+    """Descriptor class to dispatch attribute access to a data object.
+
+    Used by Tag objects to pass access to a specific attribute on to the
+    Data element which handles the implementation.
+    """
+    def __init__(self, attr):
+        self.attr = attr
+
     def __get__(self, tag, owner=None):
-        return tag.data.value
+        return getattr(tag.data, self.attr)
 
     def __set__(self, tag, value):
-        tag.data.value = value
-
-
-class Shape(object):
-    """Descriptor class for accessing array tags' shape attribute."""
-    def __get__(self, tag, owner=None):
-        return tag.data.shape
+        setattr(tag.data, self.attr, value)
 
 
 class Tag(ElementAccess):
     """Base class for a single tag."""
     description = ElementDescription()
-    value = Value()
-    shape = Shape()
     data_type = AttributeDescriptor('DataType', True)
+    value = TagDataDescriptor('value')
+    shape = TagDataDescriptor('shape')
+    names = TagDataDescriptor('names')
 
     def __init__(self, element):
         ElementAccess.__init__(self, element)
@@ -367,9 +369,19 @@ class StructureValue(object):
         struct.tag.clear_raw_data()
 
 
+class StructureNames(object):
+    """Descriptor class for accessing structure member names."""
+    def __get__(self, struct, owner=None):
+        return struct.members.names
+
+    def __set__(self, struct, owner=None):
+        raise AttributeError('Read-only attribute.')
+
+
 class Structure(Data):
     """Accessor class for structured data types."""
     value = StructureValue()
+    names = StructureNames()
 
     def __init__(self, element, tag, parent=None):
         Data.__init__(self, element, tag, parent)
