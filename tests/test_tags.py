@@ -58,6 +58,13 @@ class Tag(object):
         with self.assertRaises(TypeError):
             self.tag.description = 0
 
+    def test_data_type(self):
+        """Ensure data_type attribute is a read-only, non-empty string."""
+        self.assertIsInstance(self.tag.data_type, str)
+        self.assertGreater(len(self.tag.data_type), 0)
+        with self.assertRaises(AttributeError):
+            self.tag.data_type = 'fail'
+
     @classmethod
     def tearDownClass(cls):
         """Sets tag's final value for the output project."""

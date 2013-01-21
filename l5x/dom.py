@@ -144,10 +144,12 @@ class AttributeDescriptor(object):
 
     def __get__(self, instance, owner=None):
         if (instance.element.hasAttribute(self.name)):
-            return instance.element.getAttribute(self.name)
+            return str(instance.element.getAttribute(self.name))
         return None
 
     def __set__(self, instance, value):
+        if self.read_only is True:
+            raise AttributeError('Attribute is read-only')
         instance.element.setAttribute(self.name, value)
 
 
