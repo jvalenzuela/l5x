@@ -167,7 +167,7 @@ class Data(ElementAccess):
         indicates it is an array, in which case an array access object
         is created instead for the given data type.
         """
-        if args[0].tagName == 'Array':
+        if args[0].tagName.startswith('Array'):
             array = object.__new__(Array, *args, **kwds)
             array_args = [cls]
             array_args.extend(args)
