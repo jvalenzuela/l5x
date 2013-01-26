@@ -385,7 +385,15 @@ class Structure(Data):
 
     def __init__(self, element, tag, parent=None):
         Data.__init__(self, element, tag, parent)
-        self.members = ElementDict(element, 'Name', base_data_types,
+
+        # If this structure is an array member the given XML element
+        # is just the enclosing array member; the XML element directly
+        # holding the structure's data is the first child: a Structure
+        # XML element.
+        if element.tagName == 'Element':
+            self.element = self.get_child_element('Structure')
+
+        self.members = ElementDict(self.element, 'Name', base_data_types,
                                    'DataType', Structure,
                                    member_args=[tag, self])
 
