@@ -421,7 +421,35 @@ class Structure(Tag, unittest.TestCase):
             self.assertIsInstance(member, str)
         with self.assertRaises(AttributeError):
             self.tag.names = 'fail'
-                
+
+
+class ComplexOutputValue(object):
+    """Generates the final complex UDT output value."""
+    def __get__(self, instance, owner=None):
+        self.tag = doc.controller.tags[owner.name]
+        return [self.udt(i) for i in range(self.tag.shape[0])]
+
+    def udt(self, index):
+        """Builds a value for one UDT element."""
+        x = index * 1000
+        value = {}
+        value['dint_array'] = [i + x for i in
+                               range(self.tag[index]['dint_array'].shape[0])]
+        value['timer'] = {'PRE':x, 'ACC':x + 1, 'EN':1, 'TT':1, 'DN':1}
+        value['counter_array'] = [
+            {'PRE':x + (i * 100),
+             'ACC':x + (i * 100) + 1,
+             'CU':1, 'CD':1, 'DN':1, 'OV':1, 'UN':1}
+            for i in range(self.tag[index]['counter_array'].shape[0])]
+        value['real'] = 1.0 / float(index + 1)
+        return value
+
+        
+class Complex(Tag, unittest.TestCase):
+    """Tests for a complex data type."""
+    name = 'udt'
+    output_value = ComplexOutputValue()
+
 
 def setUpModule():
     """Opens the test project."""
