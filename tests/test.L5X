@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="20.00" TargetName="L5X_test" TargetType="Controller" ContainsContext="false" Owner="VM, Office" ExportDate="Sat Jan 26 11:12:49 2013" ExportOptions="DecoratedData ForceProtectedEncoding AllProjDocTrans">
-<Controller Use="Target" Name="L5X_test" ProcessorType="1769-L32E" MajorRev="20" MinorRev="11" TimeSlice="20" ShareUnusedTimeSlice="1" ProjectCreationDate="Sat Jan 26 10:42:46 2013" LastModifiedDate="Sat Jan 26 10:42:48 2013" SFCExecutionControl="CurrentActive" SFCRestartPosition="MostRecent"
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="20.00" TargetName="L5X_test" TargetType="Controller" ContainsContext="false" Owner="VM, Office" ExportDate="Wed Jan 30 10:58:41 2013" ExportOptions="DecoratedData ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Target" Name="L5X_test" ProcessorType="1769-L32E" MajorRev="20" MinorRev="11" TimeSlice="20" ShareUnusedTimeSlice="1" ProjectCreationDate="Wed Jan 30 10:55:15 2013" LastModifiedDate="Wed Jan 30 10:55:18 2013" SFCExecutionControl="CurrentActive" SFCRestartPosition="MostRecent"
  SFCLastScan="DontScan" ProjectSN="16#0000_0000" MatchProjectToController="false" CanUseRPIFromProducer="false" InhibitAutomaticFirmwareUpdate="0">
 <RedundancyInfo Enabled="false" KeepTestEditsOnSwitchOver="false" IOMemoryPadPercentage="90" DataTablePadPercentage="50"/>
 <Security Code="0" ChangesToDetect="16#ffff_ffff_ffff_ffff"/>
@@ -112,6 +112,192 @@
 <Data>00</Data>
 <Data Format="Decorated">
 <DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="desc" TagType="Base" DataType="udt" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[remove me]]>
+</Description>
+<Comments>
+<Comment Operand=".DINT_ARRAY">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".DINT_ARRAY[0]">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".DINT_ARRAY[0].0">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".DINT_ARRAY[0].1">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".DINT_ARRAY[0].2">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".DINT_ARRAY[0].3">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".DINT_ARRAY[0].4">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".DINT_ARRAY[0].5">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".DINT_ARRAY[0].6">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".DINT_ARRAY[0].7">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".TIMER.EN">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".TIMER.PRE">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".TIMER.PRE.0">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".TIMER.PRE.1">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".TIMER.PRE.2">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".TIMER.PRE.3">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".TIMER.PRE.4">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".TIMER.PRE.5">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".TIMER.PRE.6">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".TIMER.PRE.7">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".COUNTER_ARRAY">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".COUNTER_ARRAY[0]">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".COUNTER_ARRAY[0].CU">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".COUNTER_ARRAY[0].PRE">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".COUNTER_ARRAY[0].PRE.0">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".COUNTER_ARRAY[0].PRE.1">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".COUNTER_ARRAY[0].PRE.2">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".COUNTER_ARRAY[0].PRE.3">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".COUNTER_ARRAY[0].PRE.4">
+<![CDATA[remove me]]>
+</Comment>
+<Comment Operand=".REAL">
+<![CDATA[remove me]]>
+</Comment>
+</Comments>
+<Data>00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00</Data>
+<Data Format="Decorated">
+<Structure DataType="udt">
+<ArrayMember Name="dint_array" DataType="DINT" Dimensions="10" Radix="Decimal">
+<Element Index="[0]" Value="0"/>
+<Element Index="[1]" Value="0"/>
+<Element Index="[2]" Value="0"/>
+<Element Index="[3]" Value="0"/>
+<Element Index="[4]" Value="0"/>
+<Element Index="[5]" Value="0"/>
+<Element Index="[6]" Value="0"/>
+<Element Index="[7]" Value="0"/>
+<Element Index="[8]" Value="0"/>
+<Element Index="[9]" Value="0"/>
+</ArrayMember>
+<StructureMember Name="timer" DataType="TIMER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="EN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="TT" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+</StructureMember>
+<ArrayMember Name="counter_array" DataType="COUNTER" Dimensions="5">
+<Element Index="[0]">
+<Structure DataType="COUNTER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="CU" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CD" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="OV" DataType="BOOL" Value="0"/>
+<DataValueMember Name="UN" DataType="BOOL" Value="0"/>
+</Structure>
+</Element>
+<Element Index="[1]">
+<Structure DataType="COUNTER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="CU" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CD" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="OV" DataType="BOOL" Value="0"/>
+<DataValueMember Name="UN" DataType="BOOL" Value="0"/>
+</Structure>
+</Element>
+<Element Index="[2]">
+<Structure DataType="COUNTER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="CU" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CD" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="OV" DataType="BOOL" Value="0"/>
+<DataValueMember Name="UN" DataType="BOOL" Value="0"/>
+</Structure>
+</Element>
+<Element Index="[3]">
+<Structure DataType="COUNTER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="CU" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CD" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="OV" DataType="BOOL" Value="0"/>
+<DataValueMember Name="UN" DataType="BOOL" Value="0"/>
+</Structure>
+</Element>
+<Element Index="[4]">
+<Structure DataType="COUNTER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="CU" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CD" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="OV" DataType="BOOL" Value="0"/>
+<DataValueMember Name="UN" DataType="BOOL" Value="0"/>
+</Structure>
+</Element>
+</ArrayMember>
+<DataValueMember Name="real" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
 </Data>
 </Tag>
 <Tag Name="dint" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
