@@ -3,7 +3,7 @@ Unittests for tag access.
 """
 
 import ctypes
-import l5x
+import fixture
 import math
 import unittest
 
@@ -11,7 +11,7 @@ import unittest
 class Scope(unittest.TestCase):
     """Tests for a tag scope."""
     def setUp(self):
-        self.scope = doc.controller.tags
+        self.scope = prj.controller.tags
 
     def test_names(self):
         """Test names attribute returns a non-empty list of strings."""
@@ -39,7 +39,7 @@ class Scope(unittest.TestCase):
 class Tag(object):
     """Base class for testing a tag."""
     def setUp(self):
-        self.tag = doc.controller.tags[self.name]
+        self.tag = prj.controller.tags[self.name]
 
     def test_desc(self):
         """Test reading and writing tag's description."""
@@ -68,7 +68,7 @@ class Tag(object):
     @classmethod
     def tearDownClass(cls):
         """Sets tag's final value for the output project."""
-        tag = doc.controller.tags[cls.name]
+        tag = prj.controller.tags[cls.name]
         tag.description = ' '.join((cls.name, 'description'))
         tag.value = cls.output_value
 
@@ -151,12 +151,8 @@ class Integer(Tag):
                 self.assertEqual(cvalue.value, mask.value)
 
     def test_bit_desc(self):
-        """ """
+        """Test accessing bit descriptions."""
         for bit in range(self.bits):
-            # Test project should have no bit descriptions at start.
-            self.assertIsNone(self.tag[bit].description)
-
-            # Give the bit a description then read it back.
             desc = ' '.join((self.name, str(bit), 'description'))
             self.tag[bit].description = desc
             self.assertEqual(self.tag[bit].description, desc)
@@ -244,7 +240,7 @@ class ArrayOutputValue(object):
     while iterating through members of each dimension.
     """
     def __get__(self, instance, owner=None):
-        self.tag = doc.controller.tags[owner.name]
+        self.tag = prj.controller.tags[owner.name]
         self.acc = 0
         return self.build_dim(len(self.tag.shape) - 1)
         
@@ -323,9 +319,6 @@ class TestArray1(Tag, unittest.TestCase):
     def test_element_description(self):
         """Test setting and getting element descriptions."""
         for i in range(self.tag.shape[0]):
-            # Test project should begin with no description.
-            self.assertIsNone(self.tag[i].description)
-            
             new_desc = ' '.join(('element', str(i)))
             self.tag[i].description = new_desc
             self.assertEqual(self.tag[i].description, new_desc)
@@ -426,7 +419,7 @@ class Structure(Tag, unittest.TestCase):
 class ComplexOutputValue(object):
     """Generates the final complex UDT output value."""
     def __get__(self, instance, owner=None):
-        self.tag = doc.controller.tags[owner.name]
+        self.tag = prj.controller.tags[owner.name]
         return [self.udt(i) for i in range(self.tag.shape[0])]
 
     def udt(self, index):
@@ -463,10 +456,10 @@ class Complex(Tag, unittest.TestCase):
 
 def setUpModule():
     """Opens the test project."""
-    global doc
-    doc = l5x.Project('tests/test.L5X')
+    global prj
+    prj = fixture.setup()
 
 
 def tearDownModule():
     """Writes the output project."""
-    doc.write('tests/out_tags.L5X')
+    fixture.teardown(prj)
