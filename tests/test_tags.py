@@ -450,6 +450,16 @@ class Complex(Tag, unittest.TestCase):
     name = 'udt'
     output_value = ComplexOutputValue()
 
+    def test_array_member_value_type(self):
+        """Check array members yield list values."""
+        self.assertIsInstance(self.tag.value, list)
+        self.assertIsInstance(self.tag[0]['dint_array'].value, list)
+
+    def test_struct_member_value_type(self):
+        """Check UDT members yield dict values."""
+        self.assertIsInstance(self.tag[0].value, dict)
+        self.assertIsInstance(self.tag[0]['timer'].value, dict)
+
 
 def setUpModule():
     """Opens the test project."""
