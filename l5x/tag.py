@@ -101,7 +101,7 @@ class Comment(object):
         return str(CDATAElement(element))
 
     def __set__(self, instance, value):
-        """ """
+        """Updates, creates, or removes a comment."""
         # Get the enclosing Comments element, creating one if necessary.
         try:
             comments = self.get_comments(instance)
@@ -119,7 +119,10 @@ class Comment(object):
         else:
             cdata = CDATAElement(element)
 
-        cdata.set(value)
+        if value is not None:
+            cdata.set(value)
+        else:
+            comments.element.removeChild(cdata.element)
 
     def get_comments(self, instance):
         """Acquires an access object for the tag's Comments element."""
@@ -168,7 +171,15 @@ class Data(ElementAccess):
         is created instead for the given data type.
         """
         if args[0].tagName.startswith('Array'):
-            array = object.__new__(Array, *args, **kwds)
+
+            # Two array accessor types are possible depending on if the
+            # the array is a structure member.
+            if args[0].tagName == ('ArrayMember'):
+                array_type = ArrayMember
+            else:
+                array_type = Array
+
+            array = object.__new__(array_type, *args, **kwds)
             array_args = [cls]
             array_args.extend(args)
             array.__init__(*array_args, **kwds)
@@ -497,6 +508,16 @@ class Array(Data):
         else:
             return self.data_class(self.element, self.tag, self.parent,
                                    new_address)
+
+
+class ArrayMember(Array):
+    """Access object for arrays which are structure members.
+
+    Permits access to a description for the entire member. Preventing
+    comments for subarrays is unnecessary as array members may only be
+    one-dimensional.
+    """
+    description = Comment()
 
     
 base_data_types = {'SINT':SINT,
