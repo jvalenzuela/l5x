@@ -150,7 +150,10 @@ class AttributeDescriptor(object):
     def __set__(self, instance, value):
         if self.read_only is True:
             raise AttributeError('Attribute is read-only')
-        instance.element.setAttribute(self.name, value)
+        if value is not None:
+            instance.element.setAttribute(self.name, value)
+        else:
+            instance.element.removeAttribute(self.name)
 
 
 class ElementDictNames(object):
