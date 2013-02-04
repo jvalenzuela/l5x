@@ -70,7 +70,12 @@ class Tag(object):
         """Sets tag's final value for the output project."""
         tag = prj.controller.tags[cls.name]
         tag.description = ' '.join((cls.name, 'description'))
-        tag.value = cls.output_value
+        try:
+            output_value = cls.output_value
+        except AttributeError:
+            pass
+        else:
+            tag.value = output_value
 
 
 class Integer(Tag):
@@ -452,6 +457,46 @@ class Complex(Tag, unittest.TestCase):
         """Check UDT members yield dict values."""
         self.assertIsInstance(self.tag[0].value, dict)
         self.assertIsInstance(self.tag[0]['timer'].value, dict)
+
+
+class DescriptionRemoval(Tag, unittest.TestCase):
+    """Tests for deleting comments."""
+    name = 'desc'
+
+    def test_desc(self):
+        """Override for Tag method so no description is set."""
+        pass
+
+    def test_del_desc(self):
+        """Test deleting all member comments."""
+        member = self.tag['dint_array']
+        member.description = None
+        for i in range(member.shape[0]):
+            member[i].description = None
+            for bit in range(len(member[i])):
+                member[i][bit].description = None
+
+        self.clear_struct(self.tag['timer'])
+
+        member = self.tag['counter_array']
+        member.description = None
+        for i in range(member.shape[0]):
+            self.clear_struct(member[i])
+
+        self.tag['real'].description = None
+
+    def clear_struct(self, struct):
+        """Removes descriptions from a structured data type."""
+        struct.description = None
+        for member in struct.names:
+            struct[member].description = None
+            try:
+                bits = len(struct[member])
+            except TypeError:
+                pass
+            else:
+                for bit in range(bits):
+                    struct[member][bit].description = None
 
 
 def setUpModule():
