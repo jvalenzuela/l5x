@@ -2,6 +2,8 @@
 
 """
 
+import xml.dom
+
 
 class ChildElements(object):
     """Descriptor class to acquire a list of child elements."""
@@ -152,8 +154,14 @@ class AttributeDescriptor(object):
             raise AttributeError('Attribute is read-only')
         if value is not None:
             instance.element.setAttribute(self.name, value)
+
+        # Delete the attribute if value is None, ignoring the case if the
+        # attribute didn't exist to begin with.
         else:
-            instance.element.removeAttribute(self.name)
+            try:
+                instance.element.removeAttribute(self.name)
+            except xml.dom.NotFoundErr:
+                pass
 
 
 class ElementDictNames(object):
