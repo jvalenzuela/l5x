@@ -9,16 +9,13 @@ import xml.dom.minidom
 
 
 class InvalidFile(Exception):
-    """ """
+    """Raised if the given .L5X file was not a proper L5X export."""
     pass
 
 
 class Project(ElementAccess):
-    """Top-level container for en entire Logix project.
-
-    """
+    """Top-level container for an entire Logix project."""
     def __init__(self, filename):
-        """ """
         doc = xml.dom.minidom.parse(filename)
         if doc.documentElement.tagName != 'RSLogix5000Content':
             raise InvalidFile('Not an L5X file.')
