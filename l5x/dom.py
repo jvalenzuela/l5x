@@ -153,6 +153,8 @@ class AttributeDescriptor(object):
         if self.read_only is True:
             raise AttributeError('Attribute is read-only')
         if value is not None:
+            if not isinstance(value, str):
+                raise TypeError('Value must be a string')
             instance.element.setAttribute(self.name, value)
 
         # Delete the attribute if value is None, ignoring the case if the
