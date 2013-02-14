@@ -4,6 +4,7 @@ Unittests for tag access.
 
 import ctypes
 import fixture
+import l5x
 import math
 import unittest
 
@@ -64,6 +65,21 @@ class Tag(object):
         self.assertGreater(len(self.tag.data_type), 0)
         with self.assertRaises(AttributeError):
             self.tag.data_type = 'fail'
+
+    def test_remove_raw_data(self):
+        """Ensure setting top-level tag value removes undecorated data."""
+        clean = l5x.Project(fixture.INPUT_FILE)
+        tag = clean.controller.tags[self.name]
+        tag.value = tag.value
+        self.assertFalse(self.raw_data_exists(tag))
+
+    def raw_data_exists(self, tag):
+        """Checks to see if a tag contans an undecorated data element."""
+        exists = False
+        for e in tag.child_elements:
+            if (e.tagName == 'Data') and (not e.hasAttribute('Format')):
+                exists = True
+        return exists
 
     @classmethod
     def tearDownClass(cls):

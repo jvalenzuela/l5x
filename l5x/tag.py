@@ -74,9 +74,10 @@ class Tag(ElementAccess):
         modified decorated data elements.
         """
         for e in self.child_elements:
-            if (e.tagName == 'Data') and (not e.getAttribute('Format')):
+            if (e.tagName == 'Data') and (not e.hasAttribute('Format')):
                 data = self.element.removeChild(e)
                 data.unlink()
+                break
 
 
 class Comment(object):
