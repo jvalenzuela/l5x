@@ -178,6 +178,13 @@ class Integer(Tag):
             self.tag[bit].description = desc
             self.assertEqual(self.tag[bit].description, desc)
 
+    def test_bit_value_raw_data(self):
+        """Ensure undecorated data is cleared when setting a single bit."""
+        clean = l5x.Project(fixture.INPUT_FILE)
+        tag = clean.controller.tags[self.name]
+        tag[0].value = 0
+        self.assertFalse(self.raw_data_exists(tag))
+
 
 class TestSINT(Integer, unittest.TestCase):
     name = 'sint'
@@ -344,6 +351,13 @@ class TestArray1(Tag, unittest.TestCase):
             self.tag[i].description = new_desc
             self.assertEqual(self.tag[i].description, new_desc)
 
+    def test_element_value_raw_data(self):
+        """Ensure setting a single element clears undecorated data."""
+        clean = l5x.Project(fixture.INPUT_FILE)
+        tag = clean.controller.tags[self.name]
+        tag[0].value = tag[0].value
+        self.assertFalse(self.raw_data_exists(tag))
+
 
 class TestArray3(Tag, unittest.TestCase):
     """Multidimensional array tests"""
@@ -435,6 +449,13 @@ class Structure(Tag, unittest.TestCase):
             self.assertIsInstance(member, str)
         with self.assertRaises(AttributeError):
             self.tag.names = 'fail'
+
+    def test_element_value_raw_data(self):
+        """Ensure setting a single member clears undecorated data."""
+        clean = l5x.Project(fixture.INPUT_FILE)
+        tag = clean.controller.tags[self.name]
+        tag['PRE'].value = tag['PRE'].value
+        self.assertFalse(self.raw_data_exists(tag))
 
 
 class ComplexOutputValue(object):
