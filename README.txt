@@ -116,3 +116,35 @@ dictionaries keyed by member name.
 
 Arrays
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Array elements are accessed with standard index notation using integer
+indices. Multidimensional arrays use a series of indices, each within their
+own bracket as opposed to the comma-separated style of RSLogix.
+
+::
+
+	>>> prj.controller.tags['single_dim_array'][3].value = 16
+	>>> prj.controller.tags['multi_dim_array'][2][5].description
+	'This is multi_dim_array[2,5]'
+
+The value of entire array is available through the value attribute using
+lists. Multidimensional arrays use lists of lists and arrays of complex data
+types are supported, for example an array of UDTs is a list of dicts.
+
+::
+
+	>>> l = [0, 1, 2, 3, 4]
+	>>> prj.controller.tags['single_dim_array'].value = l
+	>>> prj.controller.tags['multi_dim_array'].value
+	[[0, 1], [2, 3], [4, 5]]
+	
+
+An array's dimensions may be read with the shape attribute, which returns
+a tuple containing the size of each dimension. The following example shows
+output for a tag of type DINT[4,3,2]. Note the tuple's reversed display order
+as the number of elements in DimX is placed in shape[X].
+
+::
+
+	>>> prj.controller.tags['array'].shape
+	(2, 3, 4)
