@@ -456,6 +456,9 @@ class ArrayShape(object):
     def __get__(self, array, owner=None):
         return tuple(array.dims)
 
+    def __set__(self, array, owner=None):
+        raise AttributeError('Read-only attribute.')
+
 
 class Array(Data):
     """Access object for arrays of any data type.

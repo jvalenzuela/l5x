@@ -311,6 +311,11 @@ class TestArray1(Tag, unittest.TestCase):
         """Verify correct dimension value."""
         self.assertEqual(self.tag.shape[0], 10)
 
+    def test_shape_read_only(self):
+        """Ensure attempting to set shape raises an exception."""
+        with self.assertRaises(AttributeError):
+            self.tag.shape = 0
+
     def test_index_type(self):
         """Ensure non-integer indices raise an exception."""
         with self.assertRaises(TypeError):
