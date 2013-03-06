@@ -25,6 +25,40 @@ RSLogix. Typical execution flow is as follows:
 	prj.write('modified.L5X')
 
 
+Controller
+-------------------------
+
+The controller attribute of a project has the following attributes:
+
+tags:
+	A tag scope containing controller tags; see _`Tags`.
+
+
+comm_path:
+	Permits reading and modifying the controller's communication path.
+	Setting to None will delete the communication path.
+
+::
+
+	>>> prj.controller.tags['tag_name'].description = 'A controller tag'
+	>>> prj.controller.comm_path
+	'AB_ETHIP-1\\192.168.1.10\\Backplane\\0'
+
+
+Programs
+-------------------------
+
+A project's programs attribute contains a names attribute that evaluates
+to a list of program names, members of which can be used as indices to access
+program-scoped tags.
+
+::
+
+	>>> prj.programs.names
+	['MainProgram', 'AnotherProgram']
+	>>> prj.programs['MainProgram'].tags['a_program_tag'].value = 50
+
+
 Tags
 -------------------------
 
