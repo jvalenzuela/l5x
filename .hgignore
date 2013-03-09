@@ -5,3 +5,6 @@ tests/*.ACD
 *.pyc
 tests/*.acd
 tests/output*
+MANIFEST
+build/*
+dist/*
