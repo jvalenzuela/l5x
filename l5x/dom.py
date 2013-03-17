@@ -1,5 +1,5 @@
 """
-
+Internal XML DOM helper inteface objects.
 """
 
 import xml.dom
@@ -13,7 +13,7 @@ class ChildElements(object):
 
         
 class ElementAccess(object):
-    """ """
+    """Generic base interface for accessing an XML element."""
     child_elements = ChildElements()
 
     def __init__(self, element):
@@ -36,6 +36,7 @@ class ElementAccess(object):
         raise KeyError()
 
     def create_element(self, name, attributes={}):
+        """Wrapper to create a new element with a set of attributes."""
         new = self.doc.createElement(name)
         for attr in attributes.keys():
             new.setAttribute(attr, attributes[attr])

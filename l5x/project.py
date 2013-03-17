@@ -1,5 +1,13 @@
 """
+Top-level module defining the Project class through which all L5X access
+is performed.
 
+The general approach of this package is to provide access to L5X data
+through descriptor objects organized under a Project instance in a structure
+similar to RSLogix. These descriptor objects modify XML elements through
+the __set__() method or return appropriately converted data from the
+__get__() method. In this way the application can process L5X projects
+without worrying about low-level XML handling.
 """
 
 from .dom import (ElementAccess, ElementDict, AttributeDescriptor)

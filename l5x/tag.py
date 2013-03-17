@@ -1,5 +1,5 @@
 """
-
+Objects implementing tag access.
 """
 
 from .dom import (ElementAccess, ElementDict, AttributeDescriptor,
@@ -64,7 +64,7 @@ class Tag(ElementAccess):
         return self.data[key]
 
     def __len__(self):
-        """ """
+        """Dispatches len queries to the base data type object."""
         return len(self.data)
 
     def clear_raw_data(self):
@@ -190,9 +190,6 @@ class Data(ElementAccess):
             return object.__new__(cls, *args, **kwds)
 
     def __init__(self, element, tag, parent=None):
-        """
-
-        """
         ElementAccess.__init__(self, element)
         self.tag = tag
         self.parent = parent
@@ -241,7 +238,7 @@ class IntegerValue(object):
 class Integer(Data):
     """Base class for integer data types.
 
-    In addition to the usual value and description access, numeric indices
+    In addition to the usual value and description access, integer indices
     are used for bit-level references.
     """
     value = IntegerValue()
@@ -253,6 +250,8 @@ class Integer(Data):
 
     def validate_bit_number(self, bit):
         """Verifies a given bit index is within range."""
+        if not isinstance(bit, int):
+            raise TypeError('Bit indices must be integers.')
         if (bit < 0) or (bit >= self.bits):
             raise IndexError('Bit index out of range')
 
@@ -262,7 +261,7 @@ class Integer(Data):
 
 
 class SINT(Integer):
-    """ """
+    """Base class for 8-bit signed integers."""
     bits = 8
     ctype = ctypes.c_int8
     value_min = -128
@@ -270,7 +269,7 @@ class SINT(Integer):
 
 
 class INT(Integer):
-    """ """
+    """Base class for 16-bit signed integers."""
     bits = 16
     ctype = ctypes.c_int16
     value_min = -32768
@@ -278,7 +277,7 @@ class INT(Integer):
 
 
 class DINT(Integer):
-    """ """
+    """Base class for 32-bit signed integers."""
     bits = 32
     ctype = ctypes.c_int32
     value_min = -2147483648
@@ -461,9 +460,7 @@ class ArrayShape(object):
 
 
 class Array(Data):
-    """Access object for arrays of any data type.
-
-    """
+    """Access object for arrays of any data type."""
     value = ArrayValue()
     description = ArrayDescription()
     shape = ArrayShape()

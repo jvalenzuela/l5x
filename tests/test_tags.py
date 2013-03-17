@@ -138,6 +138,11 @@ class Integer(Tag):
         with self.assertRaises(IndexError):
             self.tag[len(self.tag)]
 
+    def test_bit_index_type(self):
+        """Verity non-integer bit indices raise an exception."""
+        with self.assertRaises(TypeError):
+            self.tag['foo']
+
     def test_bit_value_type(self):
         """Ensure bit values are expressed as integers."""
         self.assertIsInstance(self.tag[0].value, int)
