@@ -14,6 +14,7 @@ from .dom import (ElementAccess, ElementDict, AttributeDescriptor)
 from .module import Module
 from .tag import Scope
 import xml.dom.minidom
+import xml.parsers.expat
 
 
 class InvalidFile(Exception):
@@ -24,7 +25,12 @@ class InvalidFile(Exception):
 class Project(ElementAccess):
     """Top-level container for an entire Logix project."""
     def __init__(self, filename):
-        doc = xml.dom.minidom.parse(filename)
+        try:
+            doc = xml.dom.minidom.parse(filename)
+        except xml.parsers.expat.ExpatError as e:
+            msg = xml.parsers.expat.ErrorString(e.code)
+            raise InvalidFile("XML parsing error: {0}".format(msg))
+
         if doc.documentElement.tagName != 'RSLogix5000Content':
             raise InvalidFile('Not an L5X file.')
 
