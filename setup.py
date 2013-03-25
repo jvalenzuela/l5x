@@ -10,12 +10,12 @@ setup(name='l5x',
       description='RSLogix .L5X interface.',
       long_description=open('README.txt').read(),
       classifiers=[
-        'Development Status :: Production/Stable',
+        'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 2.7',
-        'Topic :: Text Processing :: Markup :: XML'
+        'Topic :: Text Processing :: Markup :: XML',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Scientific/Engineering :: Interface Engine/Protocol Translator'
         ])
