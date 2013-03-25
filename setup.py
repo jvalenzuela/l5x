@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='l5x',
-      version='0.1',
+      version='1.0',
       author='Jason Valenzuela',
       author_email='jvalenzuela1977@gmail.com',
       packages=['l5x', 'tests'],
