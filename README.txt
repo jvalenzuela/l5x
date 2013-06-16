@@ -94,6 +94,14 @@ description
         normal read/write activities, setting this attribute to None will
         delete any existing comment.
 
+Consumed tags include these additional read/write attributes:
+
+producer
+	Name of the producing controller.
+
+remote_tag
+	Remote tag name.
+
 
 Integers
 ~~~~~~~~~~~~~~~~~~~~~~~~~

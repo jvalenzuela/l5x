@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="20.00" TargetName="L5X_test" TargetType="Controller" ContainsContext="false" Owner="VM, Office" ExportDate="Fri Feb 08 10:45:11 2013" ExportOptions="DecoratedData ForceProtectedEncoding AllProjDocTrans">
-<Controller Use="Target" Name="L5X_test" ProcessorType="1769-L32E" MajorRev="20" MinorRev="11" TimeSlice="20" ShareUnusedTimeSlice="1" ProjectCreationDate="Fri Feb 08 10:43:30 2013" LastModifiedDate="Fri Feb 08 10:43:33 2013" SFCExecutionControl="CurrentActive" SFCRestartPosition="MostRecent"
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="19.01" TargetName="L5X_test" TargetType="Controller" ContainsContext="false" Owner="VM, Office" ExportDate="Sat Jun 15 20:56:48 2013" ExportOptions="DecoratedData ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Target" Name="L5X_test" ProcessorType="1769-L32E" MajorRev="19" MinorRev="11" TimeSlice="20" ShareUnusedTimeSlice="1" ProjectCreationDate="Sat Jun 15 20:52:13 2013" LastModifiedDate="Sat Jun 15 20:52:49 2013" SFCExecutionControl="CurrentActive" SFCRestartPosition="MostRecent"
  SFCLastScan="DontScan" CommPath="AB_ETHIP-1\190.160.101.30\Backplane\0" ProjectSN="16#0000_0000" MatchProjectToController="false" CanUseRPIFromProducer="false" InhibitAutomaticFirmwareUpdate="0">
 <RedundancyInfo Enabled="false" KeepTestEditsOnSwitchOver="false" IOMemoryPadPercentage="90" DataTablePadPercentage="50"/>
-<Security Code="0" ChangesToDetect="16#ffff_ffff_ffff_ffff"/>
+<Security Code="0"/>
 <SafetyInfo/>
 <DataTypes>
 <DataType Name="udt" Family="NoFamily" Class="User">
@@ -16,7 +16,7 @@
 </DataType>
 </DataTypes>
 <Modules>
-<Module Name="Controller" CatalogNumber="1769-L32E" Vendor="1" ProductType="14" ProductCode="77" Major="20" Minor="11" ParentModule="Controller" ParentModPortId="1" Inhibited="false" MajorFault="true"
+<Module Name="Controller" CatalogNumber="1769-L32E" Vendor="1" ProductType="14" ProductCode="77" Major="19" Minor="11" ParentModule="Controller" ParentModPortId="1" Inhibited="false" MajorFault="true"
 >
 <EKey State="ExactMatch"/>
 <Ports>
@@ -25,7 +25,7 @@
 </Port>
 </Ports>
 </Module>
-<Module Name="LocalENB" CatalogNumber="1769-L32E Ethernet Port" Vendor="1" ProductType="12" ProductCode="158" Major="20" Minor="11" ParentModule="Controller" ParentModPortId="1" Inhibited="false" MajorFault="false"
+<Module Name="LocalENB" CatalogNumber="1769-L32E Ethernet Port" Vendor="1" ProductType="12" ProductCode="158" Major="19" Minor="11" ParentModule="Controller" ParentModPortId="1" Inhibited="false" MajorFault="false"
 >
 <EKey State="CompatibleModule"/>
 <Ports>
@@ -35,7 +35,29 @@
 </Port>
 </Ports>
 </Module>
-<Module Name="Local" CatalogNumber="CompactBus" Vendor="1" ProductType="12" ProductCode="71" Major="20" Minor="11" ParentModule="Controller" ParentModPortId="1" Inhibited="false" MajorFault="true"
+<Module Name="EN2T" CatalogNumber="1756-EN2T" Vendor="1" ProductType="12" ProductCode="166" Major="3" Minor="1" ParentModule="LocalENB" ParentModPortId="2" Inhibited="false" MajorFault="false"
+>
+<EKey State="CompatibleModule"/>
+<Ports>
+<Port Id="1" Address="1" Type="ICP" Upstream="false">
+<Bus Size="17"/>
+</Port>
+<Port Id="2" Address="192.168.1.1" Type="Ethernet" Upstream="true"/>
+</Ports>
+<Communications CommMethod="536870914">
+<Connections/>
+</Communications>
+<ExtendedProperties>
+<public><ConfigID>4325481</ConfigID></public></ExtendedProperties>
+</Module>
+<Module Name="PLC" CatalogNumber="1756-L55" Vendor="1" ProductType="14" ProductCode="51" Major="16" Minor="1" ParentModule="EN2T" ParentModPortId="1" Inhibited="false" MajorFault="false"
+>
+<EKey State="Disabled"/>
+<Ports>
+<Port Id="1" Address="0" Type="ICP" Upstream="true"/>
+</Ports>
+</Module>
+<Module Name="Local" CatalogNumber="CompactBus" Vendor="1" ProductType="12" ProductCode="71" Major="19" Minor="11" ParentModule="Controller" ParentModPortId="1" Inhibited="false" MajorFault="true"
 >
 <EKey State="ExactMatch"/>
 <Ports>
@@ -108,10 +130,24 @@
 </Array>
 </Data>
 </Tag>
+<Tag Name="base" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
 <Tag Name="bool" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Data>00</Data>
 <Data Format="Decorated">
 <DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="consumed" TagType="Consumed" DataType="DINT" Radix="Decimal" ExternalAccess="Read/Write">
+<ConsumeInfo Producer="PLC" RemoteTag="remote_data" RemoteInstance="0" RPI="20" Unicast="true"/>
+<Data>00 00 00 00</Data>
+<ForceData>00 00 00 00 00 00 00 00 00 00 00 00</ForceData>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
 </Data>
 </Tag>
 <Tag Name="desc" TagType="Base" DataType="udt" Constant="false" ExternalAccess="Read/Write">

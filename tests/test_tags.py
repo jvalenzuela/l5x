@@ -546,6 +546,52 @@ class DescriptionRemoval(Tag, unittest.TestCase):
                     struct[member][bit].description = None
 
 
+class Base(Tag, unittest.TestCase):
+    """Tests for base tags."""
+    name = 'base'
+    attrs = ['producer', 'remote_tag']
+
+    def test_access(self):
+        """Confirms getting and setting an attribute raises an exception."""
+        for attr in self.attrs:
+            with self.assertRaises(TypeError):
+                getattr(self.tag, attr)
+            with self.assertRaises(TypeError):
+                setattr(self.tag, '')
+
+
+class Consumed(Tag, unittest.TestCase):
+    """Tests for consumed tags."""
+    name = 'consumed'
+    attrs = ['producer', 'remote_tag']
+
+    def test_get_valid(self):
+        """Ensures an attribute's value is a non-empty string."""
+        for attr in self.attrs:
+            value = getattr(self.tag, attr)
+            self.assertIsInstance(value, str)
+            self.assertGreater(len(value), 0)
+
+    def test_set_nonstring(self):
+        """Attempts to set an attribute to a non-string value."""
+        for attr in self.attrs:
+            with self.assertRaises(TypeError):
+                setattr(self.tag, attr, 0)
+
+    def test_set_empty(self):
+        """Attempts to set an attribute to an empty string."""
+        for attr in self.attrs:
+            with self.assertRaises(ValueError):
+                setattr(self.tag, attr, '')
+
+    def test_set_valid(self):
+        """Tests setting attributes to legal values."""
+        for attr in self.attrs:
+            old = getattr(self.tag, attr)
+            new = '_'.join(('new', old))
+            setattr(self.tag, attr, new)
+
+
 def setUpModule():
     """Opens the test project."""
     global prj

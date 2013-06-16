@@ -31,6 +31,41 @@ class TagDataDescriptor(object):
         setattr(tag.data, self.attr, value)
 
 
+class ConsumeDescriptor(object):
+    """Descriptor class for accessing consumed tag properties."""
+    def __init__(self, attr):
+        self.attr = attr
+
+    def __get__(self, tag, owner=None):
+        if self.is_consumed(tag):
+            info = self.get_info(tag)
+            return str(info.getAttribute(self.attr))
+
+        else:
+            raise TypeError('Not a consumed tag')
+        
+    def __set__(self, tag, value):
+        if not self.is_consumed(tag):
+            raise TypeError('Not a consumed tag')
+        
+        # Producer names must be non-empty strings.
+        if not isinstance(value, str):
+            raise TypeError('Producer must be a string')
+        if len(value) == 0:
+            raise ValueError('Producer string cannot be empty')
+
+        info = self.get_info(tag)
+        info.setAttribute(self.attr, value)
+
+    def is_consumed(self, tag):
+        """Checks to see if this is a consumed tag."""
+        return tag.element.getAttribute('TagType') == 'Consumed'
+
+    def get_info(self, tag):
+        """Retrieves the ConsumeInfo XML element."""
+        return tag.get_child_element('ConsumeInfo')
+
+
 class Tag(ElementAccess):
     """Base class for a single tag."""
     description = ElementDescription()
@@ -38,6 +73,8 @@ class Tag(ElementAccess):
     value = TagDataDescriptor('value')
     shape = TagDataDescriptor('shape')
     names = TagDataDescriptor('names')
+    producer = ConsumeDescriptor('Producer')
+    remote_tag = ConsumeDescriptor('RemoteTag')
 
     def __init__(self, element):
         ElementAccess.__init__(self, element)
