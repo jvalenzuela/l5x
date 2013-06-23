@@ -559,6 +559,15 @@ class Base(Tag, unittest.TestCase):
             with self.assertRaises(TypeError):
                 setattr(self.tag, '')
 
+    def test_element_order(self):
+        """Ensure Description is the first element."""
+        # Force creation of a new description by first removing any
+        # existing one.
+        self.tag.description = None
+        self.tag.description = 'description'
+
+        self.assertEqual(self.tag.child_elements[0].tagName, 'Description')
+
 
 class Consumed(Tag, unittest.TestCase):
     """Tests for consumed tags."""
@@ -590,6 +599,15 @@ class Consumed(Tag, unittest.TestCase):
             old = getattr(self.tag, attr)
             new = '_'.join(('new', old))
             setattr(self.tag, attr, new)
+
+    def test_element_order(self):
+        """Ensure ConsumedInfo element is before a Description."""
+        # Force creation of a new description by first removing any
+        # existing one.
+        self.tag.description = None
+        self.tag.description = 'description'
+
+        self.assertEqual(self.tag.child_elements[0].tagName, 'ConsumeInfo')
 
 
 def setUpModule():

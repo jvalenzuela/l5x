@@ -93,9 +93,12 @@ class ElementDescription(object):
     """Descriptor class for accessing a top-level Description element.
 
     Description elements contain a CDATA comment for some type of
-    container element, such as a Tag or Module. When supported, they must
-    be placed as the first child element.
+    container element, such as a Tag or Module.
     """
+    def __init__(self, follow=[]):
+        """Store a list of elements which must preceed the description."""
+        self.follow = follow
+
     def __get__(self, instance, owner=None):
         """Returns the current description string."""
         try:
@@ -133,9 +136,29 @@ class ElementDescription(object):
             raise TypeError('Description must be a string or None')
 
     def create(self, instance):
-        """Creates a new Description element as the instance's first child."""
+        """Creates a new Description element."""
         new = CDATAElement(parent=instance, name='Description')
-        instance.element.insertBefore(new.element, instance.element.firstChild)
+
+        # Search for any elements listed in the follow attribute.
+        follow = None
+        for e in instance.child_elements:
+            if e.tagName in self.follow:
+                follow = e
+
+        # Create as first child if no elements to follow were found.
+        if follow is None:
+            instance.element.insertBefore(new.element,
+                                          instance.element.firstChild)
+
+        # If any follow elements exist, insert the new description
+        # element after the last one found. DOM node operations do not
+        # provide an append-after method so an insert-remove-insert
+        # procedure is used.
+        else:
+            instance.element.insertBefore(new.element, follow)
+            instance.element.removeChild(follow)
+            instance.element.insertBefore(follow, new.element)
+
         return new
 
 

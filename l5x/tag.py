@@ -68,7 +68,7 @@ class ConsumeDescriptor(object):
 
 class Tag(ElementAccess):
     """Base class for a single tag."""
-    description = ElementDescription()
+    description = ElementDescription(['ConsumeInfo'])
     data_type = AttributeDescriptor('DataType', True)
     value = TagDataDescriptor('value')
     shape = TagDataDescriptor('shape')
