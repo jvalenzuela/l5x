@@ -2,7 +2,7 @@
 Unit tests for a project's controller object.
 """
 
-import fixture
+from tests import fixture
 import unittest
 
 

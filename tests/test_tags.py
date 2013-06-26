@@ -3,7 +3,7 @@ Unittests for tag access.
 """
 
 import ctypes
-import fixture
+from tests import fixture
 import l5x
 import math
 import unittest

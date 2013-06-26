@@ -2,7 +2,7 @@
 Unit tests for a project's programs object.
 """
 
-import fixture
+from tests import fixture
 import unittest
 
 
