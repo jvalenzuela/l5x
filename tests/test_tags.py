@@ -16,10 +16,10 @@ class Scope(unittest.TestCase):
 
     def test_names(self):
         """Test names attribute returns a non-empty list of strings."""
-        self.assertIsInstance(self.scope.names, list)
         self.assertGreater(len(self.scope.names), 0)
-        for name in self.scope.names:
-            self.assertIsInstance(name, str)
+        for tag in self.scope.names:
+            self.assertIsInstance(tag, str)
+            self.assertGreater(len(tag), 0)
 
     def test_name_index(self):
         """Ensure tags can be indexed by name."""
@@ -452,11 +452,11 @@ class Structure(Tag, unittest.TestCase):
                 self.assertEqual(self.tag[member].value, x)
 
     def test_names(self):
-        """Verify names attributes returns a read-only list of strings."""
-        self.assertIsInstance(self.tag.names, list)
+        """Verify names attributes returns an iterable of non-empty strings."""
         self.assertGreater(len(self.tag.names), 0)
         for member in self.tag.names:
             self.assertIsInstance(member, str)
+            self.assertGreater(len(member), 0)
         with self.assertRaises(AttributeError):
             self.tag.names = 'fail'
 

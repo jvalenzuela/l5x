@@ -13,8 +13,7 @@ class Programs(unittest.TestCase):
         self.programs = prj.programs
 
     def test_names_type(self):
-        """Test name attribute returns a list of non-empty strings."""
-        self.assertIsInstance(self.programs.names, list)
+        """Test name attribute returns an interable of non-empty strings."""
         self.assertGreater(len(self.programs.names), 0)
         for prg in self.programs.names:
             self.assertIsInstance(prg, str)
@@ -31,10 +30,12 @@ class Programs(unittest.TestCase):
             self.programs[prg]
 
     def test_tags_names(self):
-        """Ensure tags names attribute is a list of non-empty strings."""
+        """Ensure tags names attribute is a iterable of non-empty strings."""
         for prg in self.programs.names:
-            self.assertIsInstance(self.programs[prg].tags.names, list)
-            self.assertGreater(len(self.programs[prg].tags.names), 0)
+            tags = self.programs[prg].tags.names
+            for tag in tags:
+                self.assertIsInstance(tag, str)
+                self.assertGreater(len(tag), 0)
 
     @classmethod
     def tearDownClass(cls):

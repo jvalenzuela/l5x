@@ -38,14 +38,6 @@ class Controller(unittest.TestCase):
         # Ensure deleting a nonexistent path succeeds.
         self.controller.comm_path = None
 
-    def test_tag_names(self):
-        """Ensure tags names attribute is a list of non-empty strings."""
-        self.assertIsInstance(self.controller.tags.names, list)
-        self.assertGreater(len(self.controller.tags.names), 0)
-        for tag in self.controller.tags.names:
-            self.assertIsInstance(tag, str)
-            self.assertGreater(len(tag), 0)
-
     @classmethod
     def tearDownClass(cls):
         """Changes the communication path in the output project."""

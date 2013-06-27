@@ -49,8 +49,8 @@ Programs
 -------------------------
 
 A project's programs attribute contains a names attribute that evaluates
-to a list of program names, members of which can be used as indices to access
-program-scoped tags.
+to an iterable of program names, members of which can be used as indices to
+access program-scoped tags.
 
 ::
 
@@ -65,7 +65,7 @@ Tags
 The top-level project contains tag scope objects, such as controller or
 programs, which provide access to their respective tags. Indexing a scope
 object with a tag's name will return a tag object providing access to the
-various properties of the tag. A list of tag names can also be acquired
+various properties of the tag. An iterable of tag names can also be acquired
 from a scope's names attribute.
 
 ::
@@ -146,6 +146,13 @@ members are accessed using the member's name as an index as follows:
 
 	prj.controller.tags['timer']['PRE'].value = 100
 	prj.controller.tags['timer']['DN'].description = 'done bit'
+
+An iterable set of member identifiers is available with the names attribute:
+
+::
+
+	>>> prj.controller.tags['timer'].names
+	['PRE', 'ACC', 'TT', 'EN', 'DN']
 
 Accessing the value of the structure as a whole is also possible using
 dictionaries keyed by member name.
