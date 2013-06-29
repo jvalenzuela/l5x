@@ -217,14 +217,17 @@ class Data(ElementAccess):
             else:
                 array_type = Array
 
-            array = object.__new__(array_type, *args, **kwds)
+            array = object.__new__(array_type)
             array_args = [cls]
             array_args.extend(args)
             array.__init__(*array_args, **kwds)
             return array
 
+        # Non-array tags return a instance of the original type; an explicit
+        # call to __init__ is not required as the returned instance
+        # is the original class.
         else:
-            return object.__new__(cls, *args, **kwds)
+            return object.__new__(cls)
 
     def __init__(self, element, tag, parent=None):
         ElementAccess.__init__(self, element)
