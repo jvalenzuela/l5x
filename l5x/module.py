@@ -6,13 +6,7 @@ from .dom import (ElementAccess, ElementDict, AttributeDescriptor)
 
 
 class Module(ElementAccess):
-    """Accessor object for a communication module.
-
-    Communication ports may be accessed via the ports attribute.
-        mod.ports.names() - List of available port numbers.
-        mod.ports[id] - Read/write access to a port; id is an integer.
-                        See Port class.
-    """
+    """Accessor object for a communication module."""
     def __init__(self, element):
         ElementAccess.__init__(self, element)
         
@@ -21,10 +15,6 @@ class Module(ElementAccess):
 
 
 class Port(ElementAccess):
-    """Accessor object for a module's port.
-
-    Address may be read or written with the address attribute:
-        current_address = port.address
-        port.address = a_new_address
-    """
+    """Accessor object for a module's port."""
     address = AttributeDescriptor('Address')
+    type = AttributeDescriptor('Type', True)

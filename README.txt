@@ -197,3 +197,28 @@ as the number of elements in DimX is placed in shape[X].
 
 	>>> prj.controller.tags['array'].shape
 	(2, 3, 4)
+
+
+Modules
+-------------------------
+
+The project's modules attribute provides access to modules defined in the
+I/O Configuration tree. A list of modules can be obtained with the names
+attribute.
+
+::
+
+	>> prj.modules.names
+	['Controller', 'DOUT1', 'ENBT']
+
+Each module is comprised of a set of communication ports identified by
+a unique integer. Ports feature a read-only type attribute to query the
+interface type and a read-write address attribute to get or set the
+type-specific address. A typical example for manipulating the IP
+address of an Ethernet port, which is usually port 2:
+
+::
+
+	>> prj.modules['ENBT'].ports[2].type
+	'Ethernet'
+	>> prj.modules['ENBT'].ports[2].address = '192.168.0.1'
