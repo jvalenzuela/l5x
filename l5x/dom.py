@@ -170,16 +170,16 @@ class AttributeDescriptor(object):
 
     def __get__(self, instance, owner=None):
         if (instance.element.hasAttribute(self.name)):
-            return str(instance.element.getAttribute(self.name))
+            raw = instance.element.getAttribute(self.name)
+            return self.from_xml(raw)
         return None
 
     def __set__(self, instance, value):
         if self.read_only is True:
             raise AttributeError('Attribute is read-only')
-        if value is not None:
-            if not isinstance(value, str):
-                raise TypeError('Value must be a string')
-            instance.element.setAttribute(self.name, value)
+        new_value = self.to_xml(value)
+        if new_value is not None:
+            instance.element.setAttribute(self.name, new_value)
 
         # Delete the attribute if value is None, ignoring the case if the
         # attribute didn't exist to begin with.
@@ -188,6 +188,23 @@ class AttributeDescriptor(object):
                 instance.element.removeAttribute(self.name)
             except xml.dom.NotFoundErr:
                 pass
+
+    def from_xml(self, value):
+        """Default converter for reading attribute string.
+
+        Can be overridden in subclasses to provide custom conversion.
+        """
+        return str(value)
+
+    def to_xml(self, value):
+        """Default converter for writing attribute string.
+
+        Subclasses may implement custom conversions from user values
+        by overriding this method. Must return a string or None.
+        """
+        if (value is not None) and (not isinstance(value, str)):
+            raise TypeError('Value must be a string')
+        return value
 
 
 class ElementDictNames(object):
