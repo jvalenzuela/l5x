@@ -44,6 +44,9 @@ comm_path:
 	>>> prj.controller.comm_path
 	'AB_ETHIP-1\\192.168.1.10\\Backplane\\0'
 
+snn:
+	Safety network number; see Modules_ for details.
+
 
 Programs
 -------------------------
@@ -222,3 +225,20 @@ address of an Ethernet port, which is usually port 2:
 	>> prj.modules['ENBT'].ports[2].type
 	'Ethernet'
 	>> prj.modules['ENBT'].ports[2].address = '192.168.0.1'
+
+Safety modules, including the controller, contain a read/write snn
+attribute for manipulating the module's safety network number.
+It evaluates to a 12-character string representing the hexadecimal
+safety network number; intervening underscores as seen with RSLogix
+are stripped away. Acceptable values to set a new number need not be
+zero padded and may contain intervening underscores, however, it must
+be a string yielding a hexadecimal number not exceeding 48 bits.
+
+::
+
+	>>> prj.controller.snn
+	'000011112222'
+	>>> prj.modules['safe_in'].snn
+	'AAAABBBBCCCC'
+	>>> prj.controller.snn = '42'
+	>>> prj.modules['safe_out'].snn = '0001_0002_0003'
