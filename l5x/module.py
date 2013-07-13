@@ -10,7 +10,7 @@ class SafetyNetworkNumber(AttributeDescriptor):
     def from_xml(self, value):
         """Removes the leading radix and unused 16 most significant bits."""
         fields = value.split('_')
-        return ''.join(fields[1:])
+        return str(''.join(fields[1:]))
 
     def to_xml(self, value):
         """Custom converter for setting a new value.
