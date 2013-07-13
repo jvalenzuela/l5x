@@ -89,4 +89,4 @@ class ControllerSafetyNetworkNumber(SafetyNetworkNumber):
 class Controller(Scope):
     """Accessor object for the controller device."""
     comm_path = AttributeDescriptor('CommPath')
-    snn = ControllerSafetyNetworkNumber('SafetyNetwork')
+    snn = ControllerSafetyNetworkNumber()

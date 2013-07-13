@@ -7,6 +7,10 @@ from .dom import (ElementAccess, ElementDict, AttributeDescriptor)
 
 class SafetyNetworkNumber(AttributeDescriptor):
     """Descriptor class for accessing safety network numbers."""
+    def __init__(self):
+        """Executes superclass's initializer with attribute name."""
+        super(SafetyNetworkNumber, self).__init__('SafetyNetwork')
+
     def from_xml(self, value):
         """Removes the leading radix and unused 16 most significant bits."""
         fields = value.split('_')
@@ -44,7 +48,7 @@ class SafetyNetworkNumber(AttributeDescriptor):
 
 class Module(ElementAccess):
     """Accessor object for a communication module."""
-    snn = SafetyNetworkNumber('SafetyNetwork')
+    snn = SafetyNetworkNumber()
 
     def __init__(self, element):
         ElementAccess.__init__(self, element)
