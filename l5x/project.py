@@ -66,7 +66,7 @@ class ControllerSafetyNetworkNumber(SafetyNetworkNumber):
     This class handles the fact that the controller's safety network number
     is stored as an attribute of the controller's module element rather than
     the top-level controller element. Some additional work is needed to
-    direct the superclass's interface with the correct element.
+    direct the superclass's interface to the correct element.
     """
     def __get__(self, instance, owner=None):
         mod = self.get_ctl_module(instance)
