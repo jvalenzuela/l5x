@@ -31,7 +31,7 @@ Controller
 The controller attribute of a project has the following attributes:
 
 tags:
-	A tag scope containing controller tags; see _`Tags`.
+	A tag scope containing controller tags; see Tags_.
 
 
 comm_path:
