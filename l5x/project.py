@@ -70,11 +70,11 @@ class ControllerSafetyNetworkNumber(SafetyNetworkNumber):
     """
     def __get__(self, instance, owner=None):
         mod = self.get_ctl_module(instance)
-        return super().__get__(mod)
+        return super(ControllerSafetyNetworkNumber, self).__get__(mod)
 
     def __set__(self, instance, value):
         mod = self.get_ctl_module(instance)
-        super().__set__(mod, value)
+        super(ControllerSafetyNetworkNumber, self).__set__(mod, value)
 
     def get_ctl_module(self, instance):
         """Generates an object to access the controller module element.
