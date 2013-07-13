@@ -38,11 +38,25 @@ class Controller(unittest.TestCase):
         # Ensure deleting a nonexistent path succeeds.
         self.controller.comm_path = None
 
+    def test_snn_read(self):
+        """Test reading the safety network number."""
+        snn = self.controller.snn
+
+    def test_snn_write(self):
+        """Test writing the safety network number."""
+        self.controller.snn = '000011110000'
+
     @classmethod
     def tearDownClass(cls):
-        """Changes the communication path in the output project."""
+        """Changes the output project."""
         prj = fixture.setup()
+
+        # Communication path.
         old = prj.controller.comm_path
         new = '\\'.join(('output', old, '42'))
         prj.controller.comm_path = new
+
+        # Safety network number.
+        prj.controller.snn = '000A0BADD00D'
+
         fixture.teardown(prj)
