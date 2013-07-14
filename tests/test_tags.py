@@ -316,11 +316,27 @@ class TestArray1(Tag, unittest.TestCase):
         """Verify correct dimension value."""
         self.assertEqual(self.tag.shape[0], 10)
 
-    def test_shape_read_only(self):
-        """Ensure attempting to set shape raises an exception."""
-        with self.assertRaises(AttributeError):
-            self.tag.shape = 0
+    def test_resize_invalid_type(self):
+        """Test attempting to resize with a non-tuple raises an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.shape = 5
 
+    def test_resize_num_dims(self):
+        """Test resizing with invalid dimension quantity raises an exception."""
+        for shape in [(), (1, 2, 3, 4)]:
+            with self.assertRaises(ValueError):
+                self.tag.shape = shape
+
+    def test_resize_dim_type(self):
+        """Ensure resizing with non-integer dimensions raises an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.shape = ('foo',)
+
+    def test_resize_dim_range(self):
+        """Test resizing with dimensions less than 1 raises an exception."""
+        with self.assertRaises(ValueError):
+            self.tag.shape = (0,)
+            
     def test_index_type(self):
         """Ensure non-integer indices raise an exception."""
         with self.assertRaises(TypeError):
@@ -504,6 +520,11 @@ class Complex(Tag, unittest.TestCase):
         """Check UDT members yield dict values."""
         self.assertIsInstance(self.tag[0].value, dict)
         self.assertIsInstance(self.tag[0]['timer'].value, dict)
+
+    def test_member_array_resize(self):
+        """Ensure member arrays cannot be resized."""
+        with self.assertRaises(AttributeError):
+            self.tag[0]['dint_array'].shape = (1,)
 
 
 class DescriptionRemoval(Tag, unittest.TestCase):

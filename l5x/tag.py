@@ -495,8 +495,28 @@ class ArrayShape(object):
     def __get__(self, array, owner=None):
         return tuple(array.dims)
 
-    def __set__(self, array, owner=None):
-        raise AttributeError('Read-only attribute.')
+    def __set__(self, array, value):
+        # Prevent resizing UDT array members.
+        if not array.element.tagName == 'Array':
+            raise AttributeError('Member arrays cannot be resized.')
+
+        self.check_shape(value)
+
+    def check_shape(self, shape):
+        """Validates a new target shape before resizing."""
+        if not isinstance(shape, tuple):
+            raise TypeError('Array shape must be a tuple')
+
+        dims = len(shape)
+        if (dims < 1) or (dims > 3):
+            raise ValueError('Arrays must have between 1 and 3 dimensions')
+
+        for d in shape:
+            if not isinstance(d, int):
+                raise TypeError('Array dimensions must be integers')
+
+            if d < 1:
+                raise ValueError('Array dimension must be >= 1')
 
 
 class Array(Data):
