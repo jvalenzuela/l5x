@@ -1,1 +1,7 @@
 v1.0, March 24, 2013 -- Initial release.
+
+v1.1, July 23, 2013
+ - Python 3.x support.
+ - Access producer and remote data for consumed tags.
+ - I/O module interface.
+ - Safety network number access.
