@@ -419,6 +419,44 @@ class TestArray3(Tag, unittest.TestCase):
                 dim.description = 'test'
 
 
+class ArrayResize(object):
+    """Base class for array resizing tests."""
+    @classmethod
+    def setUpClass(cls):
+        cls.tag = prj.controller.tags[cls.name]
+        cls.tag.shape = cls.target
+        cls.target_strings = [str(s) for s in cls.target]
+        cls.target_strings.reverse()
+
+    def test_shape(self):
+        """Ensure the tag's shape value is updated."""
+        self.assertEqual(self.tag.shape, self.target)
+
+    def test_tag_dimensions_attr(self):
+        """Ensure the top-level Tag element's Dimensions attribute is set."""
+        attr = self.tag.element.getAttribute('Dimensions')
+        dims = ' '.join(self.target_strings)
+        self.assertEqual(attr, dims)
+
+    def test_array_dimensions_attr(self):
+        """Ensures the Array element's Dimensions attribute is set."""
+        attr = self.tag.data.element.getAttribute('Dimensions')
+        dims = ','.join(self.target_strings)
+        self.assertEqual(attr, dims)
+
+
+class ArrayResizeSimple(ArrayResize, unittest.TestCase):
+    """Tests for resizing an array of simple data types."""
+    name = 'array_resize_simple'
+    target = (5,)
+
+
+class ArrayResizeStruct(ArrayResize, unittest.TestCase):
+    """Tests to resizing an array of structured data types."""
+    name = 'array_resize_struct'
+    target = (5, 6, 7)
+
+
 class Structure(Tag, unittest.TestCase):
     """Structured data tag tests."""
     name = 'timer'

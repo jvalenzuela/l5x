@@ -501,6 +501,7 @@ class ArrayShape(object):
             raise AttributeError('Member arrays cannot be resized.')
 
         self.check_shape(value)
+        array.resize(value)
 
     def check_shape(self, shape):
         """Validates a new target shape before resizing."""
@@ -569,6 +570,28 @@ class Array(Data):
         else:
             return self.data_class(self.element, self.tag, self.parent,
                                    new_address)
+
+    def resize(self, new_shape):
+        """Alters the array's size."""
+        self.dims = new_shape
+        self.set_dimensions(new_shape)
+
+    def set_dimensions(self, shape):
+        """Updates the Dimensions attributes with a given shape.
+
+        Array tag elements have two dimension attributes: one in the top-level
+        Tag element, and another in the Array child element.
+        """
+        new = list([str(x) for x in shape])
+        new.reverse() # Logix lists dimensions most-significant first.
+
+        # Top-level Tag element uses space for separators.
+        value = ' '.join(new)
+        self.tag.element.setAttribute('Dimensions', value)
+
+        # Array element uses comma for separators.
+        value = ','.join(new)
+        self.element.setAttribute('Dimensions', value)
 
 
 class ArrayMember(Array):
