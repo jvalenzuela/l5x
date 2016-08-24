@@ -444,6 +444,66 @@ class ArrayResize(object):
         dims = ','.join(self.target_strings)
         self.assertEqual(attr, dims)
 
+    def test_raw_data_removed(self):
+        """Ensure the original raw data array is deleted."""
+        for e in self.tag.child_elements:
+            if e.tagName == 'Data':
+                self.assertTrue(e.hasAttribute('Format'))
+
+    def test_index_order(self):
+        """Confirm the correct order of generated indices."""
+        indices = self.get_indices()
+        self.assertEqual(indices, sorted(indices))
+
+    def test_element_number(self):
+        """Confirm the correct number of elements were generated."""
+        for i in self.tag.shape:
+            try:
+                num *= i
+            except UnboundLocalError:
+                num = i
+
+        self.assertEqual(num, len(self.get_indices()))
+
+    def test_index_range(self):
+        """Confirm the generated indices are within the resized shape."""
+        for idx in self.get_indices():
+            # Reverse the order of dimensions to convert back from the
+            # attribute presentation format. Required to match the order
+            # of significance used for the array's shape tuple.
+            idx = tuple(reversed(idx))
+
+            for dim in range(len(idx)):
+                x = idx[dim]
+                self.assertGreaterEqual(x, 0)
+                self.assertLess(x, self.tag.shape[dim])
+
+    def test_index_length(self):
+        """Confirm generated indices have the correct number of dimensions."""
+        indices = self.get_indices()
+        [self.assertEqual(len(i), len(self.tag.shape)) for i in indices]
+
+    def test_index_unique(self):
+        """Confirm all generated indices are unique."""
+        s = set()
+        for idx in self.get_indices():
+            self.assertNotIn(idx, s)
+            s.add(idx)
+        
+    def get_indices(self):
+        """Extracts the list of element indices from the array elements.
+
+        Indices are converted into a tuple of integers. Dimension order
+        remains the same as the string presentation from the attribute
+        value: most-significant dimension stored in the least-significant
+        tuple index.
+        """
+        indices = []
+        for e in self.tag.data.child_elements:
+            attr = e.getAttribute('Index')[1:-1] # Remove braces.
+            indices.append(tuple([int(i) for i in attr.split(',')]))
+        return indices
+
 
 class ArrayResizeSimple(ArrayResize, unittest.TestCase):
     """Tests for resizing an array of simple data types."""

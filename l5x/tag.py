@@ -575,6 +575,18 @@ class Array(Data):
         """Alters the array's size."""
         self.dims = new_shape
         self.set_dimensions(new_shape)
+        self.tag.clear_raw_data()
+
+        # Make a copy of the first element before stripping all old values.
+        template = self.get_child_element('Element').cloneNode(True)
+
+        self.remove_elements()
+
+        # Generate new elements based on a new set of indices.
+        indices = self.build_new_indices(new_shape)
+        [self.append_element(template, i) for i in indices]
+
+        template.unlink()
 
     def set_dimensions(self, shape):
         """Updates the Dimensions attributes with a given shape.
@@ -592,6 +604,53 @@ class Array(Data):
         # Array element uses comma for separators.
         value = ','.join(new)
         self.element.setAttribute('Dimensions', value)
+
+    def remove_elements(self):
+        """Deletes all (array)Element elements."""
+        for e in self.child_elements:
+            self.element.removeChild(e)
+            e.unlink()
+
+    def build_new_indices(self, shape):
+        """Constructs a set of indices based on a given array shape.
+
+        This method recursively iterates through every value of every
+        dimension. The returned list contains every index combination
+        ordered by iterating through dimensions from least to
+        most-significant. This order is important because Logix requires
+        indices to be arranged in this manner.
+        """
+        # Extract the most-significant dimension to iterate though, returning
+        # an empty list if all dimension levels have been consumed.
+        try:
+            dim = shape[-1]
+        except IndexError:
+            return []
+
+        indices = []
+        for i in range(dim):
+
+            # If additional dimension levels remain, create indices
+            # for each combination.
+            next = self.build_new_indices(shape[:-1])
+            for j in next:
+                l = [i]
+                l.extend(j)
+                indices.append(l)
+
+            # If only one dimension level was given, the index contains
+            # only the dimension's current value.
+            if not next:
+                indices.append([i])
+
+        return indices
+
+    def append_element(self, template, index):
+        """Generates and appends a new element from a template."""
+        new = template.cloneNode(True)
+        index_attr = "[{0}]".format(','.join([str(i) for i in index]))
+        new.setAttribute('Index', index_attr)
+        self.element.appendChild(new)
 
 
 class ArrayMember(Array):
