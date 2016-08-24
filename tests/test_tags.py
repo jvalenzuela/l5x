@@ -316,11 +316,27 @@ class TestArray1(Tag, unittest.TestCase):
         """Verify correct dimension value."""
         self.assertEqual(self.tag.shape[0], 10)
 
-    def test_shape_read_only(self):
-        """Ensure attempting to set shape raises an exception."""
-        with self.assertRaises(AttributeError):
-            self.tag.shape = 0
+    def test_resize_invalid_type(self):
+        """Test attempting to resize with a non-tuple raises an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.shape = 5
 
+    def test_resize_num_dims(self):
+        """Test resizing with invalid dimension quantity raises an exception."""
+        for shape in [(), (1, 2, 3, 4)]:
+            with self.assertRaises(ValueError):
+                self.tag.shape = shape
+
+    def test_resize_dim_type(self):
+        """Ensure resizing with non-integer dimensions raises an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.shape = ('foo',)
+
+    def test_resize_dim_range(self):
+        """Test resizing with dimensions less than 1 raises an exception."""
+        with self.assertRaises(ValueError):
+            self.tag.shape = (0,)
+            
     def test_index_type(self):
         """Ensure non-integer indices raise an exception."""
         with self.assertRaises(TypeError):
@@ -401,6 +417,104 @@ class TestArray3(Tag, unittest.TestCase):
                 dim.description
             with self.assertRaises(TypeError):
                 dim.description = 'test'
+
+
+class ArrayResize(object):
+    """Base class for array resizing tests."""
+    @classmethod
+    def setUpClass(cls):
+        cls.tag = prj.controller.tags[cls.name]
+        cls.tag.shape = cls.target
+        cls.target_strings = [str(s) for s in cls.target]
+        cls.target_strings.reverse()
+
+    def test_shape(self):
+        """Ensure the tag's shape value is updated."""
+        self.assertEqual(self.tag.shape, self.target)
+
+    def test_tag_dimensions_attr(self):
+        """Ensure the top-level Tag element's Dimensions attribute is set."""
+        attr = self.tag.element.getAttribute('Dimensions')
+        dims = ' '.join(self.target_strings)
+        self.assertEqual(attr, dims)
+
+    def test_array_dimensions_attr(self):
+        """Ensures the Array element's Dimensions attribute is set."""
+        attr = self.tag.data.element.getAttribute('Dimensions')
+        dims = ','.join(self.target_strings)
+        self.assertEqual(attr, dims)
+
+    def test_raw_data_removed(self):
+        """Ensure the original raw data array is deleted."""
+        for e in self.tag.child_elements:
+            if e.tagName == 'Data':
+                self.assertTrue(e.hasAttribute('Format'))
+
+    def test_index_order(self):
+        """Confirm the correct order of generated indices."""
+        indices = self.get_indices()
+        self.assertEqual(indices, sorted(indices))
+
+    def test_element_number(self):
+        """Confirm the correct number of elements were generated."""
+        for i in self.tag.shape:
+            try:
+                num *= i
+            except UnboundLocalError:
+                num = i
+
+        self.assertEqual(num, len(self.get_indices()))
+
+    def test_index_range(self):
+        """Confirm the generated indices are within the resized shape."""
+        for idx in self.get_indices():
+            # Reverse the order of dimensions to convert back from the
+            # attribute presentation format. Required to match the order
+            # of significance used for the array's shape tuple.
+            idx = tuple(reversed(idx))
+
+            for dim in range(len(idx)):
+                x = idx[dim]
+                self.assertGreaterEqual(x, 0)
+                self.assertLess(x, self.tag.shape[dim])
+
+    def test_index_length(self):
+        """Confirm generated indices have the correct number of dimensions."""
+        indices = self.get_indices()
+        [self.assertEqual(len(i), len(self.tag.shape)) for i in indices]
+
+    def test_index_unique(self):
+        """Confirm all generated indices are unique."""
+        s = set()
+        for idx in self.get_indices():
+            self.assertNotIn(idx, s)
+            s.add(idx)
+        
+    def get_indices(self):
+        """Extracts the list of element indices from the array elements.
+
+        Indices are converted into a tuple of integers. Dimension order
+        remains the same as the string presentation from the attribute
+        value: most-significant dimension stored in the least-significant
+        tuple index.
+        """
+        indices = []
+        for e in self.tag.data.child_elements:
+            attr = e.getAttribute('Index')[1:-1] # Remove braces.
+            indices.append(tuple([int(i) for i in attr.split(',')]))
+        return indices
+
+
+class ArrayResizeSimple(ArrayResize, unittest.TestCase):
+    """Tests for resizing an array of simple data types."""
+    name = 'array_resize_simple'
+    target = (5,)
+
+
+class ArrayResizeStruct(ArrayResize, unittest.TestCase):
+    """Tests to resizing an array of structured data types."""
+    name = 'array_resize_struct'
+    target = (5, 6, 7)
 
 
 class Structure(Tag, unittest.TestCase):
@@ -504,6 +618,11 @@ class Complex(Tag, unittest.TestCase):
         """Check UDT members yield dict values."""
         self.assertIsInstance(self.tag[0].value, dict)
         self.assertIsInstance(self.tag[0]['timer'].value, dict)
+
+    def test_member_array_resize(self):
+        """Ensure member arrays cannot be resized."""
+        with self.assertRaises(AttributeError):
+            self.tag[0]['dint_array'].shape = (1,)
 
 
 class DescriptionRemoval(Tag, unittest.TestCase):

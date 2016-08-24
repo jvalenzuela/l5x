@@ -495,8 +495,29 @@ class ArrayShape(object):
     def __get__(self, array, owner=None):
         return tuple(array.dims)
 
-    def __set__(self, array, owner=None):
-        raise AttributeError('Read-only attribute.')
+    def __set__(self, array, value):
+        # Prevent resizing UDT array members.
+        if not array.element.tagName == 'Array':
+            raise AttributeError('Member arrays cannot be resized.')
+
+        self.check_shape(value)
+        array.resize(value)
+
+    def check_shape(self, shape):
+        """Validates a new target shape before resizing."""
+        if not isinstance(shape, tuple):
+            raise TypeError('Array shape must be a tuple')
+
+        dims = len(shape)
+        if (dims < 1) or (dims > 3):
+            raise ValueError('Arrays must have between 1 and 3 dimensions')
+
+        for d in shape:
+            if not isinstance(d, int):
+                raise TypeError('Array dimensions must be integers')
+
+            if d < 1:
+                raise ValueError('Array dimension must be >= 1')
 
 
 class Array(Data):
@@ -549,6 +570,87 @@ class Array(Data):
         else:
             return self.data_class(self.element, self.tag, self.parent,
                                    new_address)
+
+    def resize(self, new_shape):
+        """Alters the array's size."""
+        self.dims = new_shape
+        self.set_dimensions(new_shape)
+        self.tag.clear_raw_data()
+
+        # Make a copy of the first element before stripping all old values.
+        template = self.get_child_element('Element').cloneNode(True)
+
+        self.remove_elements()
+
+        # Generate new elements based on a new set of indices.
+        indices = self.build_new_indices(new_shape)
+        [self.append_element(template, i) for i in indices]
+
+        template.unlink()
+
+    def set_dimensions(self, shape):
+        """Updates the Dimensions attributes with a given shape.
+
+        Array tag elements have two dimension attributes: one in the top-level
+        Tag element, and another in the Array child element.
+        """
+        new = list([str(x) for x in shape])
+        new.reverse() # Logix lists dimensions most-significant first.
+
+        # Top-level Tag element uses space for separators.
+        value = ' '.join(new)
+        self.tag.element.setAttribute('Dimensions', value)
+
+        # Array element uses comma for separators.
+        value = ','.join(new)
+        self.element.setAttribute('Dimensions', value)
+
+    def remove_elements(self):
+        """Deletes all (array)Element elements."""
+        for e in self.child_elements:
+            self.element.removeChild(e)
+            e.unlink()
+
+    def build_new_indices(self, shape):
+        """Constructs a set of indices based on a given array shape.
+
+        This method recursively iterates through every value of every
+        dimension. The returned list contains every index combination
+        ordered by iterating through dimensions from least to
+        most-significant. This order is important because Logix requires
+        indices to be arranged in this manner.
+        """
+        # Extract the most-significant dimension to iterate though, returning
+        # an empty list if all dimension levels have been consumed.
+        try:
+            dim = shape[-1]
+        except IndexError:
+            return []
+
+        indices = []
+        for i in range(dim):
+
+            # If additional dimension levels remain, create indices
+            # for each combination.
+            next = self.build_new_indices(shape[:-1])
+            for j in next:
+                l = [i]
+                l.extend(j)
+                indices.append(l)
+
+            # If only one dimension level was given, the index contains
+            # only the dimension's current value.
+            if not next:
+                indices.append([i])
+
+        return indices
+
+    def append_element(self, template, index):
+        """Generates and appends a new element from a template."""
+        new = template.cloneNode(True)
+        index_attr = "[{0}]".format(','.join([str(i) for i in index]))
+        new.setAttribute('Index', index_attr)
+        self.element.appendChild(new)
 
 
 class ArrayMember(Array):
