@@ -202,6 +202,24 @@ as the number of elements in DimX is placed in shape[X].
 	(2, 3, 4)
 
 
+Arrays may also be resized by assigning the shape attribute to a new set
+of dimensions. Keep in mind the reversed appearance of dimensions described
+above. Specifying a shape tuple of (x, y, z) will yield an array sized as
+if Dim0=x, Dim1=y, and Dim2=z were used in the Logix tag dialog. Also the
+array's element values and descriptions are undefined following a resize
+operation, even if the new shape is a subset of the original. If original
+content needs to be retained across a resize, it should be copied to
+separate variables before assigning a new shape.
+
+::
+
+        >>> prj.controller.tags['DINT_array'].value
+        [0, 1, 2, 3]
+        >>> prj.controller.tags['DINT_array'].shape = (2, 2)
+        >>> prj.controller.tags['DINT_array'].value
+        [[0, 0], [0, 0]]
+
+
 Modules
 -------------------------
 
