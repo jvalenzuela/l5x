@@ -5,3 +5,6 @@ v1.1, July 23, 2013
  - Access producer and remote data for consumed tags.
  - I/O module interface.
  - Safety network number access.
+
+v1.2, August 24, 2016
+ - Added array resizing.
