@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='l5x',
       version='1.2',
