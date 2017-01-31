@@ -13,8 +13,7 @@ without worrying about low-level XML handling.
 from .dom import (ElementAccess, ElementDict, AttributeDescriptor)
 from .module import (Module, SafetyNetworkNumber)
 from .tag import Scope
-import xml.dom.minidom
-import xml.parsers.expat
+from lxml import etree
 
 
 class InvalidFile(Exception):
@@ -25,16 +24,7 @@ class InvalidFile(Exception):
 class Project(ElementAccess):
     """Top-level container for an entire Logix project."""
     def __init__(self, filename):
-        try:
-            doc = xml.dom.minidom.parse(filename)
-        except xml.parsers.expat.ExpatError as e:
-            msg = xml.parsers.expat.ErrorString(e.code)
-            raise InvalidFile("XML parsing error: {0}".format(msg))
-
-        if doc.documentElement.tagName != 'RSLogix5000Content':
-            raise InvalidFile('Not an L5X file.')
-
-        ElementAccess.__init__(self, doc.documentElement)
+        self._load(filename)
 
         ctl_element = self.get_child_element('Controller')
         self.controller = Controller(ctl_element)
@@ -45,11 +35,27 @@ class Project(ElementAccess):
         mods = self.controller.get_child_element('Modules')
         self.modules = ElementDict(mods, 'Name', Module)
 
+    def _load(self, filename):
+        """Parses the source project file."""
+        parser = etree.XMLParser(strip_cdata=False)
+
+        try:
+            self.etree = etree.parse(filename, parser)
+        except etree.XMLSyntaxError as e:
+            raise InvalidFile("XML parsing error: {0}".format(str(e)))
+
+        self.root = self.etree.getroot()
+
+        # Simple verification that the XML document is indeed an
+        # RSLogix export.
+        if self.root.tag != 'RSLogix5000Content':
+            raise InvalidFile('Not an L5X file.')
+
     def write(self, filename):
         """Outputs the document to a new file."""
-        f = open(filename, 'w')
-        self.doc.writexml(f, encoding='UTF-8')
-        f.close()
+        with open(filename, 'wb') as f:
+            self.etree.write(f, encoding='UTF-8', xml_declaration=True,
+                             standalone=True)
 
 
 def append_child_element(name, parent):
