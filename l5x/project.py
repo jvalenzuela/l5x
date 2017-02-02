@@ -14,6 +14,8 @@ from .dom import (ElementAccess, ElementDict, AttributeDescriptor)
 from .module import (Module, SafetyNetworkNumber)
 from .tag import Scope
 from lxml import etree
+import io
+import re
 
 
 class InvalidFile(Exception):
@@ -53,9 +55,30 @@ class Project(ElementAccess):
 
     def write(self, filename):
         """Outputs the document to a new file."""
+        buf = etree.tostring(self.etree, encoding='UTF-8', standalone=True)
+        s = str(buf, encoding='UTF-8')
+        s = self._fixup_cdata_newlines(s)
         with open(filename, 'wb') as f:
-            self.etree.write(f, encoding='UTF-8', xml_declaration=True,
-                             standalone=True)
+            f.write(s.encode())
+
+    def _fixup_cdata_newlines(self, s):
+        """Corrects newline sequences within CDATA elements.
+
+        The lxml parsing process reduces \r\n combinations to a single \n,
+        which is not interpreted correctly by RSLogix. This method restores
+        the original carriage return and newline.
+        """
+        re_cdata = re.compile(r"<!\[CDATA\[.*?\]\]>", re.DOTALL)
+
+        # Construct a list of CDATA content containing newlines.
+        cdata = [m.group() for m in re_cdata.finditer(s) if '\n' in m.group()]
+
+        # Replace the CDATA sections with expanded newline endings.
+        for txt in cdata:
+            new = txt.replace('\n', '\r\n')
+            s = s.replace(txt, new, 1)
+
+        return s
 
 
 def append_child_element(name, parent):
