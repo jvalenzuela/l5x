@@ -2,9 +2,25 @@
 Project object unit tests.
 """
 
+from lxml import etree
 from string import Template
+import io
 import unittest
 import l5x
+
+
+class ContentCheck(unittest.TestCase):
+    """Tests for initial content verifications."""
+    def test_root_element(self):
+        """
+        Confirms an exception is raised when given an XML document
+        without the correct root element.
+        """
+        root = etree.Element("notRSLogixContent")
+        s = etree.tostring(root)
+        buf = io.BytesIO(s)
+        with self.assertRaises(l5x.project.InvalidFile):
+            l5x.Project(buf)
 
 
 class CDATA_Fixture(l5x.Project):
