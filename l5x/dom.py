@@ -210,14 +210,14 @@ class AttributeDescriptor(object):
 class ElementDictNames(object):
     """Descriptor class to get a list of an ElementDict's members."""
     def __get__(self, instance, owner=None):
-        return instance.members.keys()
+        return [e.attrib[instance.key_attr] for e in instance.element]
 
     def __set__(self, instance, owner=None):
         """Raises an exception upon an attempt to modify; this is read-only."""
         raise AttributeError('Read-only attribute.')
 
 
-class ElementDict(ElementAccess):
+class ElementDict(object):
     """Container which provides access to a group of XML elements.
 
     Operates similar to a dictionary where a child element is referenced
@@ -228,33 +228,38 @@ class ElementDict(ElementAccess):
     """
     names = ElementDictNames()
 
-    def __init__(self, parent, key_attr, types, type_attr=None, dfl_type=None,
+    def __init__(self, element, key_attr, types, type_attr=None, dfl_type=None,
                  key_type=str, member_args=[]):
-        ElementAccess.__init__(self, parent)
+        self.element = element
+        self.key_attr = key_attr
         self.types = types
         self.type_attr = type_attr
         self.dfl_type = dfl_type
         self.member_args = member_args
 
-        member_elements = self.child_elements
-        keys = [key_type(e.getAttribute(key_attr)) for e in member_elements]
-        self.members = dict(zip(keys, member_elements))
-
     def __getitem__(self, key):
-        """Return a member class suitable for accessing a child element."""
+        """Return an object suitable for accessing a child element."""
+        path = "*[@{0}='{1}']".format(self.key_attr, key)
         try:
-            element = self.members[key]
-        except KeyError:
+            element = self.element.xpath(path)[0]
+        except IndexError:
             raise KeyError("{0} not found".format(key))
 
         args = [element]
         args.extend(self.member_args)
 
+        # Return a new instance if a single type was given for the target
+        # child element.
         try:
             return self.types(*args)
+
+        # If the more than one class is available for client elements,
+        # as determined by self.types not being directly
+        # callable(instantiation), the new object's class must be chosen
+        # from either the type attribute or original key.
         except TypeError:
             if self.type_attr is not None:
-                type_name = element.getAttribute(self.type_attr)
+                type_name = element.attrib[self.type_attr]
             else:
                 type_name = key
             return self.types.get(type_name, self.dfl_type)(*args)
