@@ -93,6 +93,11 @@ class Tag(ElementAccess):
                 and (e.getAttribute('Format') == 'Decorated')):
                 return ElementAccess(e).child_elements[0]
 
+        name = self.element.getAttribute('Name')
+        raise RuntimeError("Decoded data content not found for {0} tag. "
+                           "Ensure Encode Source Protected Content option "
+                           "is disabled when saving L5X.".format(name))
+
     def __getitem__(self, key):
         """
         Indices are passed to the data object to access members of compound
