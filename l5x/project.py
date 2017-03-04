@@ -13,6 +13,7 @@ without worrying about low-level XML handling.
 from .dom import (ElementAccess, ElementDict, AttributeDescriptor)
 from .module import (Module, SafetyNetworkNumber)
 from .tag import Scope
+import io
 import xml.dom.minidom
 import xml.parsers.expat
 
@@ -47,9 +48,9 @@ class Project(ElementAccess):
 
     def write(self, filename):
         """Outputs the document to a new file."""
-        f = open(filename, 'w')
-        self.doc.writexml(f, encoding='UTF-8')
-        f.close()
+        s = self.doc.toxml()
+        with io.open(filename, 'w', encoding='UTF-8') as f:
+            f.write(s)
 
 
 def append_child_element(name, parent):
