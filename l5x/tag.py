@@ -110,16 +110,17 @@ class Tag(ElementAccess):
         return len(self.data)
 
     def clear_raw_data(self):
-        """Removes the unformatted data element.
+        """Removes any data elements other than decorated.
         
         Called anytime a data value is set to avoid conflicts with
         modified decorated data elements.
         """
         for e in self.child_elements:
-            if (e.tagName == 'Data') and (not e.hasAttribute('Format')):
-                data = self.element.removeChild(e)
-                data.unlink()
-                break
+            if (e.tagName == 'Data'):
+                fmt = e.getAttribute('Format')
+                if fmt != 'Decorated':
+                    data = self.element.removeChild(e)
+                    data.unlink()
 
 
 class Comment(object):
