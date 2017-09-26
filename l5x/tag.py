@@ -539,8 +539,20 @@ class Array(Data):
                      element.getAttribute('Dimensions').split(',')]
         self.dims.reverse()
         self.address = address
-        self.members = ElementDict(element, 'Index', data_class,
-                                   member_args=[tag, self])
+        self.init_members()
+
+    def init_members(self):
+        """Builds the internal dictionary keyed by array indices.
+
+        Array members are identified in XML by the Index attribute,
+        not element order, and may include more than one dimension, so
+        the usual list-type access does not suffice. The object initialized
+        here builds a dictionary of child elements(array members) keyed
+        by the Index attribute that can then be accessed with traditional
+        array notation.
+        """
+        self.members = ElementDict(self.element, 'Index', self.data_class,
+                                   member_args=[self.tag, self])
 
     def __getitem__(self, index):
         """Returns an access object for the given index.
@@ -593,6 +605,9 @@ class Array(Data):
         [self.append_element(template, i) for i in indices]
 
         template.unlink()
+
+        # The member dictionary needs to be rebuilt with the new elements.
+        self.init_members()
 
     def set_dimensions(self, shape):
         """Updates the Dimensions attributes with a given shape.
