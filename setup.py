@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='l5x',
-      version='1.2',
+      version='1.3',
       author='Jason Valenzuela',
       author_email='jvalenzuela1977@gmail.com',
       packages=['l5x', 'tests'],

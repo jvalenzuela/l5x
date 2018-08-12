@@ -8,3 +8,11 @@ v1.1, July 23, 2013
 
 v1.2, August 24, 2016
  - Added array resizing.
+
+v1.3, August 12, 2018
+ - Unicode output corrections.
+ - Raise an exception when encountering L5X exports created
+   with Encode Source Protected Content set.
+ - Clear all non-decorated data elements when setting new
+   tag values.
+ - Initialize tag arrays after resizing.
