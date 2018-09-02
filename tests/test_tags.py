@@ -743,7 +743,7 @@ class DescriptionLanguage(unittest.TestCase):
 
     def test_multi_read(self):
         """
-        Confirm reading a description from a multi-language proejct returns
+        Confirm reading a description from a multi-language project returns
         only content from the current language.
         """
         prj = fixture.create_project(
