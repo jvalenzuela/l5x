@@ -816,6 +816,55 @@ class DescriptionLanguage(unittest.TestCase):
         """
         pass
 
+    def set_multilanguage(self, doc):
+        """
+        Enables multilingual comments by creating current language
+        attribute in the root element.
+        """
+        doc.documentElement.setAttribute('CurrentLanguage',
+                                         self.TARGET_LANGUAGE)
+
+    def create_tag(self, doc):
+        """Creates a mock controller tag."""
+        tag = doc.createElement('Tag')
+        tag.setAttribute('Name', self.TAG_NAME)
+
+        data = doc.createElement('Data')
+        data.setAttribute('Format', 'Decorated')
+        tag.appendChild(data)
+
+        value = doc.createElement('DataValue')
+        data.appendChild(value)
+
+        parent = doc.getElementsByTagName('Tags')[0]
+        parent.appendChild(tag)
+
+    def add_description(self, doc, text, language=None):
+        """Adds a description to the mock controller tag."""
+        # Find the existing Description element, or create a new one if
+        # necessary.
+        try:
+            desc = doc.getElementsByTagName('Description')[0]
+        except IndexError:
+            desc = doc.createElement('Description')
+            tag = doc.getElementsByTagName('Tag')[0]
+            tag.appendChild(desc)
+
+        cdata = doc.createCDATASection(text)
+
+        # CDATA text goes directly under the Description element if no
+        # language is specified.
+        if language is None:
+            desc.appendChild(cdata)
+
+        # Otherwise, create a localized element for the given language
+        # to contain the CDATA.
+        else:
+            local = doc.createElement('LocalizedDescription')
+            local.setAttribute('Lang', language)
+            local.appendChild(cdata)
+            desc.appendChild(local)
+
 
 def setUpModule():
     """Opens the test project."""
