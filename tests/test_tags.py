@@ -729,6 +729,94 @@ class Consumed(Tag, unittest.TestCase):
         self.assertEqual(self.tag.child_elements[0].tagName, 'ConsumeInfo')
 
 
+class DescriptionLanguage(unittest.TestCase):
+    """Tests for multilanguage descriptions."""
+    TAG_NAME = 'test_tag'
+    TARGET_LANGUAGE = 'en-US'
+
+    def test_single_read(self):
+        """Confirm reading a description from a single-language project."""
+        pass
+
+    def test_multi_read(self):
+        """
+        Confirm reading a description from a multi-language proejct returns
+        only content from the current language.
+        """
+        pass
+
+    def test_single_read_none(self):
+        """
+        Confirm reading an empty description from a single-language project.
+        """
+        pass
+
+    def test_multi_read_none(self):
+        """
+        Confirm reading an empty description from a multi-language project.
+        """
+        pass
+
+    def test_multi_read_none_foreign(self):
+        """
+        Confirm reading an empty description from a multi-language project
+        that has descriptions in other languages.
+        """
+        pass
+
+    def test_single_new(self):
+        """Confirm adding a description to a single-language project."""
+        pass
+
+    def test_multi_new(self):
+        """Confirm adding a description to a multi-language project."""
+        pass
+
+    def test_multi_new_foreign(self):
+        """
+        Confirm adding a description to a multi-language project that has
+        descriptions in other languages.
+        """
+        pass
+
+    def test_single_overwrite(self):
+        """
+        Confirm overwriting an existing description in a single-language
+        project.
+        """
+        pass
+
+    def test_multi_overwrite(self):
+        """
+        Confirm overwriting an existing description in a multi-language
+        project.
+        """
+        pass
+
+    def test_multi_overwrite_foreign(self):
+        """
+        Confirm overwriting an existing description in a multi-language
+        project that has descriptions on other languages only affects
+        the description in the current language.
+        """
+        pass
+
+    def test_single_delete(self):
+        """Confirm removing a description from a single-language project."""
+        pass
+
+    def test_multi_delete(self):
+        """Confirm removing a description from a multi-language project."""
+        pass
+
+    def test_multi_delete_foreign(self):
+        """
+        Confirm removing a description from a multi-language project affects
+        only descriptions in the current language.
+        """
+        pass
+
+
 def setUpModule():
     """Opens the test project."""
     global prj
