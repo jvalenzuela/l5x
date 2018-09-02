@@ -26,11 +26,11 @@ def teardown(prj):
     prj.write(OUTPUT_FILE)
 
 
-def create_project(populate=None):
+def create_project(*populate):
     """
     Generates a mock L5X project. The created document contains only an
     empty set of elements required by the L5X Project class; the populate
-    callback is used to add whatever additional content needed by particular
+    callbacks are used to add whatever additional content needed by particular
     test cases.
     """
     imp = xml.dom.minidom.getDOMImplementation()
@@ -45,10 +45,9 @@ def create_project(populate=None):
         element = doc.createElement(tag)
         controller.appendChild(element)
 
-    # Dispatch the document to the populate callback to allow additional
+    # Dispatch the document to the populate callbacks to allow additional
     # content to be added before serialization.
-    if populate is not None:
-        populate(doc)
+    [f(doc) for f in populate]
 
     # Serialize the document so it can be parsed as a simulated XML file.
     xml_str = root.toxml('UTF-8').decode('UTF-8')
