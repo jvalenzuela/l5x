@@ -7,6 +7,7 @@ from tests import fixture
 import l5x
 import math
 import unittest
+import xml.dom.minidom
 
 
 class Scope(unittest.TestCase):
@@ -740,6 +741,8 @@ class DescriptionLanguage(unittest.TestCase):
             self.create_tag,
             lambda doc: self.add_description(doc, 'foo')
         )
+        self.assertEqual(prj.controller.tags[self.TAG_NAME].description,
+                         'foo')
 
     def test_multi_read(self):
         """
@@ -752,6 +755,8 @@ class DescriptionLanguage(unittest.TestCase):
             lambda doc: self.add_description(doc, 'pass', self.TARGET_LANGUAGE),
             lambda doc: self.add_description(doc, 'fail', 'es-AR')
         )
+        self.assertEqual(prj.controller.tags[self.TAG_NAME].description,
+                         'pass')
 
     def test_single_read_none(self):
         """
@@ -760,6 +765,7 @@ class DescriptionLanguage(unittest.TestCase):
         prj = fixture.create_project(
             self.create_tag
         )
+        self.assertIsNone(prj.controller.tags[self.TAG_NAME].description)
 
     def test_multi_read_none(self):
         """
@@ -769,6 +775,7 @@ class DescriptionLanguage(unittest.TestCase):
             self.set_multilanguage,
             self.create_tag
         )
+        self.assertIsNone(prj.controller.tags[self.TAG_NAME].description)
 
     def test_multi_read_none_foreign(self):
         """
@@ -780,12 +787,15 @@ class DescriptionLanguage(unittest.TestCase):
             self.create_tag,
             lambda doc: self.add_description(doc, 'other', 'es-AR')
         )
+        self.assertIsNone(prj.controller.tags[self.TAG_NAME].description)
 
     def test_single_new(self):
         """Confirm adding a description to a single-language project."""
         prj = fixture.create_project(
             self.create_tag
         )
+        prj.controller.tags[self.TAG_NAME].description = 'new'
+        self.assert_description(prj.doc, 'new')
 
     def test_multi_new(self):
         """Confirm adding a description to a multi-language project."""
@@ -793,6 +803,8 @@ class DescriptionLanguage(unittest.TestCase):
             self.set_multilanguage,
             self.create_tag
         )
+        prj.controller.tags[self.TAG_NAME].description = 'new'
+        self.assert_localized_description(prj.doc, 'new', self.TARGET_LANGUAGE)
 
     def test_multi_new_foreign(self):
         """
@@ -804,6 +816,9 @@ class DescriptionLanguage(unittest.TestCase):
             self.create_tag,
             lambda doc: self.add_description(doc, 'other', 'es-AR')
         )
+        prj.controller.tags[self.TAG_NAME].description = 'new'
+        self.assert_localized_description(prj.doc, 'new', self.TARGET_LANGUAGE)
+        self.assert_localized_description(prj.doc, 'other', 'es-AR')
 
     def test_single_overwrite(self):
         """
@@ -814,6 +829,8 @@ class DescriptionLanguage(unittest.TestCase):
             self.create_tag,
             lambda doc: self.add_description(doc, 'old')
         )
+        prj.controller.tags[self.TAG_NAME].description = 'new'
+        self.assert_description(prj.doc, 'new')
 
     def test_multi_overwrite(self):
         """
@@ -825,6 +842,8 @@ class DescriptionLanguage(unittest.TestCase):
             self.create_tag,
             lambda doc: self.add_description(doc, 'old', self.TARGET_LANGUAGE)
         )
+        prj.controller.tags[self.TAG_NAME].description = 'new'
+        self.assert_localized_description(prj.doc, 'new', self.TARGET_LANGUAGE)
 
     def test_multi_overwrite_foreign(self):
         """
@@ -838,6 +857,9 @@ class DescriptionLanguage(unittest.TestCase):
             lambda doc: self.add_description(doc, 'old', self.TARGET_LANGUAGE),
             lambda doc: self.add_description(doc, 'other', 'es-AR')
         )
+        prj.controller.tags[self.TAG_NAME].description = 'new'
+        self.assert_localized_description(prj.doc, 'new', self.TARGET_LANGUAGE)
+        self.assert_localized_description(prj.doc, 'other', 'es-AR')
 
     def test_single_delete(self):
         """Confirm removing a description from a single-language project."""
@@ -845,6 +867,8 @@ class DescriptionLanguage(unittest.TestCase):
             self.create_tag,
             lambda doc: self.add_description(doc, 'foo')
         )
+        prj.controller.tags[self.TAG_NAME].description = None
+        self.assertFalse(prj.doc.getElementsByTagName('Description'))
 
     def test_multi_delete(self):
         """Confirm removing a description from a multi-language project."""
@@ -853,6 +877,8 @@ class DescriptionLanguage(unittest.TestCase):
             self.create_tag,
             lambda doc: self.add_description(doc, 'foo', self.TARGET_LANGUAGE)
         )
+        prj.controller.tags[self.TAG_NAME].description = None
+        self.assertFalse(prj.doc.getElementsByTagName('Description'))
 
     def test_multi_delete_foreign(self):
         """
@@ -865,6 +891,15 @@ class DescriptionLanguage(unittest.TestCase):
             lambda doc: self.add_description(doc, 'foo', self.TARGET_LANGUAGE),
             lambda doc: self.add_description(doc, 'other', 'es-AR')
         )
+        prj.controller.tags[self.TAG_NAME].description = None
+
+        # Ensure no localized description remains in the current language.
+        self.assertFalse([e for e in
+                          prj.doc.getElementsByTagName('LocalizedDescription')
+                          if e.getAttribute('Lang') == self.TARGET_LANGUAGE])
+
+        # Ensure descriptions in other languages are unaffected.
+        self.assert_localized_description(prj.doc, 'other', 'es-AR')
 
     def set_multilanguage(self, doc):
         """
@@ -914,6 +949,42 @@ class DescriptionLanguage(unittest.TestCase):
             local.setAttribute('Lang', language)
             local.appendChild(cdata)
             desc.appendChild(local)
+
+    def assert_description(self, doc, text):
+        """
+        Verifies a single Description element exists under the Tag and
+        contains a matching comment.
+        """
+        desc = doc.getElementsByTagName('Description')
+        self.assertEqual(len(desc), 1)
+        self.assertEqual(desc[0].parentNode.tagName, 'Tag')
+        self.assert_cdata_content(desc[0], text)
+
+    def assert_localized_description(self, doc, text, language):
+        """
+        Verifies a single LocalizedDescription element exists under the
+        Description element with a language attribute and matching text.
+        """
+        local_desc = [e for e in
+                      doc.getElementsByTagName('LocalizedDescription')
+                      if e.getAttribute('Lang') == language]
+        self.assertEqual(len(local_desc), 1)
+        self.assertEqual(local_desc[0].parentNode.tagName == 'Description')
+        self.assert_cdata_content(local_desc[0], text)
+
+    def assert_cdata_content(self, parent, text):
+        """
+        Verifies a given element contains a single CDATA section with a
+        matching string.
+        """
+        # Confirm the parent element contains a single CDATA section.
+        cdata_nodes = [e for e in parent.childNodes
+                       if e.nodeType == xml.dom.minidom.Node.CDATA_SECTION_NODE]
+        self.assertEqual(len(cdata_nodes), 1)
+
+        # Confirm the content of the new CDATA section.
+        cdata = cdata_nodes[0]
+        self.assertEqual(cdata.data, text)
 
 
 def setUpModule():
