@@ -102,10 +102,29 @@ class ElementDescription(object):
     def __get__(self, instance, owner=None):
         """Returns the current description string."""
         try:
-            element = instance.get_child_element('Description')
+            desc = instance.get_child_element('Description')
         except KeyError:
             return None
-        cdata = CDATAElement(element)
+
+        # Determine if the project supports multiple languages, and, if so,
+        # what is the current language for which descriptions shall
+        # be retrieved.
+        lang = self.get_document_language(instance)
+
+        # Single-language projects contain description text directly under
+        # the Description element.
+        if lang is None:
+            cdata = CDATAElement(desc)
+
+        # Multi-language projects keep descriptions for each language in child
+        # elements identified by the Lang attribute.
+        else:
+            local_desc = ElementDict(desc, 'Lang', CDATAElement)
+            try:
+                cdata = local_desc[lang]
+            except KeyError:
+                return None
+
         return str(cdata)
 
     def __set__(self, instance, value):
@@ -160,6 +179,17 @@ class ElementDescription(object):
             instance.element.insertBefore(follow, new.element)
 
         return new
+
+    def get_document_language(self, instance):
+        """
+        Determines the current language being used for the entire
+        project by examining the CurrentLanguage attribute in the
+        root RSLogix5000Content element.
+        """
+        if instance.doc.documentElement.hasAttribute('CurrentLanguage'):
+            return instance.doc.documentElement.getAttribute('CurrentLanguage')
+        else:
+            return None
 
 
 class AttributeDescriptor(object):
