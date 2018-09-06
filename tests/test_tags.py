@@ -969,7 +969,7 @@ class DescriptionLanguage(unittest.TestCase):
                       doc.getElementsByTagName('LocalizedDescription')
                       if e.getAttribute('Lang') == language]
         self.assertEqual(len(local_desc), 1)
-        self.assertEqual(local_desc[0].parentNode.tagName == 'Description')
+        self.assertEqual(local_desc[0].parentNode.tagName, 'Description')
         self.assert_cdata_content(local_desc[0], text)
 
     def assert_cdata_content(self, parent, text):
