@@ -143,13 +143,7 @@ class ElementDescription(object):
 
         # A value of None removes any existing description.
         elif value is None:
-            try:
-                element = instance.get_child_element('Description')
-            except KeyError:
-                pass
-            else:
-                instance.element.removeChild(element)
-                element.unlink()
+            self.remove(instance)
 
         else:
             raise TypeError('Description must be a string or None')
@@ -179,6 +173,33 @@ class ElementDescription(object):
             instance.element.insertBefore(follow, new.element)
 
         return new
+
+    def remove(self, instance):
+        """Implements removing a comment by deleting the enclosing element."""
+        try:
+            element = instance.get_child_element('Description')
+        except KeyError:
+            return
+        desc = ElementAccess(element)
+
+        # For multi-language projects, remove only the child associated
+        # with the current language.
+        language = self.get_document_language(instance)
+        if language is not None:
+            local_desc = ElementDict(desc.element, 'Lang', CDATAElement)
+            try:
+                target = local_desc[language]
+            except KeyError:
+                pass
+            else:
+                desc.element.removeChild(target.element)
+                target.element.unlink()
+
+        # Remove the entire Description element for single-language projects,
+        # or if no comments remain in other languages.
+        if (language is None) or (not desc.child_elements):
+            instance.element.removeChild(desc.element)
+            desc.element.unlink()
 
     def get_document_language(self, instance):
         """
