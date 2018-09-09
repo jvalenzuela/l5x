@@ -129,17 +129,12 @@ class ElementDescription(object):
 
     def __set__(self, instance, value):
         """Modifies the description text."""
-        # Set a new description if given a string value, creating a new
-        # element if necessary.
+        # Set a new description if given a string value.
         if isinstance(value, str):
-            try:
-                element = instance.get_child_element('Description')
-            except KeyError:
-                cdata = self.create(instance)
-            else:
-                cdata = CDATAElement(element)
-
-            cdata.set(value)
+            # See if the given description should replace an existing one
+            # or created as an entirely new element.
+            if self.__get__(instance) is not None:
+                self.modify(instance, value)
 
         # A value of None removes any existing description.
         elif value is None:
@@ -147,6 +142,24 @@ class ElementDescription(object):
 
         else:
             raise TypeError('Description must be a string or None')
+
+    def modify(self, instance, value):
+        """Alters the content of an existing description."""
+        language = self.get_document_language(instance)
+        desc = instance.get_child_element('Description')
+
+        # CDATA content is a direct child of the Description element in
+        # single-language projects.
+        if language is None:
+            cdata = CDATAElement(desc)
+
+        # Locate the matching localized description child for multi-language
+        # projects.
+        else:
+            local_desc = ElementDict(desc, 'Lang', CDATAElement)
+            cdata = local_desc[language]
+
+        cdata.set(value)
 
     def create(self, instance):
         """Creates a new Description element."""
