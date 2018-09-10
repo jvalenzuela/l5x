@@ -62,6 +62,7 @@ class CDATAElement(ElementAccess):
             self.get_existing()
         else:
             element = parent.create_element(name, attributes)
+            parent.append_child(element)
             ElementAccess.__init__(self, element)
 
             # Add the child CDATA section.
