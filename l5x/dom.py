@@ -133,9 +133,11 @@ class ElementDescription(object):
         # Set a new description if given a string value.
         if isinstance(value, str):
             # See if the given description should replace an existing one
-            # or created as an entirely new element.
+            # or be created as an entirely new element.
             if self.__get__(instance) is not None:
                 self.modify(instance, value)
+            else:
+                self.create(instance, value)
 
         # A value of None removes any existing description.
         elif value is None:
@@ -162,10 +164,39 @@ class ElementDescription(object):
 
         cdata.set(value)
 
-    def create(self, instance):
-        """Creates a new Description element."""
-        new = CDATAElement(parent=instance, name='Description')
+    def create(self, instance, value):
+        """Creates a new description when one does not previously exist."""
+        language = self.get_document_language(instance)
 
+        # The Description element directly contains the text content in
+        # single-language projects.
+        if language is None:
+            cdata = CDATAElement(parent=instance, name='Description')
+            self.insert_description(instance, cdata.element)
+
+        # Multi-language projects use localized child elements under
+        # Description for each language.
+        else:
+            # Locate the Description tag, or create a new one if necessary.
+            try:
+                desc = instance.get_child_element('Description')
+            except KeyError:
+                desc = instance.create_element('Description')
+                self.insert_description(instance, desc)
+
+            # Add a localized child with the text content.
+            desc = ElementAccess(desc)
+            cdata = CDATAElement(parent=desc,
+                                 name='LocalizedDescription',
+                                 attributes={'Lang':language})
+
+        cdata.set(value)
+
+    def insert_description(self, instance, desc):
+        """
+        Inserts the Description element as a child of the parent instance
+        based on any elements that must come first.
+        """
         # Search for any elements listed in the follow attribute.
         follow = None
         for e in instance.child_elements:
@@ -174,19 +205,16 @@ class ElementDescription(object):
 
         # Create as first child if no elements to follow were found.
         if follow is None:
-            instance.element.insertBefore(new.element,
-                                          instance.element.firstChild)
+            instance.element.insertBefore(desc, instance.element.firstChild)
 
         # If any follow elements exist, insert the new description
         # element after the last one found. DOM node operations do not
         # provide an append-after method so an insert-remove-insert
         # procedure is used.
         else:
-            instance.element.insertBefore(new.element, follow)
+            instance.element.insertBefore(desc, follow)
             instance.element.removeChild(follow)
-            instance.element.insertBefore(follow, new.element)
-
-        return new
+            instance.element.insertBefore(follow, desc)
 
     def remove(self, instance):
         """Implements removing a comment by deleting the enclosing element."""
