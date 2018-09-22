@@ -90,6 +90,25 @@ class CDATAElement(ElementAccess):
         self.node.data = s
 
 
+def get_localized_cdata(parent, language):
+    """Retrieves a CDATA string from a parent element."""
+    # Single-language projects contain text directly under the parent
+    # element.
+    if language is None:
+        cdata = CDATAElement(parent)
+
+    # Multi-language projects keep text for each language in child
+    # elements identified by the Lang attribute.
+    else:
+        local_desc = ElementDict(parent, 'Lang', CDATAElement)
+        try:
+            cdata = local_desc[language]
+        except KeyError:
+            return None
+
+    return str(cdata)
+
+
 class ElementDescription(object):
     """Descriptor class for accessing a top-level Description element.
 
@@ -112,21 +131,7 @@ class ElementDescription(object):
         # be retrieved.
         lang = self.get_document_language(instance)
 
-        # Single-language projects contain description text directly under
-        # the Description element.
-        if lang is None:
-            cdata = CDATAElement(desc)
-
-        # Multi-language projects keep descriptions for each language in child
-        # elements identified by the Lang attribute.
-        else:
-            local_desc = ElementDict(desc, 'Lang', CDATAElement)
-            try:
-                cdata = local_desc[lang]
-            except KeyError:
-                return None
-
-        return str(cdata)
+        return get_localized_cdata(desc, lang)
 
     def __set__(self, instance, value):
         """Modifies the description text."""
