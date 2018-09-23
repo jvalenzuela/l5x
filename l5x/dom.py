@@ -109,6 +109,21 @@ def get_localized_cdata(parent, language):
     return str(cdata)
 
 
+def modify_localized_cdata(parent, language, text):
+    """Alters CDATA content under a parent element."""
+    # CDATA content is a direct child of the parent element in
+    # single-language projects.
+    if language is None:
+        cdata = CDATAElement(parent)
+
+    # Locate the matching localized child for multi-language projects.
+    else:
+        local_desc = ElementDict(parent, 'Lang', CDATAElement)
+        cdata = local_desc[language]
+
+    cdata.set(text)
+
+
 class ElementDescription(object):
     """Descriptor class for accessing a top-level Description element.
 
@@ -155,19 +170,7 @@ class ElementDescription(object):
         """Alters the content of an existing description."""
         language = self.get_document_language(instance)
         desc = instance.get_child_element('Description')
-
-        # CDATA content is a direct child of the Description element in
-        # single-language projects.
-        if language is None:
-            cdata = CDATAElement(desc)
-
-        # Locate the matching localized description child for multi-language
-        # projects.
-        else:
-            local_desc = ElementDict(desc, 'Lang', CDATAElement)
-            cdata = local_desc[language]
-
-        cdata.set(value)
+        modify_localized_cdata(desc, language, value)
 
     def create(self, instance, value):
         """Creates a new description when one does not previously exist."""
