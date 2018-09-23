@@ -92,7 +92,7 @@ class Project(ElementAccess):
         # Construct a regular expression to locate the CDATA content that
         # needs to be replaced.
         re_delim = [re.escape(s) for s in remove_delim]
-        exp = re.compile(re_delim[0] + '(?P<text>.*)' + re_delim[1])
+        exp = re.compile(re_delim[0] + '(?P<text>.*?)' + re_delim[1])
 
         # Generate a list of replacement pairs(old, new) for all
         # CDATA sections.
