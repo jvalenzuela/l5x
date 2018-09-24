@@ -57,19 +57,13 @@ class CDATARemoval(unittest.TestCase):
         second = root.find('second/CDATAContent')
         self.assertEqual(second.text, 'bar')
 
-    def test_escape_amperstand(self):
-        """Confirm amperstands are converted to escape sequences."""
-        src = '<root>' + self.generate_cdata('&&&') + '</root>'
+    def test_escape_characters(self):
+        """Confirm special characters are converted to escape sequences."""
+        text = '&<>"\''
+        src = '<root>' + self.generate_cdata(text) + '</root>'
         root = self.convert_parse(src)
         cdata = root.find('CDATAContent')
-        self.assertEqual(cdata.text, '&&&')
-
-    def test_escape_less_than(self):
-        """Confirm less-than characters are converted to escape sequences."""
-        src = '<root>' + self.generate_cdata('<<<') + '</root>'
-        root = self.convert_parse(src)
-        cdata = root.find('CDATAContent')
-        self.assertEqual(cdata.text, '<<<')
+        self.assertEqual(cdata.text, text)
 
     def test_empty_section(self):
         """Confirm an empty CDATA section is converted to an empty element."""
