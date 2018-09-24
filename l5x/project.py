@@ -15,6 +15,7 @@ from .module import (Module, SafetyNetworkNumber)
 from .tag import Scope
 import io
 import re
+import xml.etree.ElementTree as ElementTree
 import xml.dom.minidom
 import xml.parsers.expat
 
@@ -43,17 +44,11 @@ class Project(ElementAccess):
     CDATA_DELIMITER = ('<![CDATA[', ']]>')
     CDATA_TAG_DELIMITER = ('<' + CDATA_TAG + '>', '</' + CDATA_TAG + '>')
 
-    # Characters from CDATA content that must be converted into escape
-    # sequences when the CDATA section is replaced with a normal tag.
-    cdata_escapes = [
-        # Amperstand must be first because it appears in other patterns.
-        # Handling it first keeps the search-replace algorithm simple.
-        ('&', '&amp;'),
-
-        ('<', '&lt;')
-    ]
-
     def __init__(self, filename):
+        # Dummy document used only for generating replacement CDATA sections.
+        implementation = xml.dom.minidom.getDOMImplementation()
+        self.cdata_converter = implementation.createDocument(None, None, None)
+
         try:
             doc = xml.dom.minidom.parse(filename)
         except xml.parsers.expat.ExpatError as e:
@@ -98,20 +93,10 @@ class Project(ElementAccess):
         # CDATA sections.
         replacements = []
         for match in exp.finditer(doc):
-            # Replace reserved characters within the text.
-            text = match.group('text')
-            for pair in self.cdata_escapes:
-                # Set the order of symbol replacement based on the
-                # conversion direction.
-                if to_cdata:
-                    pair = list(pair)
-                    pair.reverse()
-
-                text = text.replace(*pair)
-
-            # Generate a new string containing the CDATA content.
-            new = "{0[0]}{1}{0[1]}".format(insert_delim, text)
-
+            if to_cdata:
+                new = self.cdata_element_to_section(match.group())
+            else:
+                new = self.cdata_section_to_element(match.group('text'))
             replacements.append((match.group(), new))
 
         # Replace all CDATA with the new strings.
@@ -119,6 +104,35 @@ class Project(ElementAccess):
             doc = doc.replace(old, new, 1)
 
         return doc
+
+    def cdata_section_to_element(self, text):
+        """
+        Generates a string representation of an XML element with a given
+        text content. Used when replacing CDATA sections with elements.
+        """
+        element = ElementTree.Element(CDATA_TAG)
+        element.text = text
+        return ElementTree.tostring(element).decode()
+
+    def cdata_element_to_section(self, element):
+        """
+        Generates a string representation of a CDATA section containing
+        the content of an XML element. Used when replacing elements with
+        CDATA sections.
+        """
+        # Parse the string to handle any escape sequences or character
+        # references.
+        root = ElementTree.fromstring(element)
+
+        # Empty elements have None for text, which cannot be used when
+        # creating a CDATA section.
+        if root.text is not None:
+            text = root.text
+        else:
+            text = ''
+
+        cdata = self.cdata_converter.createCDATASection(text)
+        return cdata.toxml()
 
     def write(self, filename):
         """Outputs the document to a new file."""
