@@ -114,7 +114,27 @@ class Project(ElementAccess):
         element.text = text
         return ElementTree.tostring(element).decode()
 
-    def cdata_element_to_section(self, element):
+    def convert_to_cdata_section(self, doc):
+        """Replaces CDATA elements with CDATA sections.
+
+        This is used after writing a project to reinstall the CDATA sections
+        required by RSLogix.
+        """
+        # Regular expression pattern to locate CDATA elements.
+        pattern = r"""
+            # Match elements with separate opening and closing tags.
+            <{0}\s*>  # Opening tag.
+            .*?       # Element content.
+            </{0}\s*> # Closing tag
+
+            |
+
+            # Also match empty, self-closing tags.
+            <{0}\s*/>
+        """.format(CDATA_TAG)
+        return re.sub(pattern, self.cdata_section, doc, flags=re.VERBOSE)
+
+    def cdata_section(self, match):
         """
         Generates a string representation of a CDATA section containing
         the content of an XML element. Used when replacing elements with
@@ -122,7 +142,7 @@ class Project(ElementAccess):
         """
         # Parse the string to handle any escape sequences or character
         # references.
-        root = ElementTree.fromstring(element)
+        root = ElementTree.fromstring(match.group())
 
         # Empty elements have None for text, which cannot be used when
         # creating a CDATA section.

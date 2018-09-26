@@ -90,7 +90,7 @@ class CDATAInsertion(unittest.TestCase):
     def setUp(self):
         """
         Creates a dummy project. This is only needed to get a Project
-        instance to test the replace_cdata method.
+        instance to test the CDATA conversion method.
         """
         self.project = fixture.create_project()
 
@@ -130,12 +130,22 @@ class CDATAInsertion(unittest.TestCase):
         src = '<root><CDATAContent/></root>'
         self.assert_empty_cdata(src)
 
+    def test_tag_whitespace(self):
+        """Confirm whitespace in opening and closing tags is accepted."""
+        src = '<root><CDATAContent   ></CDATAContent   ></root>'
+        self.assert_empty_cdata(src)
+
+    def test_self_closing_tag_whitespace(self):
+        """Confirm whitespace in a self-closing tag is accepted."""
+        src = '<root><CDATAContent   /></root>'
+        self.assert_empty_cdata(src)
+
     def convert_parse(self, src):
         """
         Converts string containing the source document, parses the
         result, and returns the root element.
         """
-        cdata = self.project.replace_cdata(src, True)
+        cdata = self.project.convert_to_cdata_section(src)
         doc = xml.dom.minidom.parseString(cdata)
         return doc.documentElement
 
@@ -159,5 +169,5 @@ class CDATAInsertion(unittest.TestCase):
         This uses basic string equality instead of parsing the converted
         XML because empty CDATA sections are not preserved when parsed.
         """
-        doc = self.project.replace_cdata(src, True)
+        doc = self.project.convert_to_cdata_section(src)
         self.assertEqual(doc, '<root><![CDATA[]]></root>')
