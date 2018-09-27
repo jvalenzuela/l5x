@@ -77,7 +77,7 @@ class CDATARemoval(unittest.TestCase):
         Passes the test string through CDATA removal and parses the
         result into an XML document.
         """
-        doc = self.project.replace_cdata(src, False)
+        doc = self.project.convert_to_cdata_element(src)
         return ElementTree.fromstring(doc)
 
     def generate_cdata(self, text):

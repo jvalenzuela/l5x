@@ -40,10 +40,6 @@ class InvalidFile(Exception):
 
 class Project(ElementAccess):
     """Top-level container for an entire Logix project."""
-    # Opening and closing delimiters for CDATA sections.
-    CDATA_DELIMITER = ('<![CDATA[', ']]>')
-    CDATA_TAG_DELIMITER = ('<' + CDATA_TAG + '>', '</' + CDATA_TAG + '>')
-
     def __init__(self, filename):
         # Dummy document used only for generating replacement CDATA sections.
         implementation = xml.dom.minidom.getDOMImplementation()
@@ -69,49 +65,26 @@ class Project(ElementAccess):
         mods = self.controller.get_child_element('Modules')
         self.modules = ElementDict(mods, 'Name', Module)
 
-    def replace_cdata(self, doc, to_cdata):
+    def convert_to_cdata_element(self, doc):
         """Replaces the delimiters surrounding CDATA sections.
 
-        This is used both before parsing to convert CDATA sections into
-        a normal element, and before writing to revert the content back
-        into a CDATA section.
+        This is used before parsing to convert CDATA sections into
+        normal elements.
         """
-        # Assign the delimiter sets based on the conversion direction.
-        if to_cdata:
-            remove_delim = self.CDATA_TAG_DELIMITER
-            insert_delim = self.CDATA_DELIMITER
-        else:
-            remove_delim = self.CDATA_DELIMITER
-            insert_delim = self.CDATA_TAG_DELIMITER
+        pattern = r"""
+            <!\[CDATA\[   # Opening CDATA sequence.
+            (?P<text>.*?) # Element content.
+            \]\]>         # Closing CDATA sequence.
+        """
+        return re.sub(pattern, self.cdata_element, doc, flags=re.VERBOSE)
 
-        # Construct a regular expression to locate the CDATA content that
-        # needs to be replaced.
-        re_delim = [re.escape(s) for s in remove_delim]
-        exp = re.compile(re_delim[0] + '(?P<text>.*?)' + re_delim[1])
-
-        # Generate a list of replacement pairs(old, new) for all
-        # CDATA sections.
-        replacements = []
-        for match in exp.finditer(doc):
-            if to_cdata:
-                new = self.cdata_element_to_section(match.group())
-            else:
-                new = self.cdata_section_to_element(match.group('text'))
-            replacements.append((match.group(), new))
-
-        # Replace all CDATA with the new strings.
-        for old, new in replacements:
-            doc = doc.replace(old, new, 1)
-
-        return doc
-
-    def cdata_section_to_element(self, text):
+    def cdata_element(self, match):
         """
         Generates a string representation of an XML element with a given
         text content. Used when replacing CDATA sections with elements.
         """
         element = ElementTree.Element(CDATA_TAG)
-        element.text = text
+        element.text = match.group('text')
         return ElementTree.tostring(element).decode()
 
     def convert_to_cdata_section(self, doc):
