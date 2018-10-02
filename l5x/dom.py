@@ -124,6 +124,26 @@ def modify_localized_cdata(parent, language, text):
     cdata.set(text)
 
 
+def create_localized_cdata(parent, language, text):
+    """Creates new CDATA content under a parent element."""
+    parent = ElementAccess(parent)
+    cdata = parent.doc.createCDATASection(text)
+
+    # Single-language projects store the CDATA directly under the
+    # parent element.
+    if language is None:
+        parent.append_child(cdata)
+
+    # Multi-language projects keep the CDATA in localized child elements
+    # identified with the Lang attribute.
+    else:
+        tag_name = ''.join(('Localized', parent.element.tagName))
+        attr = {'Lang':language}
+        localized_element = parent.create_element(tag_name, attr)
+        localized_element.appendChild(cdata)
+        parent.append_child(localized_element)
+
+
 class ElementDescription(object):
     """Descriptor class for accessing a top-level Description element.
 
@@ -179,8 +199,8 @@ class ElementDescription(object):
         # The Description element directly contains the text content in
         # single-language projects.
         if language is None:
-            cdata = CDATAElement(parent=instance, name='Description')
-            self.insert_description(instance, cdata.element)
+            desc = instance.create_element('Description')
+            self.insert_description(instance, desc)
 
         # Multi-language projects use localized child elements under
         # Description for each language.
@@ -192,13 +212,7 @@ class ElementDescription(object):
                 desc = instance.create_element('Description')
                 self.insert_description(instance, desc)
 
-            # Add a localized child with the text content.
-            desc = ElementAccess(desc)
-            cdata = CDATAElement(parent=desc,
-                                 name='LocalizedDescription',
-                                 attributes={'Lang':language})
-
-        cdata.set(value)
+        create_localized_cdata(desc, language, value)
 
     def insert_description(self, instance, desc):
         """
