@@ -144,6 +144,27 @@ def create_localized_cdata(parent, language, text):
         parent.append_child(localized_element)
 
 
+def remove_localized_cdata(parent, language):
+    """Removes an element containing CDATA content."""
+    # For multi-language projects, remove only the child associated
+    # with the given language.
+    if language is not None:
+        parent_dict = ElementDict(parent.element, 'Lang', CDATAElement)
+        try:
+            target = parent_dict[language]
+        except KeyError:
+            pass
+        else:
+            parent.element.removeChild(target.element)
+            target.element.unlink()
+
+    # Remove the entire parent element for single-language projects,
+    # or if no comments remain in other languages.
+    if (language is None) or (not parent.child_elements):
+        parent.element.parentNode.removeChild(parent.element)
+        parent.element.unlink()
+
+
 class ElementDescription(object):
     """Descriptor class for accessing a top-level Description element.
 
@@ -245,25 +266,8 @@ class ElementDescription(object):
         except KeyError:
             return
         desc = ElementAccess(element)
-
-        # For multi-language projects, remove only the child associated
-        # with the current language.
         language = self.get_document_language(instance)
-        if language is not None:
-            local_desc = ElementDict(desc.element, 'Lang', CDATAElement)
-            try:
-                target = local_desc[language]
-            except KeyError:
-                pass
-            else:
-                desc.element.removeChild(target.element)
-                target.element.unlink()
-
-        # Remove the entire Description element for single-language projects,
-        # or if no comments remain in other languages.
-        if (language is None) or (not desc.child_elements):
-            instance.element.removeChild(desc.element)
-            desc.element.unlink()
+        remove_localized_cdata(desc, language)
 
     def get_document_language(self, instance):
         """
