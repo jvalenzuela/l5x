@@ -45,13 +45,10 @@ class Project(ElementAccess):
         implementation = xml.dom.minidom.getDOMImplementation()
         self.cdata_converter = implementation.createDocument(None, None, None)
 
-        try:
-            doc = xml.dom.minidom.parse(filename)
-        except xml.parsers.expat.ExpatError as e:
-            msg = xml.parsers.expat.ErrorString(e.code)
-            raise InvalidFile("XML parsing error: {0}".format(msg))
+        self.parse(filename)
 
-        if doc.documentElement.tagName != 'RSLogix5000Content':
+        # Confirm the root element indicates this is a Logix project.
+        if self.doc.tag != 'RSLogix5000Content':
             raise InvalidFile('Not an L5X file.')
 
         ElementAccess.__init__(self, doc.documentElement)
@@ -64,6 +61,26 @@ class Project(ElementAccess):
 
         mods = self.controller.get_child_element('Modules')
         self.modules = ElementDict(mods, 'Name', Module)
+
+    def parse(self, filename):
+        """Parses the source project."""
+        # Accept both filename strings for normal usage, and buffer objects
+        # for unit tests.
+        try:
+            f = io.open(filename, encoding='UTF-8')
+        except TypeError:
+            f = filename
+
+        with f:
+            orig = f.read()
+
+        # Swap out CDATA sections before parsing.
+        cdata_replaced = self.convert_to_cdata_element(orig)
+
+        try:
+            self.doc = ElementTree.fromstring(cdata_replaced)
+        except ElementTree.ParseError as e:
+            raise InvalidFile("XML parsing error: {0}".format(e))
 
     def convert_to_cdata_element(self, doc):
         """Replaces the delimiters surrounding CDATA sections.
