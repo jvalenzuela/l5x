@@ -14,15 +14,21 @@ class Parse(unittest.TestCase):
     """Input file parsing tests."""
     def test_invalid_xml(self):
         """Ensure an exception is raised if the XML could not be parsed."""
-        buf = io.BytesIO(b"foo bar")
+        buf = io.StringIO(u"foo bar")
         with self.assertRaises(l5x.InvalidFile):
             l5x.Project(buf)
 
     def test_invalid_root(self):
         """Ensure an exception is raised without the correct root element."""
-        imp = xml.dom.minidom.getDOMImplementation()
-        doc = imp.createDocument(None, "foo", None)
-        buf = io.BytesIO(doc.toxml('UTF-8'))
+        doc = ElementTree.Element('random root')
+
+        # Support Python 2 and 3 methods to get a Unicode object.
+        try:
+            s = ElementTree.tostring(doc, 'unicode')
+        except LookupError:
+            s = ElementTree.tostring(doc).decode()
+
+        buf = io.StringIO(s)
         with self.assertRaises(l5x.InvalidFile):
             l5x.Project(buf)
 
