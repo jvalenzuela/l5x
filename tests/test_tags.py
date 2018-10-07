@@ -730,11 +730,51 @@ class Consumed(Tag, unittest.TestCase):
         self.assertEqual(self.tag.child_elements[0].tagName, 'ConsumeInfo')
 
 
-class DescriptionLanguage(unittest.TestCase):
-    """Tests for multilanguage descriptions."""
+class LanguageBase(unittest.TestCase):
+    """Base class for tests involving multilanguage comments and descriptions."""
     TAG_NAME = 'test_tag'
     TARGET_LANGUAGE = 'en-US'
 
+    def set_multilanguage(self, doc):
+        """
+        Enables multilingual comments by creating current language
+        attribute in the root element.
+        """
+        doc.documentElement.setAttribute('CurrentLanguage',
+                                         self.TARGET_LANGUAGE)
+
+    def create_tag(self, doc):
+        """Creates a mock controller tag."""
+        tag = doc.createElement('Tag')
+        tag.setAttribute('Name', self.TAG_NAME)
+
+        data = doc.createElement('Data')
+        data.setAttribute('Format', 'Decorated')
+        tag.appendChild(data)
+
+        value = doc.createElement('DataValue')
+        data.appendChild(value)
+
+        parent = doc.getElementsByTagName('Tags')[0]
+        parent.appendChild(tag)
+
+    def assert_cdata_content(self, parent, text):
+        """
+        Verifies a given element contains a single CDATA section with a
+        matching string.
+        """
+        # Confirm the parent element contains a single CDATA section.
+        cdata_nodes = [e for e in parent.childNodes
+                       if e.nodeType == xml.dom.minidom.Node.CDATA_SECTION_NODE]
+        self.assertEqual(len(cdata_nodes), 1)
+
+        # Confirm the content of the new CDATA section.
+        cdata = cdata_nodes[0]
+        self.assertEqual(cdata.data, text)
+
+
+class DescriptionLanguage(LanguageBase):
+    """Tests for multilanguage descriptions."""
     def test_single_read(self):
         """Confirm reading a description from a single-language project."""
         prj = fixture.create_project(
@@ -901,29 +941,6 @@ class DescriptionLanguage(unittest.TestCase):
         # Ensure descriptions in other languages are unaffected.
         self.assert_localized_description(prj.doc, 'other', 'es-AR')
 
-    def set_multilanguage(self, doc):
-        """
-        Enables multilingual comments by creating current language
-        attribute in the root element.
-        """
-        doc.documentElement.setAttribute('CurrentLanguage',
-                                         self.TARGET_LANGUAGE)
-
-    def create_tag(self, doc):
-        """Creates a mock controller tag."""
-        tag = doc.createElement('Tag')
-        tag.setAttribute('Name', self.TAG_NAME)
-
-        data = doc.createElement('Data')
-        data.setAttribute('Format', 'Decorated')
-        tag.appendChild(data)
-
-        value = doc.createElement('DataValue')
-        data.appendChild(value)
-
-        parent = doc.getElementsByTagName('Tags')[0]
-        parent.appendChild(tag)
-
     def add_description(self, doc, text, language=None):
         """Adds a description to the mock controller tag."""
         # Find the existing Description element, or create a new one if
@@ -972,19 +989,70 @@ class DescriptionLanguage(unittest.TestCase):
         self.assertEqual(local_desc[0].parentNode.tagName, 'Description')
         self.assert_cdata_content(local_desc[0], text)
 
-    def assert_cdata_content(self, parent, text):
-        """
-        Verifies a given element contains a single CDATA section with a
-        matching string.
-        """
-        # Confirm the parent element contains a single CDATA section.
-        cdata_nodes = [e for e in parent.childNodes
-                       if e.nodeType == xml.dom.minidom.Node.CDATA_SECTION_NODE]
-        self.assertEqual(len(cdata_nodes), 1)
 
-        # Confirm the content of the new CDATA section.
-        cdata = cdata_nodes[0]
-        self.assertEqual(cdata.data, text)
+class CommentLanguage(LanguageBase):
+    """Tests for multilanguage comments."""
+    def add_comment(self, doc, operand, text, language=None):
+        """Creates a comment assigned to a given operand."""
+        # Locate the Comments element, creating one if necessary.
+        try:
+            comments = doc.getElementsByTagName('Comments')[0]
+        except IndexError:
+            comments = doc.createElement('Comments')
+            tag = doc.getElementsByTagName('Tag')[0]
+            tag.appendChild(comments)
+
+        # Find the Comment element with the matching operand, or
+        # create a new one if needed.
+        try:
+            comment = [e for e in comments.getElementsByTagName('Comment')
+                       if e.getAttribute('Operand') == operand][0]
+        except IndexError:
+            comment = doc.createElement('Comment')
+            comment.setAttribute('Operand', operand)
+            comments.appendChild(comment)
+
+        cdata = doc.createCDATASection(text)
+
+        # Put the CDATA directly under the Comment element for single-language
+        # projects.
+        if language is None:
+            comment.appendChild(cdata)
+
+        # Create a localized comment for multi-language projects.
+        else:
+            localized = doc.createElement('LocalizedComment')
+            localized.setAttribute('Lang', language)
+            localized.appendChild(cdata)
+            comment.appendChild(localized)
+
+    def assert_comment(self, doc, operand, text):
+        """
+        Verifies a single Comment element exists under the Comments parent
+        with a given operand attribute and text content.
+        """
+        comment = self.get_comment(doc, operand)
+        self.assert_cdata_content(comment, text)
+
+    def assert_localized_comment(self, doc, operand, text, language):
+        """
+        Verifies a single LocalizedComment element exists under the Comments
+        element with a language attribute and matching text.
+        """
+        comment = self.get_comment(doc, operand)
+        localized = [e for e in comment.getElementsByTagName('LocalizedComment')
+                     if e.getAttribute('Lang') == language]
+        self.assertEqual(len(localized), 1)
+        self.assert_cdata_content(localized[0], text)
+
+    def get_comment(self, doc, operand):
+        """Finds a Comment element with a matching operand attribute."""
+        comments = doc.getElementsByTagName('Comments')
+        self.assertEqual(len(comments), 1)
+        target = [e for e in comments[0].getElementsByTagName('Comment')
+                  if e.getAttribute('Operand') == operand]
+        self.assertEqual(len(target), 1)
+        return target[0]
 
 
 def setUpModule():
