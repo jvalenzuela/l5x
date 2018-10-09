@@ -992,6 +992,110 @@ class DescriptionLanguage(LanguageBase):
 
 class CommentLanguage(LanguageBase):
     """Tests for multilanguage comments."""
+    def test_single_read(self):
+        """Confirm reading a comment from a single-language project."""
+        pass
+
+    def test_multi_read(self):
+        """
+        Confirm reading a comment from a multi-language project returns
+        only content from the current language.
+        """
+        pass
+
+    def test_single_read_none(self):
+        """
+        Confirm reading a nonexistent comment from a single-language project.
+        """
+        pass
+
+    def test_multi_read_none_foreign(self):
+        """
+        Confirm reading a nonexistent comment from a multi-language project
+        that has comments in other languages.
+        """
+        pass
+
+    def test_single_new(self):
+        """Confirm adding a comment to a single-language project."""
+        pass
+
+    def test_multi_new(self):
+        """Confirm adding a comment to a multi-language project."""
+        pass
+
+    def test_multi_new_foreign(self):
+        """
+        Confirm adding a comment to a multi-language project that has
+        comments in other languages.
+        """
+        pass
+
+    def test_single_overwrite(self):
+        """
+        Confirm overwriting an existing comment in a single-language
+        project.
+        """
+        pass
+
+    def test_multi_overwrite(self):
+        """
+        Confirm overwriting an existing comment in a multi-language
+        project.
+        """
+        pass
+
+    def test_multi_overwrite_foreign(self):
+        """
+        Confirm overwriting an existing comment in a multi-language
+        project that has comments on other languages only affects
+        the comment in the current language.
+        """
+        pass
+
+    def test_single_delete(self):
+        """Confirm removing a comment from a single-language project."""
+        pass
+
+    def test_single_delete_other_operand(self):
+        """
+        Confirm removing a comment from a single-language project
+        does not affect comments for other operands.
+        """
+        pass
+
+    def test_single_delete_last(self):
+        """
+        Confirm removing the last comment in a single-language project
+        also removes the overall Comments parent element.
+        """
+        pass
+
+    def test_multi_delete(self):
+        """Confirm removing a comment from a multi-language project."""
+        pass
+
+    def test_multi_delete_other_operand(self):
+        """
+        Confirm removing a comment from a multi-language project
+        does not affect comments for other operands.
+        """
+        pass
+
+    def test_multi_delete_last(self):
+        """
+        Confirm removing the last comment in a multi-language project
+        also removes the overall Comments parent element.
+        """
+        pass
+
+    def test_multi_delete_foreign(self):
+        """
+        Confirm removing a comment from a multi-language project affects
+        only comments in the current language.
+        """
+        pass
+
     def add_comment(self, doc, operand, text, language=None):
         """Creates a comment assigned to a given operand."""
         # Locate the Comments element, creating one if necessary.
