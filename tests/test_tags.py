@@ -747,6 +747,7 @@ class LanguageBase(unittest.TestCase):
         """Creates a mock controller tag."""
         tag = doc.createElement('Tag')
         tag.setAttribute('Name', self.TAG_NAME)
+        tag.setAttribute('DataType', 'DINT')
 
         data = doc.createElement('Data')
         data.setAttribute('Format', 'Decorated')
@@ -994,56 +995,108 @@ class CommentLanguage(LanguageBase):
     """Tests for multilanguage comments."""
     def test_single_read(self):
         """Confirm reading a comment from a single-language project."""
-        pass
+        prj = fixture.create_project(
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'foo')
+        )
+        self.assertEqual(prj.controller.tags[self.TAG_NAME][0].description,
+                         'foo')
 
     def test_multi_read(self):
         """
         Confirm reading a comment from a multi-language project returns
         only content from the current language.
         """
-        pass
+        prj = fixture.create_project(
+            self.set_multilanguage,
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'pass',
+                                         self.TARGET_LANGUAGE),
+            lambda doc: self.add_comment(doc, '.0', 'fail', 'zh-CN')
+        )
+        self.assertEqual(prj.controller.tags[self.TAG_NAME][0].description,
+                         'pass')
 
     def test_single_read_none(self):
         """
         Confirm reading a nonexistent comment from a single-language project.
         """
-        pass
+        prj = fixture.create_project(
+            self.create_tag
+        )
+        self.assertIsNone(prj.controller.tags[self.TAG_NAME][0].description)
 
     def test_multi_read_none_foreign(self):
         """
         Confirm reading a nonexistent comment from a multi-language project
         that has comments in other languages.
         """
-        pass
+        prj = fixture.create_project(
+            self.set_multilanguage,
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'other', 'zh-CN')
+        )
+        self.assertIsNone(prj.controller.tags[self.TAG_NAME][0].description)
 
     def test_single_new(self):
         """Confirm adding a comment to a single-language project."""
-        pass
+        prj = fixture.create_project(
+            self.create_tag
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = 'new'
+        self.assert_comment(prj.doc, '.0', 'new')
 
     def test_multi_new(self):
         """Confirm adding a comment to a multi-language project."""
-        pass
+        prj = fixture.create_project(
+            self.set_multilanguage,
+            self.create_tag
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = 'new'
+        self.assert_localized_comment(prj.doc, '.0', 'new',
+                                      self.TARGET_LANGUAGE)
 
     def test_multi_new_foreign(self):
         """
         Confirm adding a comment to a multi-language project that has
         comments in other languages.
         """
-        pass
+        prj = fixture.create_project(
+            self.set_multilanguage,
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'other', 'zh-CN')
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = 'new'
+        self.assert_localized_description(prj.doc, '.0', 'new',
+                                          self.TARGET_LANGUAGE)
+        self.assert_localized_description(prj.doc, '.0', 'other', 'zh-CN')
 
     def test_single_overwrite(self):
         """
         Confirm overwriting an existing comment in a single-language
         project.
         """
-        pass
+        prj = fixture.create_project(
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'old')
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = 'new'
+        self.assert_comment(prj.doc, '.0', 'new')
 
     def test_multi_overwrite(self):
         """
         Confirm overwriting an existing comment in a multi-language
         project.
         """
-        pass
+        prj = fixture.create_project(
+            self.set_multilanguage,
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'old',
+                                         self.TARGET_LANGUAGE)
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = 'new'
+        self.assert_localized_comment(prj.doc, '.0', 'new',
+                                      self.TARGET_LANGUAGE)
 
     def test_multi_overwrite_foreign(self):
         """
@@ -1051,50 +1104,113 @@ class CommentLanguage(LanguageBase):
         project that has comments on other languages only affects
         the comment in the current language.
         """
-        pass
+        prj = fixture.create_project(
+            self.set_multilanguage,
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'old',
+                                         self.TARGET_LANGUAGE),
+            lambda doc: self.add_comment(doc, '.0', 'other', 'zh-CN')
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = 'new'
+        self.assert_localized_comment(prj.doc, '.0', 'new',
+                                      self.TARGET_LANGUAGE)
+        self.assert_localized_comment(prj.doc, '.0', 'other', 'zh-CN')
 
     def test_single_delete(self):
         """Confirm removing a comment from a single-language project."""
-        pass
+        prj = fixture.create_project(
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'foo')
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = None
+        self.assertFalse(prj.doc.getElementsByTagName('Comment'))
 
     def test_single_delete_other_operand(self):
         """
         Confirm removing a comment from a single-language project
         does not affect comments for other operands.
         """
-        pass
+        prj = fixture.create_project(
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'foo'),
+            lambda doc: self.add_comment(doc, '.1', 'bar')
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = None
+        self.assert_comment(prj.doc, '.1', 'bar')
 
     def test_single_delete_last(self):
         """
         Confirm removing the last comment in a single-language project
         also removes the overall Comments parent element.
         """
-        pass
+        prj = fixture.create_project(
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'foo'),
+            lambda doc: self.add_comment(doc, '.1', 'bar')
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = None
+        prj.controller.tags[self.TAG_NAME][1].description = None
+        self.assertFalse(prj.doc.getElementsByTagName('Comments'))
 
     def test_multi_delete(self):
         """Confirm removing a comment from a multi-language project."""
-        pass
+        prj = fixture.create_project(
+            self.set_multilanguage,
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'foo',
+                                         self.TARGET_LANGUAGE)
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = None
+        self.assertFalse(prj.doc.getElementsByTagName('Comment'))
 
     def test_multi_delete_other_operand(self):
         """
         Confirm removing a comment from a multi-language project
         does not affect comments for other operands.
         """
-        pass
+        prj = fixture.create_project(
+            self.set_multilanguage,
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'foo',
+                                         self.TARGET_LANGUAGE),
+            lambda doc: self.add_comment(doc, '.1', 'bar',
+                                         self.TARGET_LANGUAGE)
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = None
+        self.assert_localized_comment(prj.doc, '.1', 'bar',
+                                      self.TARGET_LANGUAGE)
 
     def test_multi_delete_last(self):
         """
         Confirm removing the last comment in a multi-language project
         also removes the overall Comments parent element.
         """
-        pass
+        prj = fixture.create_project(
+            self.set_multilanguage,
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'foo',
+                                         self.TARGET_LANGUAGE),
+            lambda doc: self.add_comment(doc, '.1', 'bar',
+                                         self.TARGET_LANGUAGE)
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = None
+        prj.controller.tags[self.TAG_NAME][1].description = None
+        self.assertFalse(prj.doc.getElementsByTagName('Comments'))
 
     def test_multi_delete_foreign(self):
         """
         Confirm removing a comment from a multi-language project affects
         only comments in the current language.
         """
-        pass
+        prj = fixture.create_project(
+            self.set_multilanguage,
+            self.create_tag,
+            lambda doc: self.add_comment(doc, '.0', 'foo',
+                                         self.TARGET_LANGUAGE),
+            lambda doc: self.add_comment(doc, '.0', 'bar', 'zh-CN')
+        )
+        prj.controller.tags[self.TAG_NAME][0].description = None
+        self.assert_localized_comment(prj.doc, '.0', 'bar', 'zh-CN')
 
     def add_comment(self, doc, operand, text, language=None):
         """Creates a comment assigned to a given operand."""
