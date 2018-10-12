@@ -2,17 +2,16 @@
 Objects implementing tag access.
 """
 
-from .dom import (ElementAccess, ElementDict, AttributeDescriptor,
-                  ElementDescription, CDATAElement)
+from l5x import dom
 import ctypes
 
 
-class Scope(ElementAccess):
+class Scope(dom.ElementAccess):
     """Container to hold a group of tags within a specific scope."""
     def __init__(self, element):
-        ElementAccess.__init__(self, element)
+        dom.ElementAccess.__init__(self, element)
         tag_element = self.get_child_element('Tags')
-        self.tags = ElementDict(tag_element, 'Name', Tag)
+        self.tags = dom.ElementDict(tag_element, 'Name', Tag)
 
 
 class TagDataDescriptor(object):
@@ -66,10 +65,10 @@ class ConsumeDescriptor(object):
         return tag.get_child_element('ConsumeInfo')
 
 
-class Tag(ElementAccess):
+class Tag(dom.ElementAccess):
     """Base class for a single tag."""
-    description = ElementDescription(['ConsumeInfo'])
-    data_type = AttributeDescriptor('DataType', True)
+    description = dom.ElementDescription(['ConsumeInfo'])
+    data_type = dom.AttributeDescriptor('DataType', True)
     value = TagDataDescriptor('value')
     shape = TagDataDescriptor('shape')
     names = TagDataDescriptor('names')
@@ -77,7 +76,7 @@ class Tag(ElementAccess):
     remote_tag = ConsumeDescriptor('RemoteTag')
 
     def __init__(self, element):
-        ElementAccess.__init__(self, element)
+        dom.ElementAccess.__init__(self, element)
 
         data_class = base_data_types.get(self.data_type, Structure)
         self.data = data_class(self.get_data_element(), self)
@@ -91,7 +90,7 @@ class Tag(ElementAccess):
         for e in self.child_elements:
             if ((e.tagName == 'Data')
                 and (e.getAttribute('Format') == 'Decorated')):
-                return ElementAccess(e).child_elements[0]
+                return dom.ElementAccess(e).child_elements[0]
 
         name = self.element.getAttribute('Name')
         raise RuntimeError("Decoded data content not found for {0} tag. "
@@ -157,11 +156,11 @@ class Comment(object):
         try:
             element = self.get_comment_element(instance, comments)
         except KeyError:
-            cdata = CDATAElement(parent=comments, name='Comment',
+            cdata = dom.CDATAElement(parent=comments, name='Comment',
                                  attributes={'Operand':instance.operand})
             comments.element.appendChild(cdata.element)
         else:
-            cdata = CDATAElement(element)
+            cdata = dom.CDATAElement(element)
 
         if value is not None:
             cdata.set(value)
@@ -175,7 +174,7 @@ class Comment(object):
         except KeyError:
             raise AttributeError()
 
-        return ElementAccess(element)
+        return dom.ElementAccess(element)
 
     def create_comments(self, instance):
         """Creates a new Comments container element.
@@ -187,7 +186,7 @@ class Comment(object):
         new = instance.create_element('Comments')
         data = instance.tag.get_child_element('Data')
         instance.tag.element.insertBefore(new, data)
-        return ElementAccess(new)
+        return dom.ElementAccess(new)
 
     def get_comment_element(self, instance, comments):
         """Acquires the Comment element of the instance's operand."""
@@ -198,7 +197,7 @@ class Comment(object):
         raise KeyError()
 
 
-class Data(ElementAccess):
+class Data(dom.ElementAccess):
     """Base class for objects providing access to tag values and comments."""
     description = Comment()
 
@@ -236,7 +235,7 @@ class Data(ElementAccess):
             return object.__new__(cls)
 
     def __init__(self, element, tag, parent=None):
-        ElementAccess.__init__(self, element)
+        dom.ElementAccess.__init__(self, element)
         self.tag = tag
         self.parent = parent
         self.build_operand()
@@ -450,7 +449,7 @@ class Structure(Data):
         if element.tagName == 'Element':
             self.element = self.get_child_element('Structure')
 
-        self.members = ElementDict(self.element, 'Name', base_data_types,
+        self.members = dom.ElementDict(self.element, 'Name', base_data_types,
                                    'DataType', Structure,
                                    member_args=[tag, self])
 
@@ -551,8 +550,8 @@ class Array(Data):
         by the Index attribute that can then be accessed with traditional
         array notation.
         """
-        self.members = ElementDict(self.element, 'Index', self.data_class,
-                                   member_args=[self.tag, self])
+        self.members = dom.ElementDict(self.element, 'Index', self.data_class,
+                                       member_args=[self.tag, self])
 
     def __getitem__(self, index):
         """Returns an access object for the given index.
