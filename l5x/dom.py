@@ -90,6 +90,18 @@ class CDATAElement(ElementAccess):
         self.node.data = s
 
 
+def get_document_language(element):
+    """
+    Determines the current language being used for the entire
+    project by examining the CurrentLanguage attribute in the
+    root RSLogix5000Content element.
+    """
+    if element.doc.documentElement.hasAttribute('CurrentLanguage'):
+        return element.doc.documentElement.getAttribute('CurrentLanguage')
+    else:
+        return None
+
+
 def get_localized_cdata(parent, language):
     """Retrieves a CDATA string from a parent element."""
     # Single-language projects contain text directly under the parent
@@ -185,7 +197,7 @@ class ElementDescription(object):
         # Determine if the project supports multiple languages, and, if so,
         # what is the current language for which descriptions shall
         # be retrieved.
-        lang = self.get_document_language(instance)
+        lang = get_document_language(instance)
 
         return get_localized_cdata(desc, lang)
 
@@ -209,13 +221,13 @@ class ElementDescription(object):
 
     def modify(self, instance, value):
         """Alters the content of an existing description."""
-        language = self.get_document_language(instance)
+        language = get_document_language(instance)
         desc = instance.get_child_element('Description')
         modify_localized_cdata(desc, language, value)
 
     def create(self, instance, value):
         """Creates a new description when one does not previously exist."""
-        language = self.get_document_language(instance)
+        language = get_document_language(instance)
 
         # The Description element directly contains the text content in
         # single-language projects.
@@ -266,19 +278,8 @@ class ElementDescription(object):
         except KeyError:
             return
         desc = ElementAccess(element)
-        language = self.get_document_language(instance)
+        language = get_document_language(instance)
         remove_localized_cdata(desc, language)
-
-    def get_document_language(self, instance):
-        """
-        Determines the current language being used for the entire
-        project by examining the CurrentLanguage attribute in the
-        root RSLogix5000Content element.
-        """
-        if instance.doc.documentElement.hasAttribute('CurrentLanguage'):
-            return instance.doc.documentElement.getAttribute('CurrentLanguage')
-        else:
-            return None
 
 
 class AttributeDescriptor(object):
