@@ -131,17 +131,20 @@ class Comment(object):
     """
     def __get__(self, instance, owner=None):
         """Returns the data's description."""
+        # Acquire the overall Comments parent element.
         try:
             comments = self.get_comments(instance)
         except AttributeError:
             return None
 
+        # Locate the Comment child with the matching operand.
         try:
             element = self.get_comment_element(instance, comments)
         except KeyError:
             return None
 
-        return str(CDATAElement(element))
+        language = dom.get_document_language(instance)
+        return dom.get_localized_cdata(element, language)
 
     def __set__(self, instance, value):
         """Updates, creates, or removes a comment."""
