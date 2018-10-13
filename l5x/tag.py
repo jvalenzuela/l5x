@@ -168,7 +168,33 @@ class Comment(object):
         if value is not None:
             cdata.set(value)
         else:
-            comments.element.removeChild(cdata.element)
+            self.delete(instance)
+
+    def delete(self, instance):
+        """Removes a comment."""
+        # Acquire the overall Comments parent element.
+        try:
+            comments_parent = self.get_comments(instance)
+        except AttributeError:
+            return
+
+        # Locate the Comment child with the matching operand.
+        try:
+            e = self.get_comment_element(instance, comments_parent)
+        except KeyError:
+            return
+        else:
+            comment = dom.ElementAccess(e)
+
+        # Remove the Comment or LocalizedComment containing the actual text.
+        language = dom.get_document_language(instance)
+        dom.remove_localized_cdata(comment, language)
+
+        # Remove the entire Comments parent element if no other comments for any
+        # operands remain.
+        if not comments_parent.child_elements:
+            instance.tag.element.removeChild(comments_parent.element)
+            comments_parent.element.unlink()
 
     def get_comments(self, instance):
         """Acquires an access object for the tag's Comments element."""
