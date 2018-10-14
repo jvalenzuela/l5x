@@ -166,9 +166,42 @@ class Comment(object):
             cdata = dom.CDATAElement(element)
 
         if value is not None:
-            cdata.set(value)
+            if self.__get__(instance) is None:
+                self.create(instance, value)
         else:
             self.delete(instance)
+
+    def create(self, instance, text):
+        """Creates a new comment."""
+        # Get the parent Comments element, creating one if necessary.
+        try:
+            comments_parent = self.get_comments(instance)
+        except AttributeError:
+            comments_parent = self.create_comments(instance)
+
+        language = dom.get_document_language(instance)
+
+        # Find or create a Comment element with matching operand to store
+        # the new comment text.
+        try:
+            # Single-language projects will not have an existing Comment
+            # element because no localized comments are possible in other
+            # languages.
+            if language is None:
+                raise KeyError()
+
+            # A matching Comment element may already exist in multilanguage
+            # projects, containing comments in other languages.
+            else:
+                comment = self.get_comment_element(instance, comments_parent)
+
+        # Create a new Comment element with the target operand.
+        except KeyError:
+            comment = instance.create_element('Comment',
+                                              {'Operand':instance.operand})
+            comments_parent.element.appendChild(comment)
+
+        dom.create_localized_cdata(comment, language, text)
 
     def delete(self, instance):
         """Removes a comment."""
