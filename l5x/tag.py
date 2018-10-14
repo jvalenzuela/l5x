@@ -148,26 +148,11 @@ class Comment(object):
 
     def __set__(self, instance, value):
         """Updates, creates, or removes a comment."""
-        # Get the enclosing Comments element, creating one if necessary.
-        try:
-            comments = self.get_comments(instance)
-        except AttributeError:
-            comments = self.create_comments(instance)
-
-        # Find the matching Comment element and set the new text
-        # or create a new Comment if none exists.
-        try:
-            element = self.get_comment_element(instance, comments)
-        except KeyError:
-            cdata = dom.CDATAElement(parent=comments, name='Comment',
-                                 attributes={'Operand':instance.operand})
-            comments.element.appendChild(cdata.element)
-        else:
-            cdata = dom.CDATAElement(element)
-
         if value is not None:
             if self.__get__(instance) is None:
                 self.create(instance, value)
+            else:
+                self.modify(instance, value)
         else:
             self.delete(instance)
 
@@ -202,6 +187,13 @@ class Comment(object):
             comments_parent.element.appendChild(comment)
 
         dom.create_localized_cdata(comment, language, text)
+
+    def modify(self, instance, text):
+        """Alters an existing comment."""
+        comments_parent = self.get_comments(instance)
+        comment = self.get_comment_element(instance, comments_parent)
+        language = dom.get_document_language(instance)
+        dom.modify_localized_cdata(comment, language, text)
 
     def delete(self, instance):
         """Removes a comment."""
