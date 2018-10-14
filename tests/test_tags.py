@@ -1067,9 +1067,9 @@ class CommentLanguage(LanguageBase):
             lambda doc: self.add_comment(doc, '.0', 'other', 'zh-CN')
         )
         prj.controller.tags[self.TAG_NAME][0].description = 'new'
-        self.assert_localized_description(prj.doc, '.0', 'new',
-                                          self.TARGET_LANGUAGE)
-        self.assert_localized_description(prj.doc, '.0', 'other', 'zh-CN')
+        self.assert_localized_comment(prj.doc, '.0', 'new',
+                                      self.TARGET_LANGUAGE)
+        self.assert_localized_comment(prj.doc, '.0', 'other', 'zh-CN')
 
     def test_single_overwrite(self):
         """
