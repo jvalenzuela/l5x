@@ -97,6 +97,12 @@ description
         normal read/write activities, setting this attribute to None will
         delete any existing comment.
 
+        Recent versions of RSLogix have implemented maintaining comments and
+        descriptions in multiple languages. Adding, removing, or modifying
+        comments with the L5X package will only affect comments in the
+        project's current language. Changing the current language, or
+        manipulating comments in other languages is currently not implemented.
+
 Consumed tags include these additional read/write attributes:
 
 producer
