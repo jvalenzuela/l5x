@@ -16,3 +16,6 @@ v1.3, August 12, 2018
  - Clear all non-decorated data elements when setting new
    tag values.
  - Initialize tag arrays after resizing.
+
+v1.4, October 14, 2018
+ - Add support for multilingual tag comments.

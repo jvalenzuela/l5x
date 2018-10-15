@@ -2,17 +2,16 @@
 Objects implementing tag access.
 """
 
-from .dom import (ElementAccess, ElementDict, AttributeDescriptor,
-                  ElementDescription, CDATAElement)
+from l5x import dom
 import ctypes
 
 
-class Scope(ElementAccess):
+class Scope(dom.ElementAccess):
     """Container to hold a group of tags within a specific scope."""
     def __init__(self, element):
-        ElementAccess.__init__(self, element)
+        dom.ElementAccess.__init__(self, element)
         tag_element = self.get_child_element('Tags')
-        self.tags = ElementDict(tag_element, 'Name', Tag)
+        self.tags = dom.ElementDict(tag_element, 'Name', Tag)
 
 
 class TagDataDescriptor(object):
@@ -66,10 +65,10 @@ class ConsumeDescriptor(object):
         return tag.get_child_element('ConsumeInfo')
 
 
-class Tag(ElementAccess):
+class Tag(dom.ElementAccess):
     """Base class for a single tag."""
-    description = ElementDescription(['ConsumeInfo'])
-    data_type = AttributeDescriptor('DataType', True)
+    description = dom.ElementDescription(['ConsumeInfo'])
+    data_type = dom.AttributeDescriptor('DataType', True)
     value = TagDataDescriptor('value')
     shape = TagDataDescriptor('shape')
     names = TagDataDescriptor('names')
@@ -77,7 +76,7 @@ class Tag(ElementAccess):
     remote_tag = ConsumeDescriptor('RemoteTag')
 
     def __init__(self, element):
-        ElementAccess.__init__(self, element)
+        dom.ElementAccess.__init__(self, element)
 
         data_class = base_data_types.get(self.data_type, Structure)
         self.data = data_class(self.get_data_element(), self)
@@ -91,7 +90,7 @@ class Tag(ElementAccess):
         for e in self.child_elements:
             if ((e.tagName == 'Data')
                 and (e.getAttribute('Format') == 'Decorated')):
-                return ElementAccess(e).child_elements[0]
+                return dom.ElementAccess(e).child_elements[0]
 
         name = self.element.getAttribute('Name')
         raise RuntimeError("Decoded data content not found for {0} tag. "
@@ -132,41 +131,95 @@ class Comment(object):
     """
     def __get__(self, instance, owner=None):
         """Returns the data's description."""
+        # Acquire the overall Comments parent element.
         try:
             comments = self.get_comments(instance)
         except AttributeError:
             return None
 
+        # Locate the Comment child with the matching operand.
         try:
             element = self.get_comment_element(instance, comments)
         except KeyError:
             return None
 
-        return str(CDATAElement(element))
+        language = dom.get_document_language(instance)
+        return dom.get_localized_cdata(element, language)
 
     def __set__(self, instance, value):
         """Updates, creates, or removes a comment."""
-        # Get the enclosing Comments element, creating one if necessary.
-        try:
-            comments = self.get_comments(instance)
-        except AttributeError:
-            comments = self.create_comments(instance)
-
-        # Find the matching Comment element and set the new text
-        # or create a new Comment if none exists.
-        try:
-            element = self.get_comment_element(instance, comments)
-        except KeyError:
-            cdata = CDATAElement(parent=comments, name='Comment',
-                                 attributes={'Operand':instance.operand})
-            comments.element.appendChild(cdata.element)
-        else:
-            cdata = CDATAElement(element)
-
         if value is not None:
-            cdata.set(value)
+            if self.__get__(instance) is None:
+                self.create(instance, value)
+            else:
+                self.modify(instance, value)
         else:
-            comments.element.removeChild(cdata.element)
+            self.delete(instance)
+
+    def create(self, instance, text):
+        """Creates a new comment."""
+        # Get the parent Comments element, creating one if necessary.
+        try:
+            comments_parent = self.get_comments(instance)
+        except AttributeError:
+            comments_parent = self.create_comments(instance)
+
+        language = dom.get_document_language(instance)
+
+        # Find or create a Comment element with matching operand to store
+        # the new comment text.
+        try:
+            # Single-language projects will not have an existing Comment
+            # element because no localized comments are possible in other
+            # languages.
+            if language is None:
+                raise KeyError()
+
+            # A matching Comment element may already exist in multilanguage
+            # projects, containing comments in other languages.
+            else:
+                comment = self.get_comment_element(instance, comments_parent)
+
+        # Create a new Comment element with the target operand.
+        except KeyError:
+            comment = instance.create_element('Comment',
+                                              {'Operand':instance.operand})
+            comments_parent.element.appendChild(comment)
+
+        dom.create_localized_cdata(comment, language, text)
+
+    def modify(self, instance, text):
+        """Alters an existing comment."""
+        comments_parent = self.get_comments(instance)
+        comment = self.get_comment_element(instance, comments_parent)
+        language = dom.get_document_language(instance)
+        dom.modify_localized_cdata(comment, language, text)
+
+    def delete(self, instance):
+        """Removes a comment."""
+        # Acquire the overall Comments parent element.
+        try:
+            comments_parent = self.get_comments(instance)
+        except AttributeError:
+            return
+
+        # Locate the Comment child with the matching operand.
+        try:
+            e = self.get_comment_element(instance, comments_parent)
+        except KeyError:
+            return
+        else:
+            comment = dom.ElementAccess(e)
+
+        # Remove the Comment or LocalizedComment containing the actual text.
+        language = dom.get_document_language(instance)
+        dom.remove_localized_cdata(comment, language)
+
+        # Remove the entire Comments parent element if no other comments for any
+        # operands remain.
+        if not comments_parent.child_elements:
+            instance.tag.element.removeChild(comments_parent.element)
+            comments_parent.element.unlink()
 
     def get_comments(self, instance):
         """Acquires an access object for the tag's Comments element."""
@@ -175,7 +228,7 @@ class Comment(object):
         except KeyError:
             raise AttributeError()
 
-        return ElementAccess(element)
+        return dom.ElementAccess(element)
 
     def create_comments(self, instance):
         """Creates a new Comments container element.
@@ -187,7 +240,7 @@ class Comment(object):
         new = instance.create_element('Comments')
         data = instance.tag.get_child_element('Data')
         instance.tag.element.insertBefore(new, data)
-        return ElementAccess(new)
+        return dom.ElementAccess(new)
 
     def get_comment_element(self, instance, comments):
         """Acquires the Comment element of the instance's operand."""
@@ -198,7 +251,7 @@ class Comment(object):
         raise KeyError()
 
 
-class Data(ElementAccess):
+class Data(dom.ElementAccess):
     """Base class for objects providing access to tag values and comments."""
     description = Comment()
 
@@ -236,7 +289,7 @@ class Data(ElementAccess):
             return object.__new__(cls)
 
     def __init__(self, element, tag, parent=None):
-        ElementAccess.__init__(self, element)
+        dom.ElementAccess.__init__(self, element)
         self.tag = tag
         self.parent = parent
         self.build_operand()
@@ -450,7 +503,7 @@ class Structure(Data):
         if element.tagName == 'Element':
             self.element = self.get_child_element('Structure')
 
-        self.members = ElementDict(self.element, 'Name', base_data_types,
+        self.members = dom.ElementDict(self.element, 'Name', base_data_types,
                                    'DataType', Structure,
                                    member_args=[tag, self])
 
@@ -551,8 +604,8 @@ class Array(Data):
         by the Index attribute that can then be accessed with traditional
         array notation.
         """
-        self.members = ElementDict(self.element, 'Index', self.data_class,
-                                   member_args=[self.tag, self])
+        self.members = dom.ElementDict(self.element, 'Index', self.data_class,
+                                       member_args=[self.tag, self])
 
     def __getitem__(self, index):
         """Returns an access object for the given index.

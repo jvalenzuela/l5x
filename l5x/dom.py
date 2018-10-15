@@ -90,6 +90,93 @@ class CDATAElement(ElementAccess):
         self.node.data = s
 
 
+def get_document_language(element):
+    """
+    Determines the current language being used for the entire
+    project by examining the CurrentLanguage attribute in the
+    root RSLogix5000Content element.
+    """
+    if element.doc.documentElement.hasAttribute('CurrentLanguage'):
+        return element.doc.documentElement.getAttribute('CurrentLanguage')
+    else:
+        return None
+
+
+def get_localized_cdata(parent, language):
+    """Retrieves a CDATA string from a parent element."""
+    # Single-language projects contain text directly under the parent
+    # element.
+    if language is None:
+        cdata = CDATAElement(parent)
+
+    # Multi-language projects keep text for each language in child
+    # elements identified by the Lang attribute.
+    else:
+        local_desc = ElementDict(parent, 'Lang', CDATAElement)
+        try:
+            cdata = local_desc[language]
+        except KeyError:
+            return None
+
+    return str(cdata)
+
+
+def modify_localized_cdata(parent, language, text):
+    """Alters CDATA content under a parent element."""
+    # CDATA content is a direct child of the parent element in
+    # single-language projects.
+    if language is None:
+        cdata = CDATAElement(parent)
+
+    # Locate the matching localized child for multi-language projects.
+    else:
+        local_desc = ElementDict(parent, 'Lang', CDATAElement)
+        cdata = local_desc[language]
+
+    cdata.set(text)
+
+
+def create_localized_cdata(parent, language, text):
+    """Creates new CDATA content under a parent element."""
+    parent = ElementAccess(parent)
+    cdata = parent.doc.createCDATASection(text)
+
+    # Single-language projects store the CDATA directly under the
+    # parent element.
+    if language is None:
+        parent.append_child(cdata)
+
+    # Multi-language projects keep the CDATA in localized child elements
+    # identified with the Lang attribute.
+    else:
+        tag_name = ''.join(('Localized', parent.element.tagName))
+        attr = {'Lang':language}
+        localized_element = parent.create_element(tag_name, attr)
+        localized_element.appendChild(cdata)
+        parent.append_child(localized_element)
+
+
+def remove_localized_cdata(parent, language):
+    """Removes an element containing CDATA content."""
+    # For multi-language projects, remove only the child associated
+    # with the given language.
+    if language is not None:
+        parent_dict = ElementDict(parent.element, 'Lang', CDATAElement)
+        try:
+            target = parent_dict[language]
+        except KeyError:
+            pass
+        else:
+            parent.element.removeChild(target.element)
+            target.element.unlink()
+
+    # Remove the entire parent element for single-language projects,
+    # or if no comments remain in other languages.
+    if (language is None) or (not parent.child_elements):
+        parent.element.parentNode.removeChild(parent.element)
+        parent.element.unlink()
+
+
 class ElementDescription(object):
     """Descriptor class for accessing a top-level Description element.
 
@@ -110,23 +197,9 @@ class ElementDescription(object):
         # Determine if the project supports multiple languages, and, if so,
         # what is the current language for which descriptions shall
         # be retrieved.
-        lang = self.get_document_language(instance)
+        lang = get_document_language(instance)
 
-        # Single-language projects contain description text directly under
-        # the Description element.
-        if lang is None:
-            cdata = CDATAElement(desc)
-
-        # Multi-language projects keep descriptions for each language in child
-        # elements identified by the Lang attribute.
-        else:
-            local_desc = ElementDict(desc, 'Lang', CDATAElement)
-            try:
-                cdata = local_desc[lang]
-            except KeyError:
-                return None
-
-        return str(cdata)
+        return get_localized_cdata(desc, lang)
 
     def __set__(self, instance, value):
         """Modifies the description text."""
@@ -148,31 +221,19 @@ class ElementDescription(object):
 
     def modify(self, instance, value):
         """Alters the content of an existing description."""
-        language = self.get_document_language(instance)
+        language = get_document_language(instance)
         desc = instance.get_child_element('Description')
-
-        # CDATA content is a direct child of the Description element in
-        # single-language projects.
-        if language is None:
-            cdata = CDATAElement(desc)
-
-        # Locate the matching localized description child for multi-language
-        # projects.
-        else:
-            local_desc = ElementDict(desc, 'Lang', CDATAElement)
-            cdata = local_desc[language]
-
-        cdata.set(value)
+        modify_localized_cdata(desc, language, value)
 
     def create(self, instance, value):
         """Creates a new description when one does not previously exist."""
-        language = self.get_document_language(instance)
+        language = get_document_language(instance)
 
         # The Description element directly contains the text content in
         # single-language projects.
         if language is None:
-            cdata = CDATAElement(parent=instance, name='Description')
-            self.insert_description(instance, cdata.element)
+            desc = instance.create_element('Description')
+            self.insert_description(instance, desc)
 
         # Multi-language projects use localized child elements under
         # Description for each language.
@@ -184,13 +245,7 @@ class ElementDescription(object):
                 desc = instance.create_element('Description')
                 self.insert_description(instance, desc)
 
-            # Add a localized child with the text content.
-            desc = ElementAccess(desc)
-            cdata = CDATAElement(parent=desc,
-                                 name='LocalizedDescription',
-                                 attributes={'Lang':language})
-
-        cdata.set(value)
+        create_localized_cdata(desc, language, value)
 
     def insert_description(self, instance, desc):
         """
@@ -223,36 +278,8 @@ class ElementDescription(object):
         except KeyError:
             return
         desc = ElementAccess(element)
-
-        # For multi-language projects, remove only the child associated
-        # with the current language.
-        language = self.get_document_language(instance)
-        if language is not None:
-            local_desc = ElementDict(desc.element, 'Lang', CDATAElement)
-            try:
-                target = local_desc[language]
-            except KeyError:
-                pass
-            else:
-                desc.element.removeChild(target.element)
-                target.element.unlink()
-
-        # Remove the entire Description element for single-language projects,
-        # or if no comments remain in other languages.
-        if (language is None) or (not desc.child_elements):
-            instance.element.removeChild(desc.element)
-            desc.element.unlink()
-
-    def get_document_language(self, instance):
-        """
-        Determines the current language being used for the entire
-        project by examining the CurrentLanguage attribute in the
-        root RSLogix5000Content element.
-        """
-        if instance.doc.documentElement.hasAttribute('CurrentLanguage'):
-            return instance.doc.documentElement.getAttribute('CurrentLanguage')
-        else:
-            return None
+        language = get_document_language(instance)
+        remove_localized_cdata(desc, language)
 
 
 class AttributeDescriptor(object):
