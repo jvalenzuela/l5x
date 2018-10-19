@@ -9,91 +9,169 @@ import xml.etree.ElementTree as ElementTree
 
 class ElementDict(unittest.TestCase):
     """Unit tests for the ElementDict class."""
+    class Dummy(object):
+        """Mock dictionary value type."""
+        def __init__(self, element, *args):
+            self.element = element
+            self.args = args
+
     def test_key_attribute_value(self):
         """Confirm values from the key attribute are used for lookup."""
-        pass
+        parent = ElementTree.Element('parent')
+        child = ElementTree.SubElement(parent, 'child', {'key':'foo'})
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        self.assertIs(d['foo'].element, child)
 
     def test_depth_lookup(self):
         """Confirm only direct children are queried for lookup."""
-        pass
+        parent = ElementTree.Element('parent')
+        child = ElementTree.SubElement(parent, 'child', {'key':'foo'})
+        ElementTree.SubElement(child, 'grandchild', {'key':'bar'})
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        with self.assertRaises(KeyError):
+            d['bar']
 
     def test_key_not_found(self):
         """Confirm a KeyError is raised if a matching key doesn't exist."""
-        pass
+        parent = ElementTree.Element('parent')
+        ElementTree.SubElement(parent, 'child', {'key':'foo'})
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        with self.assertRaises(KeyError):
+            d['bar']
 
     def test_key_not_found_empty(self):
         """Confirm a KeyError is raised if the parent has no child elements."""
-        pass
+        parent = ElementTree.Element('parent')
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        with self.assertRaises(KeyError):
+            d['bar']
 
     def test_string_lookup(self):
         """Confirm correct lookup with string keys."""
-        pass
+        parent = ElementTree.Element('parent')
+        child = ElementTree.SubElement(parent, 'child', {'key':'foo'})
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        self.assertIs(d['foo'].element, child)
 
     def test_integer_lookup(self):
         """Confirm correct lookup with integer keys."""
-        pass
+        parent = ElementTree.Element('parent')
+        child = ElementTree.SubElement(parent, 'child', {'key':'42'})
+        d = dom.ElementDict(parent, 'key', self.Dummy, key_type=int)
+        self.assertIs(d[42].element, child)
 
     def test_value_read_only(self):
         """
         Confirm attempting to assign a different value raises an exception.
         """
-        pass
+        parent = ElementTree.Element('parent')
+        ElementTree.SubElement(parent, 'child', {'key':'foo'})
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        with self.assertRaises(TypeError):
+            d['foo'] = 0
 
     def test_create_new(self):
         """
         Confirm attempting to create a new key raises an exception.
         """
-        pass
+        parent = ElementTree.Element('parent')
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        with self.assertRaises(TypeError):
+            d['bar'] = 'foo'
 
     def test_names(self):
         """Confirm the names attribute returns a list of keys."""
-        pass
+        parent = ElementTree.Element('parent')
+        ElementTree.SubElement(parent, 'child', {'key':'foo'})
+        ElementTree.SubElement(parent, 'child', {'key':'bar'})
+        ElementTree.SubElement(parent, 'child', {'key':'baz'})
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        names = set(d.names)
+        self.assertEqual(names, set(['foo', 'bar', 'baz']))
 
     def test_names_empty(self):
         """
         Confirm the names attribute returns an empty list when the parent has
         no child elements.
         """
-        pass
+        parent = ElementTree.Element('parent')
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        self.assertFalse(d.names)
 
     def test_names_attribute(self):
         """Confirm the key attribute is used to generate the names list."""
-        pass
+        parent = ElementTree.Element('parent')
+        ElementTree.SubElement(parent, 'child', {'key':'foo', 'attr':'spam'})
+        ElementTree.SubElement(parent, 'child', {'key':'bar', 'attr':'eggs'})
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        names = set(d.names)
+        self.assertEqual(names, set(['foo', 'bar']))
 
     def test_names_type(self):
         """Confirm names are converted to the correct key type."""
-        pass
+        parent = ElementTree.Element('parent')
+        child = ElementTree.SubElement(parent, 'child', {'key':'42'})
+        d = dom.ElementDict(parent, 'key', self.Dummy, key_type=int)
+        self.assertIsInstance(d.names[0], int)
 
     def test_names_read_only(self):
         """
         Confirm attempting to assign the names attributes raises an exception.
         """
-        pass
+        parent = ElementTree.Element('parent')
+        ElementTree.SubElement(parent, 'child', {'key':'foo'})
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        with self.assertRaises(AttributeError):
+            d.names = 'foo'
 
     def test_single_value_type(self):
         """
         Confirm an instance of the value type is returned when the value
         type is specified as a class.
         """
-        pass
+        parent = ElementTree.Element('parent')
+        ElementTree.SubElement(parent, 'child', {'key':'foo'})
+        d = dom.ElementDict(parent, 'key', self.Dummy)
+        self.assertIsInstance(d['foo'], self.Dummy)
 
     def test_single_value_type_args(self):
         """
         Confirm the target element and extra arguments are passed to
         the value class for single-type values.
         """
-        pass
+        parent = ElementTree.Element('parent')
+        child = ElementTree.SubElement(parent, 'child', {'key':'foo'})
+        d = dom.ElementDict(parent, 'key', self.Dummy,
+                            value_args=['spam', 'eggs'])
+        self.assertIs(d['foo'].element, child)
+        self.assertEqual(d['foo'].args, ('spam', 'eggs'))
 
     def test_value_type_by_attribute(self):
         """
         Confirm the type of value returned is selected by the type attribute
         when the value type is specified as a dictionary.
         """
-        pass
+        class Foo(self.Dummy): pass
+        class Bar(self.Dummy): pass
+        types = {'Foo':Foo, 'Bar':Bar}
+        parent = ElementTree.Element('parent')
+        ElementTree.SubElement(parent, 'child', {'key':'foo', 'type':'Foo'})
+        ElementTree.SubElement(parent, 'child', {'key':'bar', 'type':'Bar'})
+        d = dom.ElementDict(parent, 'key', types, type_attr='type')
+        self.assertIsInstance(d['foo'], Foo)
+        self.assertIsInstance(d['bar'], Bar)
 
     def test_value_type_by_attribute_args(self):
         """
         Confirm the target element and extra arguments are passed to
         the value class for value types selected by attribute.
         """
-        pass
+        class Foo(self.Dummy): pass
+        types = {'Foo':Foo}
+        parent = ElementTree.Element('parent')
+        child = ElementTree.SubElement(parent, 'child',
+                                       {'key':'foo', 'type':'Foo'})
+        d = dom.ElementDict(parent, 'key', types, type_attr='type',
+                        value_args=['spam', 'eggs'])
+        self.assertIs(d['foo'].element, child)
+        self.assertEqual(d['foo'].args, ('spam', 'eggs'))
