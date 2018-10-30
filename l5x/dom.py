@@ -330,51 +330,55 @@ class AttributeDescriptor(object):
 class ElementDictNames(object):
     """Descriptor class to get a list of an ElementDict's members."""
     def __get__(self, instance, owner=None):
-        return instance.members.keys()
+        return [instance.key_type(e.attrib[instance.key_attr])
+                for e in instance.parent.iterfind('*')]
 
     def __set__(self, instance, owner=None):
         """Raises an exception upon an attempt to modify; this is read-only."""
         raise AttributeError('Read-only attribute.')
 
 
-class ElementDict(ElementAccess):
+class ElementDict(object):
     """Container which provides access to a group of XML elements.
 
     Operates similar to a dictionary where a child element is referenced
     by index notation to find the child with the matching key attribute.
-    Instead of returning the actual XML element, a member class is
+    Instead of returning the actual XML element, a new object is
     instantiated and returned which is used to handle access to the child's
     data.
     """
     names = ElementDictNames()
 
-    def __init__(self, parent, key_attr, types, type_attr=None, dfl_type=None,
-                 key_type=str, member_args=[]):
-        ElementAccess.__init__(self, parent)
-        self.types = types
+    def __init__(self, parent, key_attr, value_type, type_attr=None,
+                 dfl_type=None, key_type=str, value_args=[]):
+        self.parent = parent
+        self.key_attr = key_attr
+        self.value_type = value_type
         self.type_attr = type_attr
         self.dfl_type = dfl_type
-        self.member_args = member_args
-
-        member_elements = self.child_elements
-        keys = [key_type(e.getAttribute(key_attr)) for e in member_elements]
-        self.members = dict(zip(keys, member_elements))
+        self.key_type = key_type
+        self.value_args = value_args
 
     def __getitem__(self, key):
         """Return a member class suitable for accessing a child element."""
-        try:
-            element = self.members[key]
-        except KeyError:
+        xpath = "*[@{0}='{1}']".format(self.key_attr, key)
+        element = self.parent.find(xpath)
+        if element is None:
             raise KeyError("{0} not found".format(key))
+        return self.create_value_object(element)
 
+    def create_value_object(self, element):
+        """Instantiates an object returned as the value."""
         args = [element]
-        args.extend(self.member_args)
+        args.extend(self.value_args)
 
+        # Use the same type for all child objects if the given value type
+        # is a class.
         try:
-            return self.types(*args)
+            return self.value_type(*args)
+
+        # If the value type is a mapping, use the given attribute to select
+        # the appropriate type.
         except TypeError:
-            if self.type_attr is not None:
-                type_name = element.getAttribute(self.type_attr)
-            else:
-                type_name = key
-            return self.types.get(type_name, self.dfl_type)(*args)
+            type_name = element.attrib[self.type_attr]
+            return self.value_type.get(type_name, self.dfl_type)(*args)
