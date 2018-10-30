@@ -175,3 +175,38 @@ class ElementDict(unittest.TestCase):
                         value_args=['spam', 'eggs'])
         self.assertIs(d['foo'].element, child)
         self.assertEqual(d['foo'].args, ('spam', 'eggs'))
+
+
+class CDATAElement(unittest.TestCase):
+    """Unit tests for the CDATAElement class."""
+    def test_existing_get_string(self):
+        """Confirm CDATA element content is retrieved as the object's string."""
+        pass
+
+    def test_existing_set_string(self):
+        """Confirm CDATA element content is updated when set."""
+        pass
+
+    def test_existing_empty(self):
+        """Confirm an existing empty element returns an empty string."""
+        pass
+
+    def test_existing_empty_self_closing(self):
+        """Confirm a self-closing tag returns an empty string."""
+        pass
+
+    def test_new_cdata_child(self):
+        """Confirm a single CDATA child is included when creating an element."""
+        pass
+
+    def test_new_tag(self):
+        """Confirm tag name when creating a new element."""
+        pass
+
+    def test_new_parent(self):
+        """Confirm placement under parent when creating a new element."""
+        pass
+
+    def test_new_attributes(self):
+        """Confirm attribute assignment when creating a new element."""
+        pass
