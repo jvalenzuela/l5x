@@ -5,6 +5,19 @@ Internal XML DOM helper inteface objects.
 import xml.dom
 
 
+# Logix uses CDATA sections to enclose certain content, such as rung
+# comments and tag descriptions. This inappropriate use of CDATA is
+# difficult to maintain when parsing and generating XML as CDATA is not
+# intended to be used as semantic markup. Without special handling only
+# possible with the DOM API, these CDATA sections are merged into the
+# surrounding text, which then does not import correctly into Logix.
+# To simplify the application and allow use of the ElementTree API,
+# CDATA sections are converted into normal elements before parsing,
+# then back to CDATA when the project is written. This is the tag name
+# used do enclose the original CDATA content.
+CDATA_TAG = 'CDATAContent'
+
+
 class ChildElements(object):
     """Descriptor class to acquire a list of child elements."""
     def __get__(self, accessor, owner=None):
