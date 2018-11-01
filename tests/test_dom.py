@@ -181,32 +181,53 @@ class CDATAElement(unittest.TestCase):
     """Unit tests for the CDATAElement class."""
     def test_existing_get_string(self):
         """Confirm CDATA element content is retrieved as the object's string."""
-        pass
+        e = ElementTree.Element('element')
+        cdata = ElementTree.SubElement(e, dom.CDATA_TAG)
+        cdata.text = 'foo'
+        self.assertEqual(str(dom.CDATAElement(e)), 'foo')
 
     def test_existing_set_string(self):
         """Confirm CDATA element content is updated when set."""
-        pass
+        e = ElementTree.Element('element')
+        ElementTree.SubElement(e, dom.CDATA_TAG)
+        cdata = dom.CDATAElement(e)
+        cdata.set('foo')
+        self.assertEqual(str(cdata), 'foo')
 
     def test_existing_empty(self):
         """Confirm an existing empty element returns an empty string."""
-        pass
-
-    def test_existing_empty_self_closing(self):
-        """Confirm a self-closing tag returns an empty string."""
-        pass
+        e = ElementTree.Element('element')
+        child = ElementTree.SubElement(e, dom.CDATA_TAG)
+        cdata = dom.CDATAElement(e)
+        self.assertEqual(str(cdata), '')
 
     def test_new_cdata_child(self):
         """Confirm a single CDATA child is included when creating an element."""
-        pass
+        parent = ElementTree.Element('parent')
+        dom.CDATAElement(parent=parent, name='new')
+        cdata = parent.find('new')
+        children = cdata.findall('*')
+        self.assertEqual(len(children), 1)
+        self.assertEqual(children[0].tag, dom.CDATA_TAG)
 
     def test_new_tag(self):
         """Confirm tag name when creating a new element."""
-        pass
+        parent = ElementTree.Element('parent')
+        dom.CDATAElement(parent=parent, name='new')
+        children = parent.findall('*')
+        self.assertEqual(children[0].tag, 'new')
 
     def test_new_parent(self):
         """Confirm placement under parent when creating a new element."""
-        pass
+        parent = ElementTree.Element('parent')
+        dom.CDATAElement(parent=parent, name='new')
+        children = parent.findall('*')
+        self.assertNotEqual(len(children), 0)
 
     def test_new_attributes(self):
         """Confirm attribute assignment when creating a new element."""
-        pass
+        attrs = {'foo':'bar', 'spam':'eggs'}
+        parent = ElementTree.Element('parent')
+        dom.CDATAElement(parent=parent, name='new', attributes=attrs)
+        child = parent.find('new')
+        self.assertEqual(child.attrib, attrs)
