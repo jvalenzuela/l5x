@@ -3,6 +3,7 @@ Internal XML DOM helper inteface objects.
 """
 
 import xml.dom
+import xml.etree.ElementTree as ElementTree
 
 
 # Logix uses CDATA sections to enclose certain content, such as rung
@@ -60,47 +61,44 @@ class ElementAccess(object):
         self.element.appendChild(node)
 
 
-class CDATAElement(ElementAccess):
+class CDATAElement(object):
     """
     This class manages access to CDATA content contained within a dedicated
-    XML element. Examples of uses are tag descriptions and comments.
+    XML element, such as for tag descriptions and comments. An example
+    construct would be:
+
+    <parent> <!-- Parent element must already exist. -->
+
+      <!--
+      This and its single CDATA child can either be preexisting or
+      created by this class.
+      -->
+      <comment>
+        <CDATAContent>Foo Bar</CDATAContent>
+      </comment>
+
+    </parent>
     """
     def __init__(self, element=None, parent=None, name=None, attributes={}):
-        """
-        When instantiated this can access an existing element or create
-        a new one.
-        """
-        if element is not None:
-            ElementAccess.__init__(self, element)
-            self.get_existing()
-        else:
-            element = parent.create_element(name, attributes)
-            parent.append_child(element)
-            ElementAccess.__init__(self, element)
-
-            # Add the child CDATA section.
-            self.node = parent.doc.createCDATASection('')
-            self.append_child(self.node)
-
-    def get_existing(self):
-        """Locates a CDATA node within an existing element."""
-        for child in self.element.childNodes:
-            if child.nodeType == child.CDATA_SECTION_NODE:
-                self.node = child
-
-        # Verify a CDATA node was found.
+        # Find the CDATA child if a target element was given.
         try:
-            s = str(self)
+            self.cdata_element = element.find(CDATA_TAG)
+
+        # Create a new element and CDATA grandchild under the parent if no
+        # element was given.
         except AttributeError:
-            raise AttributeError('No CDATA node found')
+            element = ElementTree.SubElement(parent, name, attributes)
+            self.cdata_element = ElementTree.SubElement(element, CDATA_TAG)
 
     def __str__(self):
         """Returns the current string content."""
-        return self.node.data
+        if self.cdata_element.text is None:
+            return ''
+        return self.cdata_element.text
 
     def set(self, s):
         """Sets the CDATA section content."""
-        self.node.data = s
+        self.cdata_element.text = s
 
 
 def get_document_language(element):
