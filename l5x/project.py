@@ -64,8 +64,12 @@ class Project(ElementAccess):
         # Swap out CDATA sections before parsing.
         cdata_replaced = self.convert_to_cdata_element(orig)
 
+        # The (unicode) string needs to be converted back to a series
+        # of bytes before ElementTree parses it.
+        encoded = cdata_replaced.encode('UTF-8')
+
         try:
-            self.doc = ElementTree.fromstring(cdata_replaced)
+            self.doc = ElementTree.fromstring(encoded)
         except ElementTree.ParseError as e:
             raise InvalidFile("XML parsing error: {0}".format(e))
 
@@ -118,8 +122,10 @@ class Project(ElementAccess):
         CDATA sections.
         """
         # Parse the string to handle any escape sequences or character
-        # references.
-        root = ElementTree.fromstring(match.group())
+        # references, after encoding to ensure ElementTree parses a
+        # series of bytes.
+        encoded = match.group().encode('UTF-8')
+        root = ElementTree.fromstring(encoded)
 
         # Empty elements have None for text, which cannot be used when
         # creating a CDATA section.
