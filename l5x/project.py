@@ -139,9 +139,22 @@ class Project(ElementAccess):
 
     def write(self, filename):
         """Outputs the document to a new file."""
-        s = self.doc.toxml()
+        no_cdata = self.doc_to_string()
+        with_cdata = self.convert_to_cdata_section(no_cdata)
         with io.open(filename, 'w', encoding='UTF-8') as f:
-            f.write(s)
+            f.write(with_cdata)
+
+    def doc_to_string(self):
+        """Serializes the document into a unicode string.
+
+        This is used instead of ElementTree's tostring() method because
+        an XML declaration is required, which can only be generated
+        with write().
+        """
+        tree = ElementTree.ElementTree(self.doc)
+        buf = io.BytesIO()
+        tree.write(buf, encoding='UTF-8', xml_declaration=True)
+        return buf.getvalue().decode('UTF-8')
 
 
 def append_child_element(name, parent):
