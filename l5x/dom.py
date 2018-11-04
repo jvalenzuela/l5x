@@ -300,24 +300,26 @@ class AttributeDescriptor(object):
         self.read_only = read_only
 
     def __get__(self, instance, owner=None):
-        if (instance.element.hasAttribute(self.name)):
-            raw = instance.element.getAttribute(self.name)
+        try:
+            raw = instance.element.attrib[self.name]
+        except KeyError:
+            return None
+        else:
             return self.from_xml(raw)
-        return None
 
     def __set__(self, instance, value):
         if self.read_only is True:
             raise AttributeError('Attribute is read-only')
         new_value = self.to_xml(value)
         if new_value is not None:
-            instance.element.setAttribute(self.name, new_value)
+            instance.element.attrib[self.name] = new_value
 
         # Delete the attribute if value is None, ignoring the case if the
         # attribute didn't exist to begin with.
         else:
             try:
-                instance.element.removeAttribute(self.name)
-            except xml.dom.NotFoundErr:
+                del instance.element.attrib[self.name]
+            except KeyError:
                 pass
 
     def from_xml(self, value):
