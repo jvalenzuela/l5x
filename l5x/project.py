@@ -38,15 +38,13 @@ class Project(ElementAccess):
         if self.doc.tag != 'RSLogix5000Content':
             raise InvalidFile('Not an L5X file.')
 
-        ElementAccess.__init__(self, doc.documentElement)
-
-        ctl_element = self.get_child_element('Controller')
+        ctl_element = self.doc.find('Controller')
         self.controller = Controller(ctl_element)
 
-        progs = self.controller.get_child_element('Programs')
+        progs = ctl_element.find('Programs')
         self.programs = ElementDict(progs, 'Name', Scope)
 
-        mods = self.controller.get_child_element('Modules')
+        mods = ctl_element.find('Modules')
         self.modules = ElementDict(mods, 'Name', Module)
 
     def parse(self, filename):
