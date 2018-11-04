@@ -141,8 +141,19 @@ class Project(ElementAccess):
         """Outputs the document to a new file."""
         no_cdata = self.doc_to_string()
         with_cdata = self.convert_to_cdata_section(no_cdata)
-        with io.open(filename, 'w', encoding='UTF-8') as f:
-            f.write(with_cdata)
+
+        encoded = with_cdata.encode('UTF-8')
+        try:
+            f = open(filename, 'wb')
+
+        # Accept buffer targets for unit testing.
+        except TypeError:
+            filename.write(encoded)
+            filename.seek(0)
+
+        else:
+            with f:
+                f.write(encoded)
 
     def doc_to_string(self):
         """Serializes the document into a unicode string.
