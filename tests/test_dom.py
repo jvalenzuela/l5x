@@ -235,30 +235,62 @@ class CDATAElement(unittest.TestCase):
 
 class AttributeDescriptor(unittest.TestCase):
     """Unit tests for the AttributeDescriptor class."""
+    class Dummy(object):
+        """Test fixture."""
+        read_write = dom.AttributeDescriptor('read_write')
+        read_only = dom.AttributeDescriptor('read_only', True)
+        nonexistent = dom.AttributeDescriptor('nonexistent')
+
+        def __init__(self, element):
+            self.element = element
+
+    def setUp(self):
+        attrs = {'read_write':'foo',
+                 'read_only':'bar'}
+        self.element = ElementTree.Element('tag', attrs)
+        self.dummy = self.Dummy(self.element)
+
     def test_get(self):
         """Confirm a get request returns the target attribute's value."""
-        pass
+        self.assertEqual(self.dummy.read_write, 'foo')
+
+    def test_get_nonexistent(self):
+        """Confirm getting a nonexistent attribute returns None."""
+        self.assertIsNone(self.dummy.nonexistent)
 
     def test_set(self):
         """Confirm assignment updates the target attribute's value."""
-        pass
+        self.dummy.read_write = 'spam'
+        self.assertEqual(self.element.attrib['read_write'], 'spam')
+
+    def test_new(self):
+        """
+        Confirm a new attribute is created when assigning a value to a
+        nonexistent attribute.
+        """
+        self.dummy.nonexistent = 'foo'
+        self.assertEqual(self.element.attrib['nonexistent'], 'foo')
 
     def test_set_read_only(self):
         """Confirm assignment to a read-only attribute raises an exception."""
-        pass
+        with self.assertRaises(AttributeError):
+            self.dummy.read_only = 'spam'
 
     def test_delete(self):
         """Confirm attribute is removed when set to None."""
-        pass
+        self.dummy.read_write = None
+        self.assertFalse('read_write' in self.element.attrib.keys())
 
     def test_delete_nonexistent(self):
         """Confirm deleting an attribute that does not exist does not fail."""
-        pass
+        self.dummy.nonexistent = None
 
     def test_delete_read_only(self):
         """Confirm deleting a read-only attribute raises an exception."""
-        pass
+        with self.assertRaises(AttributeError):
+            self.dummy.read_only = None
 
     def test_invalid_value_type(self):
         """Confirm assigning a non-string value raises an exception."""
-        pass
+        with self.assertRaises(TypeError):
+            self.dummy.read_write = 42
