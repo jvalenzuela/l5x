@@ -2,7 +2,9 @@
 Module unit tests.
 """
 
+from l5x import module
 from tests import fixture
+import xml.etree.ElementTree as ElementTree
 import unittest
 
 
@@ -66,13 +68,19 @@ class Module(unittest.TestCase):
         fixture.teardown(prj)
 
 
-class SafetyModule(unittest.TestCase):
+class SafetyNetworkNumber(unittest.TestCase):
     """Tests for safety modules."""
-    test_module = 'safety_module'
+    class DummyModule(object):
+        """Test fixture object."""
+        snn = module.SafetyNetworkNumber()
+
+        def __init__(self, element):
+            self.element = element
 
     def setUp(self):
-        prj = fixture.setup()
-        self.module = prj.modules[self.test_module]
+        attrs = {'SafetyNetwork':"16#0000_0000_0000_0000"}
+        element = ElementTree.Element('Module', attrs)
+        self.module = self.DummyModule(element)
 
     def test_snn_type(self):
         """Confirm SNN is a 12 character string."""
@@ -102,15 +110,16 @@ class SafetyModule(unittest.TestCase):
     def test_set_snn(self):
         """Test setting SNN to a legal value."""
         self.module.snn = '0000deadbeef'
+        self.assertEqual(self.module.element.attrib['SafetyNetwork'],
+                         '16#0000_0000_DEAD_BEEF')
 
     def test_set_snn_underscore(self):
         """Test setting SNN to a value including underscores."""
         self.module.snn = '0000_1111_2222'
+        self.assertEqual(self.module.element.attrib['SafetyNetwork'],
+                         '16#0000_0000_1111_2222')
 
-    @classmethod
-    def tearDownClass(cls):
-        """Sets the module's SNN in the output project."""
-        prj = fixture.setup()
-        module = prj.modules[cls.test_module]
-        module.snn = '0123456789AB'
-        fixture.teardown(prj)
+    def test_delete(self):
+        """Confirm SNN can not be removed by setting to None."""
+        with self.assertRaises(TypeError):
+            self.module.snn = None
