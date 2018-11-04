@@ -231,3 +231,34 @@ class CDATAElement(unittest.TestCase):
         dom.CDATAElement(parent=parent, name='new', attributes=attrs)
         child = parent.find('new')
         self.assertEqual(child.attrib, attrs)
+
+
+class AttributeDescriptor(unittest.TestCase):
+    """Unit tests for the AttributeDescriptor class."""
+    def test_get(self):
+        """Confirm a get request returns the target attribute's value."""
+        pass
+
+    def test_set(self):
+        """Confirm assignment updates the target attribute's value."""
+        pass
+
+    def test_set_read_only(self):
+        """Confirm assignment to a read-only attribute raises an exception."""
+        pass
+
+    def test_delete(self):
+        """Confirm attribute is removed when set to None."""
+        pass
+
+    def test_delete_nonexistent(self):
+        """Confirm deleting an attribute that does not exist does not fail."""
+        pass
+
+    def test_delete_read_only(self):
+        """Confirm deleting a read-only attribute raises an exception."""
+        pass
+
+    def test_invalid_value_type(self):
+        """Confirm assigning a non-string value raises an exception."""
+        pass
