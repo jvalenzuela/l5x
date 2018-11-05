@@ -64,7 +64,7 @@ class ConsumeDescriptor(object):
         return tag.get_child_element('ConsumeInfo')
 
 
-class Tag(dom.ElementAccess):
+class Tag(object):
     """Base class for a single tag."""
     description = dom.ElementDescription(['ConsumeInfo'])
     data_type = dom.AttributeDescriptor('DataType', True)
@@ -75,8 +75,7 @@ class Tag(dom.ElementAccess):
     remote_tag = ConsumeDescriptor('RemoteTag')
 
     def __init__(self, element):
-        dom.ElementAccess.__init__(self, element)
-
+        self.element = element
         data_class = base_data_types.get(self.data_type, Structure)
         self.data = data_class(self.get_data_element(), self)
 
@@ -86,15 +85,15 @@ class Tag(dom.ElementAccess):
         This is always the sole element contained with the decorated Data
         element.
         """
-        for e in self.child_elements:
-            if ((e.tagName == 'Data')
-                and (e.getAttribute('Format') == 'Decorated')):
-                return dom.ElementAccess(e).child_elements[0]
+        data = self.element.find("Data[@Format='Decorated']/[1]")
 
-        name = self.element.getAttribute('Name')
-        raise RuntimeError("Decoded data content not found for {0} tag. "
-                           "Ensure Encode Source Protected Content option "
-                           "is disabled when saving L5X.".format(name))
+        if data is None:
+            name = self.element.attrib['Name']
+            raise RuntimeError("Decoded data content not found for {0} tag. "
+                               "Ensure Encode Source Protected Content option "
+                               "is disabled when saving L5X.".format(name))
+
+        return data
 
     def __getitem__(self, key):
         """
@@ -113,12 +112,17 @@ class Tag(dom.ElementAccess):
         Called anytime a data value is set to avoid conflicts with
         modified decorated data elements.
         """
-        for e in self.child_elements:
-            if (e.tagName == 'Data'):
-                fmt = e.getAttribute('Format')
-                if fmt != 'Decorated':
-                    data = self.element.removeChild(e)
-                    data.unlink()
+        undecorated_data = []
+        for e in self.element.iterfind('Data'):
+            try:
+                format = e.attrib['Format']
+            except KeyError:
+                undecorated_data.append(e)
+            else:
+                if format != 'Decorated':
+                    undecorated_data.append(e)
+
+        [self.element.remove(e) for e in undecorated_data]
 
 
 class Comment(object):
