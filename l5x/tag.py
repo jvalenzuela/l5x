@@ -6,11 +6,10 @@ from l5x import dom
 import ctypes
 
 
-class Scope(dom.ElementAccess):
+class Scope(object):
     """Container to hold a group of tags within a specific scope."""
     def __init__(self, element):
-        dom.ElementAccess.__init__(self, element)
-        tag_element = self.get_child_element('Tags')
+        tag_element = element.find('Tags')
         self.tags = dom.ElementDict(tag_element, 'Name', Tag)
 
 

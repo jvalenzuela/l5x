@@ -8,34 +8,40 @@ import l5x
 import math
 import unittest
 import xml.dom.minidom
+import xml.etree.ElementTree as ElementTree
 
 
 class Scope(unittest.TestCase):
     """Tests for a tag scope."""
     def setUp(self):
-        self.scope = prj.controller.tags
+        parent = ElementTree.Element('parent')
+        tags = ElementTree.SubElement(parent, 'Tags')
+        for name in ['foo', 'bar', 'baz']:
+            tag = ElementTree.SubElement(tags, 'Tag', {'Name':name})
+            ElementTree.SubElement(tag, 'Data', {'Format':'Decorated'})
+        self.scope = l5x.tag.Scope(parent)
 
     def test_names(self):
         """Test names attribute returns a non-empty list of strings."""
-        self.assertGreater(len(self.scope.names), 0)
-        for tag in self.scope.names:
+        self.assertGreater(len(self.scope.tags.names), 0)
+        for tag in self.scope.tags.names:
             self.assertIsInstance(tag, str)
             self.assertGreater(len(tag), 0)
 
     def test_name_index(self):
         """Ensure tags can be indexed by name."""
-        for name in self.scope.names:
-            self.scope[name]
+        for name in self.scope.tags.names:
+            self.scope.tags[name]
 
     def test_name_read_only(self):
         """Verify list of names cannot be directly modified."""
         with self.assertRaises(AttributeError):
-            self.scope.names = 'foo'
+            self.scope.tags.names = 'foo'
 
     def test_invalid_index(self):
         """Verify accessing a nonexistent tag raises an exception."""
         with self.assertRaises(KeyError):
-            self.scope['not_a_tag']
+            self.scope.tags['not_a_tag']
 
 
 class Tag(object):
