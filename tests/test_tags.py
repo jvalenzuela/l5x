@@ -101,6 +101,33 @@ class Tag(object):
             tag.value = output_value
 
 
+class Data(unittest.TestCase):
+    """Unit tests for the base Data class."""
+    def test_array(self):
+        """Confirm array data is delegated to an Array object."""
+        pass
+
+    def test_array_member(self):
+        """Confirm array member data is delegated to an ArrayMember object."""
+        pass
+
+    def test_delegate_args(self):
+        """Confirm init arguments are passed to delegate classes."""
+        pass
+
+    def test_name_operand(self):
+        """Confirm data identified by Name are separated by dots."""
+        pass
+
+    def test_index_operand(self):
+        """Confirm data identified by Index have no separators."""
+        pass
+
+    def test_operand_case(self):
+        """Confirm operand members are converted to upper case."""
+        pass
+
+
 class Integer(Tag):
     """Base class for testing integer data types."""
     output_value = -1
@@ -1279,14 +1306,3 @@ class CommentLanguage(LanguageBase):
                   if e.getAttribute('Operand') == operand]
         self.assertEqual(len(target), 1)
         return target[0]
-
-
-def setUpModule():
-    """Opens the test project."""
-    global prj
-    prj = fixture.setup()
-
-
-def tearDownModule():
-    """Writes the output project."""
-    fixture.teardown(prj)
