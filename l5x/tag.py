@@ -254,15 +254,9 @@ class Comment(object):
         raise KeyError()
 
 
-class Data(dom.ElementAccess):
+class Data(object):
     """Base class for objects providing access to tag values and comments."""
     description = Comment()
-
-    # XML attribute names that contain the string used to build the operand.
-    # The type of attribute also determines the separator character used
-    # to concentate the operand with the parent's: array indices use nothing
-    # and everything else uses a dot.
-    operand_attributes = {'Name':'.', 'Index':''}
 
     def __new__(cls, *args, **kwds):
         """
@@ -270,11 +264,11 @@ class Data(dom.ElementAccess):
         indicates it is an array, in which case an array access object
         is created instead for the given data type.
         """
-        if args[0].tagName.startswith('Array'):
+        if args[0].tag.startswith('Array'):
 
             # Two array accessor types are possible depending on if the
             # the array is a structure member.
-            if args[0].tagName == ('ArrayMember'):
+            if args[0].tag == ('ArrayMember'):
                 array_type = ArrayMember
             else:
                 array_type = Array
@@ -292,7 +286,7 @@ class Data(dom.ElementAccess):
             return object.__new__(cls)
 
     def __init__(self, element, tag, parent=None):
-        dom.ElementAccess.__init__(self, element)
+        self.element = element
         self.tag = tag
         self.parent = parent
         self.build_operand()
@@ -313,13 +307,22 @@ class Data(dom.ElementAccess):
         if self.parent is None:
             self.operand = ''
         else:
-            for attr in self.operand_attributes.keys():
-                if self.element.hasAttribute(attr):
-                    sep = self.operand_attributes[attr]
-                    name = self.element.getAttribute(attr).upper()
-                    break
+            # One of two possible XML attributes determine how this data is
+            # identified.
+            try:
+                # Array members use the Index attribute, which is appended to
+                # the operand string without an additional separator; the
+                # enclosing square brackets are included in the attribute
+                # value.
+                operand = self.element.attrib['Index']
+                sep = ''
+            except KeyError:
+                # All other operands use the Name attribute, which is
+                # separated from other operands by a dot.
+                operand = self.element.attrib['Name']
+                sep = '.'
                 
-            self.operand = sep.join((self.parent.operand, name))
+            self.operand = sep.join((self.parent.operand, operand.upper()))
 
 
 class IntegerValue(object):
