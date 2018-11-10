@@ -103,29 +103,47 @@ class Tag(object):
 
 class Data(unittest.TestCase):
     """Unit tests for the base Data class."""
+    class DummyType(l5x.tag.Data):
+        """Mock subclass; the Data class is never instantiated directly."""
+        pass
+
     def test_array(self):
         """Confirm array data is delegated to an Array object."""
-        pass
+        element = ElementTree.Element('Array', {'Dimensions':'1'})
+        data = self.DummyType(element, None)
+        self.assertIsInstance(data, l5x.tag.Array)
 
     def test_array_member(self):
         """Confirm array member data is delegated to an ArrayMember object."""
-        pass
-
-    def test_delegate_args(self):
-        """Confirm init arguments are passed to delegate classes."""
-        pass
+        element = ElementTree.Element('ArrayMember', {'Dimensions':'1'})
+        data = self.DummyType(element, None)
+        self.assertIsInstance(data, l5x.tag.ArrayMember)
 
     def test_name_operand(self):
         """Confirm data identified by Name are separated by dots."""
-        pass
+        e = ElementTree.Element('udt')
+        udt = self.DummyType(e, None)
+
+        e = ElementTree.SubElement(udt.element, 'member', {'Name':'foo'})
+        member = self.DummyType(e, None, udt)
+
+        e = ElementTree.SubElement(member.element, 'submember', {'Name':'bar'})
+        submember = self.DummyType(e, None, member)
+
+        self.assertEqual(submember.operand, '.FOO.BAR')
 
     def test_index_operand(self):
         """Confirm data identified by Index have no separators."""
-        pass
+        e = ElementTree.Element('array')
+        array = self.DummyType(e, None)
 
-    def test_operand_case(self):
-        """Confirm operand members are converted to upper case."""
-        pass
+        e = ElementTree.SubElement(array.element, 'member', {'Index':'[42]'})
+        member = self.DummyType(e, None, array)
+
+        e = ElementTree.SubElement(member.element, 'submember', {'Index':'[0]'})
+        submember = self.DummyType(e, None, member)
+
+        self.assertEqual(submember.operand, '[42][0]')
 
 
 class Integer(Tag):
