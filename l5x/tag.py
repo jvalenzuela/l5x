@@ -328,7 +328,7 @@ class Data(object):
 class IntegerValue(object):
     """Descriptor class for accessing an integer's value."""
     def __get__(self, instance, owner=None):
-        return int(instance.element.getAttribute('Value'))
+        return int(instance.element.attrib['Value'])
 
     def __set__(self, instance, value):
         """Sets a new value."""
@@ -336,7 +336,7 @@ class IntegerValue(object):
             raise TypeError('Value must be an integer')
         if (value < instance.value_min) or (value > instance.value_max):
             raise ValueError('Value out of range')
-        instance.element.setAttribute('Value', str(value))
+        instance.element.attrib['Value'] = str(value)
         instance.tag.clear_raw_data()
 
 
@@ -447,7 +447,7 @@ class BOOL(Data):
 class RealValue(object):
     """Descriptor class for accessing REAL values."""
     def __get__(self, instance, owner=None):
-        return float(instance.element.getAttribute('Value'))
+        return float(instance.element.attrib['Value'])
 
     def __set__(self, instance, value):
         if not isinstance(value, float):
@@ -459,7 +459,7 @@ class RealValue(object):
         except (OverflowError, ValueError):
             raise ValueError('NaN and infinite values are not supported')
             
-        instance.element.setAttribute('Value', str(value))
+        instance.element.attrib['Value'] = str(value)
         instance.tag.clear_raw_data()
 
 
