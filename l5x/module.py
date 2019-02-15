@@ -5,23 +5,22 @@ Objects for accessing a set of I/O modules.
 from .dom import (ElementAccess, ElementDict, AttributeDescriptor)
 
 
-class SafetyNetworkNumber(AttributeDescriptor):
+class SafetyNetworkNumber(object):
     """Descriptor class for accessing safety network numbers."""
-    def __init__(self):
-        """Executes superclass's initializer with attribute name."""
-        super(SafetyNetworkNumber, self).__init__('SafetyNetwork')
+    ATTRIBUTE_NAME = 'SafetyNetwork'
+    PREFIX = '16#0000'
+    def __get__(self, instance, owner=None):
+        """Returns the current SNN.
 
-    def from_xml(self, value):
-        """Removes the leading radix and unused 16 most significant bits."""
-        fields = value.split('_')
-        return str(''.join(fields[1:]))
-
-    def to_xml(self, value):
-        """Custom converter for setting a new value.
-
-        Allows the given string to omit underscores, expands to a 32-bit
-        value, and adds a radix prefix.
+        Removes the prefix, unused 16 most-significant bits, and underscores.
         """
+        self.check_is_safety(instance.element)
+        snn = instance.element.attrib[self.ATTRIBUTE_NAME][len(self.PREFIX):]
+        return snn.replace('_', '')
+
+    def __set__(self, instance, value):
+        """Sets a new SNN."""
+        self.check_is_safety(instance.element)
         if not isinstance(value, str):
             raise TypeError('Safety network number must be a hex string')
         new = value.replace('_', '')
@@ -38,12 +37,27 @@ class SafetyNetworkNumber(AttributeDescriptor):
             raise ValueError('Value must be 24-bit, 12 hex characters')
 
         # Add radix prefix and insert underscores for the final output string.
-        fields = ['16#0000']
+        fields = [self.PREFIX]
         for word in range(3):
             start = word * 4
             end = start + 4
             fields.append(padded[start:end])
-        return '_'.join(fields)
+
+        instance.element.attrib[self.ATTRIBUTE_NAME] = '_'.join(fields)
+
+    def check_is_safety(self, element):
+        """Confirms the target port/module is safety and has a SNN."""
+        try:
+            element.attrib[self.ATTRIBUTE_NAME]
+        except KeyError:
+            try:
+                id = element.attrib['Name']
+            except KeyError:
+                id = "{0}({1})".format(element.attrib['Id'],
+                                       element.attrib['Type'])
+            msg = "{0} {1} does not support a safety network number.".format(
+                element.tag, id)
+            raise TypeError(msg)
 
 
 class Module(ElementAccess):

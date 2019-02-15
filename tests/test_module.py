@@ -69,7 +69,7 @@ class Module(unittest.TestCase):
 
 
 class SafetyNetworkNumber(unittest.TestCase):
-    """Tests for safety modules."""
+    """Tests for safety network numbers."""
     class DummyModule(object):
         """Test fixture object."""
         snn = module.SafetyNetworkNumber()
@@ -78,7 +78,8 @@ class SafetyNetworkNumber(unittest.TestCase):
             self.element = element
 
     def setUp(self):
-        attrs = {'SafetyNetwork':"16#0000_0000_0000_0000"}
+        attrs = {'SafetyNetwork':"16#0000_0000_0000_0000",
+                 'Name':'dummy'}
         element = ElementTree.Element('Module', attrs)
         self.module = self.DummyModule(element)
 
@@ -123,3 +124,15 @@ class SafetyNetworkNumber(unittest.TestCase):
         """Confirm SNN can not be removed by setting to None."""
         with self.assertRaises(TypeError):
             self.module.snn = None
+
+    def test_nonsafety_read(self):
+        """Confirm reading from a non-safety object raises an exception."""
+        del self.module.element.attrib['SafetyNetwork']
+        with self.assertRaises(TypeError):
+            self.module.snn
+
+    def test_nonsafety_write(self):
+        """Confirm writing a SNN to a non-safety object raises an exception."""
+        del self.module.element.attrib['SafetyNetwork']
+        with self.assertRaises(TypeError):
+            self.module.snn = '0000deadbeef'
