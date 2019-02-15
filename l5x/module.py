@@ -70,7 +70,11 @@ class Module(object):
         self.ports = ElementDict(ports_element, 'Id', Port, key_type=int)
 
 
-class Port(ElementAccess):
+class Port(object):
     """Accessor object for a module's port."""
     address = AttributeDescriptor('Address')
     type = AttributeDescriptor('Type', True)
+    snn = SafetyNetworkNumber()
+
+    def __init__(self, element):
+        self.element = element

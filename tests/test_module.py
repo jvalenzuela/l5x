@@ -48,24 +48,34 @@ class Module(unittest.TestCase):
 
 class Port(unittest.TestCase):
     """Tests for a module communication port."""
-    def test_port_type(self):
-        """Port type should return a non-empty string."""
-        for port in self.module.ports.names:
-            type = self.module.ports[port].type
-            self.assertIsInstance(type, str)
-            self.assertGreater(len(type), 0)
+    def setUp(self):
+        attrib = {'Type':'ICP',
+                  'Address':'1',
+                  'SafetyNetwork':'16#0000_1337_d00d_0100'}
+        element = ElementTree.Element('Port', attrib)
+        self.port = module.Port(element)
 
-    def test_port_type_access(self):
+    def test_type(self):
+        """Type attribute return a the current attribute value."""
+        self.assertEqual(self.port.type, 'ICP')
+
+    def test_type_access(self):
         """Attempting to modify port type should raise an exception."""
-        for port in self.module.ports.names:
-            with self.assertRaises(AttributeError):
-                self.module.ports[port].type = 'foo'
+        with self.assertRaises(AttributeError):
+            self.ports.type = 'foo'
 
-    def test_address_type(self):
-        """Address attribute should return a non-empty string."""
-        address = self.module.ports[2].address
-        self.assertIsInstance(address, str)
-        self.assertGreater(len(address), 0)
+    def test_address_read(self):
+        """Confirm the current address is returned via the address attribute."""
+        self.assertEqual(self.port.address, '1')
+
+    def test_address_write(self):
+        """Confirm correct attribute is updated when setting a new address."""
+        self.port.address = '42'
+        self.assertEqual(self.port.element.attrib['Address'], '42')
+
+    def test_snn(self):
+        """Confirm the snn attribute yields the safety network number."""
+        self.assertEqual(self.port.snn, '1337d00d0100')
 
 
 class SafetyNetworkNumber(unittest.TestCase):
