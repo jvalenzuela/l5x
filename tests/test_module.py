@@ -23,11 +23,12 @@ class Modules(unittest.TestCase):
 
 class Module(unittest.TestCase):
     """Tests for a single module instance."""
-    test_module = 'EN2T'
-
     def setUp(self):
-        prj = fixture.setup()
-        self.module = prj.modules[self.test_module]
+        attrib = {'SafetyNetwork':'16#0000_1337_d00d_0100'}
+        element = ElementTree.Element('Module', attrib)
+        ports = ElementTree.SubElement(element, 'Ports')
+        ElementTree.SubElement(ports, 'Port', {'Id':'1'})
+        self.module = module.Module(element)
 
     def test_port_names(self):
         """Ensure names returns a non-empty list of integers."""
@@ -40,6 +41,13 @@ class Module(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.module.ports[0]
 
+    def test_snn(self):
+        """Confirm the snn attribute yields a safety network number."""
+        self.assertEqual(self.module.snn, '1337d00d0100')
+
+
+class Port(unittest.TestCase):
+    """Tests for a module communication port."""
     def test_port_type(self):
         """Port type should return a non-empty string."""
         for port in self.module.ports.names:
@@ -58,14 +66,6 @@ class Module(unittest.TestCase):
         address = self.module.ports[2].address
         self.assertIsInstance(address, str)
         self.assertGreater(len(address), 0)
-
-    @classmethod
-    def tearDownClass(cls):
-        """Changes the module's IP address in the output project."""
-        prj = fixture.setup()
-        module = prj.modules[cls.test_module]
-        module.ports[2].address = '1.2.3.4'
-        fixture.teardown(prj)
 
 
 class SafetyNetworkNumber(unittest.TestCase):

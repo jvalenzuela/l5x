@@ -60,14 +60,13 @@ class SafetyNetworkNumber(object):
             raise TypeError(msg)
 
 
-class Module(ElementAccess):
+class Module(object):
     """Accessor object for a communication module."""
     snn = SafetyNetworkNumber()
 
     def __init__(self, element):
-        ElementAccess.__init__(self, element)
-        
-        ports_element = self.get_child_element('Ports')
+        self.element = element
+        ports_element = element.find('Ports')
         self.ports = ElementDict(ports_element, 'Id', Port, key_type=int)
 
 
