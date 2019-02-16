@@ -148,7 +148,8 @@ class Comment(object):
         except KeyError:
             return None
 
-        return dom.get_localized_cdata(element, instance.tag.lang)
+        cdata = get_localized_cdata(element, instance.tag.lang)
+        return str(cdata)
 
     def __set__(self, instance, value):
         """Updates, creates, or removes a comment."""

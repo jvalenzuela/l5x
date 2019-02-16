@@ -106,32 +106,22 @@ def get_localized_cdata(parent, language):
     # Single-language projects contain text directly under the parent
     # element.
     if language is None:
-        cdata = CDATAElement(parent)
+        element = parent
 
     # Multi-language projects keep text for each language in child
     # elements identified by the Lang attribute.
     else:
-        local_desc = ElementDict(parent, 'Lang', CDATAElement)
-        try:
-            cdata = local_desc[language]
-        except KeyError:
+        path = "*[@Lang]='{0}'".format(language)
+        element = parent.find(path)
+        if element is None:
             return None
 
-    return str(cdata)
+    return CDATAElement(element)
 
 
 def modify_localized_cdata(parent, language, text):
     """Alters CDATA content under a parent element."""
-    # CDATA content is a direct child of the parent element in
-    # single-language projects.
-    if language is None:
-        cdata = CDATAElement(parent)
-
-    # Locate the matching localized child for multi-language projects.
-    else:
-        local_desc = ElementDict(parent, 'Lang', CDATAElement)
-        cdata = local_desc[language]
-
+    cdata = get_localized_cdata(parent, language)
     cdata.set(text)
 
 
@@ -193,7 +183,8 @@ class ElementDescription(object):
         except KeyError:
             return None
 
-        return get_localized_cdata(desc, instance.lang)
+        cdata = get_localized_cdata(desc, instance.lang)
+        return str(cdata)
 
     def __set__(self, instance, value):
         """Modifies the description text."""
