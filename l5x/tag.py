@@ -35,16 +35,14 @@ class ConsumeDescriptor(object):
         self.attr = attr
 
     def __get__(self, tag, owner=None):
-        if self.is_consumed(tag):
-            info = self.get_info(tag)
-            return str(info.getAttribute(self.attr))
-
-        else:
-            raise TypeError('Not a consumed tag')
+        """Returns the current consumed tag property."""
+        self.check_consumed(tag)
+        info = self.get_info(tag)
+        return info.attrib[self.attr]
         
     def __set__(self, tag, value):
-        if not self.is_consumed(tag):
-            raise TypeError('Not a consumed tag')
+        """Sets a new consumed tag property."""
+        self.check_consumed(tag)
         
         # Producer names must be non-empty strings.
         if not isinstance(value, str):
@@ -53,15 +51,17 @@ class ConsumeDescriptor(object):
             raise ValueError('Producer string cannot be empty')
 
         info = self.get_info(tag)
-        info.setAttribute(self.attr, value)
+        info.attrib[self.attr] = value
 
-    def is_consumed(self, tag):
-        """Checks to see if this is a consumed tag."""
-        return tag.element.getAttribute('TagType') == 'Consumed'
+    def check_consumed(self, tag):
+        """Verifies this is a consumed tag."""
+        if tag.element.attrib['TagType'] != 'Consumed':
+            raise TypeError("Tag {0} is not a consumed tag".format(
+                tag.element.attrib['Name']))
 
     def get_info(self, tag):
         """Retrieves the ConsumeInfo XML element."""
-        return tag.get_child_element('ConsumeInfo')
+        return tag.element.find('ConsumeInfo')
 
 
 class Tag(object):

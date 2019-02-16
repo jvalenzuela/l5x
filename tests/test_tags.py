@@ -4,6 +4,7 @@ Unittests for tag access.
 
 import ctypes
 from tests import fixture
+from l5x import tag
 import l5x
 import math
 import unittest
@@ -740,36 +741,50 @@ class Base(Tag, unittest.TestCase):
         self.assertEqual(self.tag.child_elements[0].tagName, 'Description')
 
 
-class Consumed(Tag, unittest.TestCase):
-    """Tests for consumed tags."""
-    name = 'consumed'
-    attrs = ['producer', 'remote_tag']
+class Consumed(unittest.TestCase):
+    """Tests for attributes specific to consumed tags."""
+    def setUp(self):
+        attrs = {'Name':'tagName', 'TagType':'Consumed', 'DataType':'DINT'}
+        tag_element = ElementTree.Element('Tag', attrs)
+        self.consume_info = ElementTree.SubElement(tag_element, 'ConsumeInfo')
+        ElementTree.SubElement(tag_element, 'Data', {'Format':'Decorated'})
+        self.tag = tag.Tag(tag_element)
 
-    def test_get_valid(self):
-        """Ensures an attribute's value is a non-empty string."""
-        for attr in self.attrs:
-            value = getattr(self.tag, attr)
-            self.assertIsInstance(value, str)
-            self.assertGreater(len(value), 0)
+    def test_get_producer(self):
+        """Confirm producer returns the correct attribute value."""
+        self.consume_info.attrib['Producer'] = 'foo'
+        self.assertEqual(self.tag.producer, 'foo')
+
+    def test_set_producer(self):
+        """Confirm setting the producer alters the correct attribute."""
+        self.tag.producer = 'spam'
+        self.assertEqual(self.consume_info.attrib['Producer'], 'spam')
+
+    def test_get_remote_tag(self):
+        """Confirm remote tag returns the correct attribute value."""
+        self.consume_info.attrib['RemoteTag'] = 'bar'
+        self.assertEqual(self.tag.remote_tag, 'bar')
+
+    def test_set_remote_tag(self):
+        """Confirm setting the remote tag alters the correct attribute."""
+        self.tag.remote_tag = 'eggs'
+        self.assertEqual(self.consume_info.attrib['RemoteTag'], 'eggs')
 
     def test_set_nonstring(self):
-        """Attempts to set an attribute to a non-string value."""
-        for attr in self.attrs:
-            with self.assertRaises(TypeError):
-                setattr(self.tag, attr, 0)
+        """Confirm an exception is raised when setting to a non-string."""
+        with self.assertRaises(TypeError):
+            self.tag.producer = 0
 
     def test_set_empty(self):
-        """Attempts to set an attribute to an empty string."""
-        for attr in self.attrs:
-            with self.assertRaises(ValueError):
-                setattr(self.tag, attr, '')
+        """Confirm an exception is raised when setting to an empty string."""
+        with self.assertRaises(ValueError):
+            self.tag.remote_tag = ''
 
-    def test_set_valid(self):
-        """Tests setting attributes to legal values."""
-        for attr in self.attrs:
-            old = getattr(self.tag, attr)
-            new = '_'.join(('new', old))
-            setattr(self.tag, attr, new)
+    def test_not_consumed(self):
+        """Confirm access to a base tag raises an exception."""
+        self.tag.element.attrib['TagType'] = 'Base'
+        with self.assertRaises(TypeError):
+            self.tag.producer
 
     def test_element_order(self):
         """Ensure ConsumedInfo element is before a Description."""
