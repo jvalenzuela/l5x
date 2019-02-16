@@ -8,9 +8,10 @@ import ctypes
 
 class Scope(object):
     """Container to hold a group of tags within a specific scope."""
-    def __init__(self, element):
+    def __init__(self, element, lang):
         tag_element = element.find('Tags')
-        self.tags = dom.ElementDict(tag_element, 'Name', Tag)
+        self.tags = dom.ElementDict(tag_element, 'Name', Tag,
+                                    value_args=[lang])
 
 
 class TagDataDescriptor(object):
@@ -74,8 +75,9 @@ class Tag(object):
     producer = ConsumeDescriptor('Producer')
     remote_tag = ConsumeDescriptor('RemoteTag')
 
-    def __init__(self, element):
+    def __init__(self, element, lang):
         self.element = element
+        self.lang = lang
         data_class = base_data_types.get(self.data_type, Structure)
         self.data = data_class(self.get_data_element(), self)
 
@@ -146,8 +148,7 @@ class Comment(object):
         except KeyError:
             return None
 
-        language = dom.get_document_language(instance)
-        return dom.get_localized_cdata(element, language)
+        return dom.get_localized_cdata(element, instance.tag.lang)
 
     def __set__(self, instance, value):
         """Updates, creates, or removes a comment."""
@@ -167,15 +168,13 @@ class Comment(object):
         except AttributeError:
             comments_parent = self.create_comments(instance)
 
-        language = dom.get_document_language(instance)
-
         # Find or create a Comment element with matching operand to store
         # the new comment text.
         try:
             # Single-language projects will not have an existing Comment
             # element because no localized comments are possible in other
             # languages.
-            if language is None:
+            if instance.tag.lang is None:
                 raise KeyError()
 
             # A matching Comment element may already exist in multilanguage
@@ -189,14 +188,13 @@ class Comment(object):
                                               {'Operand':instance.operand})
             comments_parent.element.appendChild(comment)
 
-        dom.create_localized_cdata(comment, language, text)
+        dom.create_localized_cdata(comment, instance.tag.lang, text)
 
     def modify(self, instance, text):
         """Alters an existing comment."""
         comments_parent = self.get_comments(instance)
         comment = self.get_comment_element(instance, comments_parent)
-        language = dom.get_document_language(instance)
-        dom.modify_localized_cdata(comment, language, text)
+        dom.modify_localized_cdata(comment, instance.tag.lang, text)
 
     def delete(self, instance):
         """Removes a comment."""
@@ -215,8 +213,7 @@ class Comment(object):
             comment = dom.ElementAccess(e)
 
         # Remove the Comment or LocalizedComment containing the actual text.
-        language = dom.get_document_language(instance)
-        dom.remove_localized_cdata(comment, language)
+        dom.remove_localized_cdata(comment, instance.tag.lang)
 
         # Remove the entire Comments parent element if no other comments for any
         # operands remain.

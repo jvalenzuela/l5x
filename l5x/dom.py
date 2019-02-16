@@ -101,18 +101,6 @@ class CDATAElement(object):
         self.cdata_element.text = s
 
 
-def get_document_language(element):
-    """
-    Determines the current language being used for the entire
-    project by examining the CurrentLanguage attribute in the
-    root RSLogix5000Content element.
-    """
-    if element.doc.documentElement.hasAttribute('CurrentLanguage'):
-        return element.doc.documentElement.getAttribute('CurrentLanguage')
-    else:
-        return None
-
-
 def get_localized_cdata(parent, language):
     """Retrieves a CDATA string from a parent element."""
     # Single-language projects contain text directly under the parent
@@ -205,12 +193,7 @@ class ElementDescription(object):
         except KeyError:
             return None
 
-        # Determine if the project supports multiple languages, and, if so,
-        # what is the current language for which descriptions shall
-        # be retrieved.
-        lang = get_document_language(instance)
-
-        return get_localized_cdata(desc, lang)
+        return get_localized_cdata(desc, instance.lang)
 
     def __set__(self, instance, value):
         """Modifies the description text."""
@@ -232,13 +215,11 @@ class ElementDescription(object):
 
     def modify(self, instance, value):
         """Alters the content of an existing description."""
-        language = get_document_language(instance)
         desc = instance.get_child_element('Description')
-        modify_localized_cdata(desc, language, value)
+        modify_localized_cdata(desc, instance.lang, value)
 
     def create(self, instance, value):
         """Creates a new description when one does not previously exist."""
-        language = get_document_language(instance)
 
         # The Description element directly contains the text content in
         # single-language projects.
@@ -256,7 +237,7 @@ class ElementDescription(object):
                 desc = instance.create_element('Description')
                 self.insert_description(instance, desc)
 
-        create_localized_cdata(desc, language, value)
+        create_localized_cdata(desc, instance.lang, value)
 
     def insert_description(self, instance, desc):
         """
@@ -289,8 +270,7 @@ class ElementDescription(object):
         except KeyError:
             return
         desc = ElementAccess(element)
-        language = get_document_language(instance)
-        remove_localized_cdata(desc, language)
+        remove_localized_cdata(desc, instance.lang)
 
 
 class AttributeDescriptor(object):

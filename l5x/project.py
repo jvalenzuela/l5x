@@ -38,11 +38,16 @@ class Project(ElementAccess):
         if self.doc.tag != 'RSLogix5000Content':
             raise InvalidFile('Not an L5X file.')
 
+        try:
+            lang = self.doc.attrib['CurrentLanguage']
+        except KeyError:
+            lang = None
+
         ctl_element = self.doc.find('Controller')
-        self.controller = Controller(ctl_element)
+        self.controller = Controller(ctl_element, lang)
 
         progs = ctl_element.find('Programs')
-        self.programs = ElementDict(progs, 'Name', Scope)
+        self.programs = ElementDict(progs, 'Name', Scope, value_args=[lang])
 
         mods = ctl_element.find('Modules')
         self.modules = ElementDict(mods, 'Name', Module)
