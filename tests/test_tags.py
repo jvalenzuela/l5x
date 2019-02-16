@@ -18,7 +18,8 @@ class Scope(unittest.TestCase):
         parent = ElementTree.Element('parent')
         tags = ElementTree.SubElement(parent, 'Tags')
         for name in ['foo', 'bar', 'baz']:
-            tag = ElementTree.SubElement(tags, 'Tag', {'Name':name})
+            attrs = {'Name':name, 'DataType':'DINT'}
+            tag = ElementTree.SubElement(tags, 'Tag', attrs)
             ElementTree.SubElement(tag, 'Data', {'Format':'Decorated'})
         self.scope = l5x.tag.Scope(parent)
 
