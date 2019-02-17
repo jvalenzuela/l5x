@@ -4,7 +4,7 @@ Unittests for tag access.
 
 import ctypes
 from tests import fixture
-from l5x import tag
+from l5x import (dom, tag)
 import l5x
 import math
 import unittest
@@ -802,156 +802,117 @@ class LanguageBase(unittest.TestCase):
     TAG_NAME = 'test_tag'
     TARGET_LANGUAGE = 'en-US'
 
-    def set_multilanguage(self, doc):
-        """
-        Enables multilingual comments by creating current language
-        attribute in the root element.
-        """
-        doc.documentElement.setAttribute('CurrentLanguage',
-                                         self.TARGET_LANGUAGE)
-
-    def create_tag(self, doc):
+    def setUp(self):
         """Creates a mock controller tag."""
-        tag = doc.createElement('Tag')
-        tag.setAttribute('Name', self.TAG_NAME)
-        tag.setAttribute('DataType', 'DINT')
+        attr = {'Name':'tag_name',
+                'DataType':'DINT'}
+        tag_element = ElementTree.Element('Tag', attr)
 
-        data = doc.createElement('Data')
-        data.setAttribute('Format', 'Decorated')
-        tag.appendChild(data)
+        attr = {'Format':'Decorated'}
+        data = ElementTree.SubElement(tag_element, 'Data', attr)
 
-        value = doc.createElement('DataValue')
-        data.appendChild(value)
+        self.tag = tag.Tag(tag_element, None)
 
-        parent = doc.getElementsByTagName('Tags')[0]
-        parent.appendChild(tag)
+    def set_multilanguage(self):
+        """Enables multilingual comments."""
+        self.tag.lang = TARGET_LANGUAGE
 
     def assert_cdata_content(self, parent, text):
         """
-        Verifies a given element contains a single CDATA section with a
-        matching string.
+        Verifies a given element contains a single CDATA subelement with a
+        matching string. Note, this tests for a CDATA element, not an
+        actual CDATA section, as unit tests using this function operate
+        using CDATA elements. See CDATA_TAG comments in the dom module
+        for details.
         """
-        # Confirm the parent element contains a single CDATA section.
-        cdata_nodes = [e for e in parent.childNodes
-                       if e.nodeType == xml.dom.minidom.Node.CDATA_SECTION_NODE]
-        self.assertEqual(len(cdata_nodes), 1)
+        # Confirm the parent element contains a single CDATA subelement.
+        children = [e for e in parent.iterfind('*')]
+        self.assertEqual(len(children), 1)
+        self.assertEqual(children[0].tag, dom.CDATA_TAG)
 
         # Confirm the content of the new CDATA section.
-        cdata = cdata_nodes[0]
-        self.assertEqual(cdata.data, text)
+        self.assertEqual(children[0].text, text)
 
 
 class DescriptionLanguage(LanguageBase):
     """Tests for multilanguage descriptions."""
     def test_single_read(self):
         """Confirm reading a description from a single-language project."""
-        prj = fixture.create_project(
-            self.create_tag,
-            lambda doc: self.add_description(doc, 'foo')
-        )
-        self.assertEqual(prj.controller.tags[self.TAG_NAME].description,
-                         'foo')
+        self.add_description('foo')
+        self.assertEqual(self.tag.description, 'foo')
 
     def test_multi_read(self):
         """
         Confirm reading a description from a multi-language project returns
         only content from the current language.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_description(doc, 'pass', self.TARGET_LANGUAGE),
-            lambda doc: self.add_description(doc, 'fail', 'es-AR')
-        )
-        self.assertEqual(prj.controller.tags[self.TAG_NAME].description,
-                         'pass')
+        self.set_multilanguage,
+        self.add_description('pass', self.TARGET_LANGUAGE)
+        self.add_description('fail', 'es-AR')
+        self.assertEqual(self.tag.description, 'pass')
 
     def test_single_read_none(self):
         """
         Confirm reading an empty description from a single-language project.
         """
-        prj = fixture.create_project(
-            self.create_tag
-        )
-        self.assertIsNone(prj.controller.tags[self.TAG_NAME].description)
+        self.assertIsNone(self.tag.description)
 
     def test_multi_read_none(self):
         """
         Confirm reading an empty description from a multi-language project.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag
-        )
-        self.assertIsNone(prj.controller.tags[self.TAG_NAME].description)
+        self.set_multilanguage,
+        self.assertIsNone(self.tag.description)
 
     def test_multi_read_none_foreign(self):
         """
         Confirm reading an empty description from a multi-language project
         that has descriptions in other languages.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_description(doc, 'other', 'es-AR')
-        )
-        self.assertIsNone(prj.controller.tags[self.TAG_NAME].description)
+        self.set_multilanguage,
+        self.add_description('other', 'es-AR')
+        self.assertIsNone(self.tag.description)
 
     def test_single_new(self):
         """Confirm adding a description to a single-language project."""
-        prj = fixture.create_project(
-            self.create_tag
-        )
-        prj.controller.tags[self.TAG_NAME].description = 'new'
-        self.assert_description(prj.doc, 'new')
+        self.tag.description = 'new'
+        self.assert_description('new')
 
     def test_multi_new(self):
         """Confirm adding a description to a multi-language project."""
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag
-        )
-        prj.controller.tags[self.TAG_NAME].description = 'new'
-        self.assert_localized_description(prj.doc, 'new', self.TARGET_LANGUAGE)
+        self.set_multilanguage,
+        self.tag.description = 'new'
+        self.assert_localized_description('new', self.TARGET_LANGUAGE)
 
     def test_multi_new_foreign(self):
         """
         Confirm adding a description to a multi-language project that has
         descriptions in other languages.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_description(doc, 'other', 'es-AR')
-        )
-        prj.controller.tags[self.TAG_NAME].description = 'new'
-        self.assert_localized_description(prj.doc, 'new', self.TARGET_LANGUAGE)
-        self.assert_localized_description(prj.doc, 'other', 'es-AR')
+        self.set_multilanguage,
+        self.add_description('other', 'es-AR')
+        self.tag.description = 'new'
+        self.assert_localized_description('new', self.TARGET_LANGUAGE)
+        self.assert_localized_description('other', 'es-AR')
 
     def test_single_overwrite(self):
         """
         Confirm overwriting an existing description in a single-language
         project.
         """
-        prj = fixture.create_project(
-            self.create_tag,
-            lambda doc: self.add_description(doc, 'old')
-        )
-        prj.controller.tags[self.TAG_NAME].description = 'new'
-        self.assert_description(prj.doc, 'new')
+        self.add_description('old')
+        self.tag.description = 'new'
+        self.assert_description('new')
 
     def test_multi_overwrite(self):
         """
         Confirm overwriting an existing description in a multi-language
         project.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_description(doc, 'old', self.TARGET_LANGUAGE)
-        )
-        prj.controller.tags[self.TAG_NAME].description = 'new'
-        self.assert_localized_description(prj.doc, 'new', self.TARGET_LANGUAGE)
+        self.set_multilanguage,
+        self.add_description('old', self.TARGET_LANGUAGE)
+        self.tag.description = 'new'
+        self.assert_localized_description('new', self.TARGET_LANGUAGE)
 
     def test_multi_overwrite_foreign(self):
         """
@@ -959,102 +920,88 @@ class DescriptionLanguage(LanguageBase):
         project that has descriptions on other languages only affects
         the description in the current language.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_description(doc, 'old', self.TARGET_LANGUAGE),
-            lambda doc: self.add_description(doc, 'other', 'es-AR')
-        )
-        prj.controller.tags[self.TAG_NAME].description = 'new'
-        self.assert_localized_description(prj.doc, 'new', self.TARGET_LANGUAGE)
-        self.assert_localized_description(prj.doc, 'other', 'es-AR')
+        self.set_multilanguage,
+        self.add_description('old', self.TARGET_LANGUAGE),
+        self.add_description('other', 'es-AR')
+        self.tag.description = 'new'
+        self.assert_localized_description('new', self.TARGET_LANGUAGE)
+        self.assert_localized_description('other', 'es-AR')
 
     def test_single_delete(self):
         """Confirm removing a description from a single-language project."""
-        prj = fixture.create_project(
-            self.create_tag,
-            lambda doc: self.add_description(doc, 'foo')
-        )
-        prj.controller.tags[self.TAG_NAME].description = None
-        self.assertFalse(prj.doc.getElementsByTagName('Description'))
+        self.add_description('foo')
+        self.tag.description = None
+        desc = self.tag.element.findall('Description')
+        self.assertEqual(len(desc), 0)
 
     def test_multi_delete(self):
         """Confirm removing a description from a multi-language project."""
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_description(doc, 'foo', self.TARGET_LANGUAGE)
-        )
-        prj.controller.tags[self.TAG_NAME].description = None
-        self.assertFalse(prj.doc.getElementsByTagName('Description'))
+        self.set_multilanguage,
+        self.add_description('foo', self.TARGET_LANGUAGE)
+        self.tag.description = None
+        desc = self.tag.element.findall('Description')
+        self.assertEqual(len(desc), 0)
 
     def test_multi_delete_foreign(self):
         """
         Confirm removing a description from a multi-language project affects
         only descriptions in the current language.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_description(doc, 'foo', self.TARGET_LANGUAGE),
-            lambda doc: self.add_description(doc, 'other', 'es-AR')
-        )
-        prj.controller.tags[self.TAG_NAME].description = None
+        self.set_multilanguage,
+        self.add_description('foo', self.TARGET_LANGUAGE),
+        self.add_description('other', 'es-AR')
+        self.tag.description = None
 
         # Ensure no localized description remains in the current language.
-        self.assertFalse([e for e in
-                          prj.doc.getElementsByTagName('LocalizedDescription')
-                          if e.getAttribute('Lang') == self.TARGET_LANGUAGE])
+        path = "Description/LocalizedDescription[@Lang='{0}']".format(
+            self.TARGET_LANGUAGE)
+        targets = self.tag.element.findall(path)
+        self.assertEqual(len(targets), 0)
 
         # Ensure descriptions in other languages are unaffected.
-        self.assert_localized_description(prj.doc, 'other', 'es-AR')
+        self.assert_localized_description('other', 'es-AR')
 
-    def add_description(self, doc, text, language=None):
+    def add_description(self, text, language=None):
         """Adds a description to the mock controller tag."""
         # Find the existing Description element, or create a new one if
         # necessary.
-        try:
-            desc = doc.getElementsByTagName('Description')[0]
-        except IndexError:
-            desc = doc.createElement('Description')
-            tag = doc.getElementsByTagName('Tag')[0]
-            tag.appendChild(desc)
+        desc = self.tag.element.find('Description')
+        if desc is None:
+            desc = ElementTree.SubElement(self.tag.element, 'Description')
 
-        cdata = doc.createCDATASection(text)
+        cdata = ElementTree.Element(dom.CDATA_TAG)
+        cdata.text = text
 
         # CDATA text goes directly under the Description element if no
         # language is specified.
         if language is None:
-            desc.appendChild(cdata)
+            desc.append(cdata)
 
         # Otherwise, create a localized element for the given language
         # to contain the CDATA.
         else:
-            local = doc.createElement('LocalizedDescription')
-            local.setAttribute('Lang', language)
-            local.appendChild(cdata)
-            desc.appendChild(local)
+            attr = {'Lang':language}
+            local = ElementTree.SubElement(desc, 'LocalizedDescription',
+                                           attr)
+            local.append(cdata)
 
-    def assert_description(self, doc, text):
+    def assert_description(self, text):
         """
         Verifies a single Description element exists under the Tag and
         contains a matching comment.
         """
-        desc = doc.getElementsByTagName('Description')
+        desc = self.tag.element.findall('Description')
         self.assertEqual(len(desc), 1)
-        self.assertEqual(desc[0].parentNode.tagName, 'Tag')
         self.assert_cdata_content(desc[0], text)
 
-    def assert_localized_description(self, doc, text, language):
+    def assert_localized_description(self, text, language):
         """
         Verifies a single LocalizedDescription element exists under the
         Description element with a language attribute and matching text.
         """
-        local_desc = [e for e in
-                      doc.getElementsByTagName('LocalizedDescription')
-                      if e.getAttribute('Lang') == language]
+        path = "Description/LocalizedDescription[@Lang='{0}']".format(language)
+        local_desc = self.tag.element.findall(path)
         self.assertEqual(len(local_desc), 1)
-        self.assertEqual(local_desc[0].parentNode.tagName, 'Description')
         self.assert_cdata_content(local_desc[0], text)
 
 
@@ -1062,108 +1009,74 @@ class CommentLanguage(LanguageBase):
     """Tests for multilanguage comments."""
     def test_single_read(self):
         """Confirm reading a comment from a single-language project."""
-        prj = fixture.create_project(
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'foo')
-        )
-        self.assertEqual(prj.controller.tags[self.TAG_NAME][0].description,
-                         'foo')
+        self.add_comment('.0', 'foo')
+        self.assertEqual(self.tag[0].description, 'foo')
 
     def test_multi_read(self):
         """
         Confirm reading a comment from a multi-language project returns
         only content from the current language.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'pass',
-                                         self.TARGET_LANGUAGE),
-            lambda doc: self.add_comment(doc, '.0', 'fail', 'zh-CN')
-        )
-        self.assertEqual(prj.controller.tags[self.TAG_NAME][0].description,
-                         'pass')
+        self.set_multilanguage
+        self.add_comment('.0', 'pass', self.TARGET_LANGUAGE),
+        self.add_comment('.0', 'fail', 'zh-CN')
+        self.assertEqual(self.tag[0].description, 'pass')
 
     def test_single_read_none(self):
         """
         Confirm reading a nonexistent comment from a single-language project.
         """
-        prj = fixture.create_project(
-            self.create_tag
-        )
-        self.assertIsNone(prj.controller.tags[self.TAG_NAME][0].description)
+        self.assertIsNone(self.tag[0].description)
 
     def test_multi_read_none_foreign(self):
         """
         Confirm reading a nonexistent comment from a multi-language project
         that has comments in other languages.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'other', 'zh-CN')
-        )
-        self.assertIsNone(prj.controller.tags[self.TAG_NAME][0].description)
+        self.set_multilanguage
+        self.add_comment('.0', 'other', 'zh-CN')
+        self.assertIsNone(self.tag[0].description)
 
     def test_single_new(self):
         """Confirm adding a comment to a single-language project."""
-        prj = fixture.create_project(
-            self.create_tag
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = 'new'
-        self.assert_comment(prj.doc, '.0', 'new')
+        self.tag[0].description = 'new'
+        self.assert_comment('.0', 'new')
 
     def test_multi_new(self):
         """Confirm adding a comment to a multi-language project."""
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = 'new'
-        self.assert_localized_comment(prj.doc, '.0', 'new',
-                                      self.TARGET_LANGUAGE)
+        self.set_multilanguage
+        self.tag[0].description = 'new'
+        self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
 
     def test_multi_new_foreign(self):
         """
         Confirm adding a comment to a multi-language project that has
         comments in other languages.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'other', 'zh-CN')
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = 'new'
-        self.assert_localized_comment(prj.doc, '.0', 'new',
-                                      self.TARGET_LANGUAGE)
-        self.assert_localized_comment(prj.doc, '.0', 'other', 'zh-CN')
+        self.set_multilanguage
+        self.add_comment('.0', 'other', 'zh-CN')
+        self.tag[0].description = 'new'
+        self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
+        self.assert_localized_comment('.0', 'other', 'zh-CN')
 
     def test_single_overwrite(self):
         """
         Confirm overwriting an existing comment in a single-language
         project.
         """
-        prj = fixture.create_project(
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'old')
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = 'new'
-        self.assert_comment(prj.doc, '.0', 'new')
+        self.add_comment('.0', 'old')
+        self.tag[0].description = 'new'
+        self.assert_comment('.0', 'new')
 
     def test_multi_overwrite(self):
         """
         Confirm overwriting an existing comment in a multi-language
         project.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'old',
-                                         self.TARGET_LANGUAGE)
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = 'new'
-        self.assert_localized_comment(prj.doc, '.0', 'new',
-                                      self.TARGET_LANGUAGE)
+        self.set_multilanguage
+        self.add_comment('.0', 'old', self.TARGET_LANGUAGE)
+        self.tag[0].description = 'new'
+        self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
 
     def test_multi_overwrite_foreign(self):
         """
@@ -1171,172 +1084,151 @@ class CommentLanguage(LanguageBase):
         project that has comments on other languages only affects
         the comment in the current language.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'old',
-                                         self.TARGET_LANGUAGE),
-            lambda doc: self.add_comment(doc, '.0', 'other', 'zh-CN')
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = 'new'
-        self.assert_localized_comment(prj.doc, '.0', 'new',
-                                      self.TARGET_LANGUAGE)
-        self.assert_localized_comment(prj.doc, '.0', 'other', 'zh-CN')
+        self.set_multilanguage
+        self.add_comment('.0', 'old', self.TARGET_LANGUAGE)
+        self.add_comment('.0', 'other', 'zh-CN')
+        self.tag[0].description = 'new'
+        self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
+        self.assert_localized_comment('.0', 'other', 'zh-CN')
 
     def test_single_delete(self):
         """Confirm removing a comment from a single-language project."""
-        prj = fixture.create_project(
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'foo')
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = None
-        self.assertFalse(prj.doc.getElementsByTagName('Comment'))
+        self.add_comment('.0', 'foo')
+        self.tag[0].description = None
+        comments = self.tag.element.findall('Comments')
+        self.assertEqual(len(comments), 0)
 
     def test_single_delete_other_operand(self):
         """
         Confirm removing a comment from a single-language project
         does not affect comments for other operands.
         """
-        prj = fixture.create_project(
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'foo'),
-            lambda doc: self.add_comment(doc, '.1', 'bar')
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = None
-        self.assert_comment(prj.doc, '.1', 'bar')
+        self.add_comment('.0', 'foo')
+        self.add_comment('.1', 'bar')
+        self.tag[0].description = None
+
+        # Confirm the target comment was removed.
+        target = self.tag.element.findall("Comments/Comment[@Operand='.0']")
+        self.assertEqual(len(target), 0)
+
+        # Confirm the unaffected comment remains.
+        self.assert_comment('.1', 'bar')
 
     def test_single_delete_last(self):
         """
         Confirm removing the last comment in a single-language project
         also removes the overall Comments parent element.
         """
-        prj = fixture.create_project(
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'foo'),
-            lambda doc: self.add_comment(doc, '.1', 'bar')
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = None
-        prj.controller.tags[self.TAG_NAME][1].description = None
-        self.assertFalse(prj.doc.getElementsByTagName('Comments'))
+        self.add_comment('.0', 'foo')
+        self.add_comment('.1', 'bar')
+        self.tag[0].description = None
+        self.tag[1].description = None
+        target = self.tag.element.find('Comments')
+        self.assertEqual(len(target), 0)
 
     def test_multi_delete(self):
         """Confirm removing a comment from a multi-language project."""
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'foo',
-                                         self.TARGET_LANGUAGE)
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = None
-        self.assertFalse(prj.doc.getElementsByTagName('Comment'))
+        self.set_multilanguage
+        self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
+        self.tag[0].description = None
+        target = self.tag.element.find('Comments')
+        self.assertEqual(len(target), 0)
 
     def test_multi_delete_other_operand(self):
         """
         Confirm removing a comment from a multi-language project
         does not affect comments for other operands.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'foo',
-                                         self.TARGET_LANGUAGE),
-            lambda doc: self.add_comment(doc, '.1', 'bar',
-                                         self.TARGET_LANGUAGE)
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = None
-        self.assert_localized_comment(prj.doc, '.1', 'bar',
-                                      self.TARGET_LANGUAGE)
+        self.set_multilanguage
+        self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
+        self.add_comment('.1', 'bar', self.TARGET_LANGUAGE)
+        self.tag[0].description = None
+
+        # Confirm the target comment was removed.
+        path = "Comments/Comment[@Operand='.0']" \
+               "/LocalizedComment[@Lang='{0}']".format(self.TARGET_LANGUAGE)
+        target = self.tag.element.findall(path)
+        self.assertEqual(len(target), 0)
+
+        # Confirm the unaffected comment remains.
+        self.assert_localized_comment('.1', 'bar', self.TARGET_LANGUAGE)
 
     def test_multi_delete_last(self):
         """
         Confirm removing the last comment in a multi-language project
         also removes the overall Comments parent element.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'foo',
-                                         self.TARGET_LANGUAGE),
-            lambda doc: self.add_comment(doc, '.1', 'bar',
-                                         self.TARGET_LANGUAGE)
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = None
-        prj.controller.tags[self.TAG_NAME][1].description = None
-        self.assertFalse(prj.doc.getElementsByTagName('Comments'))
+        self.set_multilanguage
+        self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
+        self.add_comment('.1', 'bar', self.TARGET_LANGUAGE)
+        self.tag[0].description = None
+        self.tag[1].description = None
+        target = self.tag.element.find('Comments')
+        self.assertEqual(len(target), 0)
 
     def test_multi_delete_foreign(self):
         """
         Confirm removing a comment from a multi-language project affects
         only comments in the current language.
         """
-        prj = fixture.create_project(
-            self.set_multilanguage,
-            self.create_tag,
-            lambda doc: self.add_comment(doc, '.0', 'foo',
-                                         self.TARGET_LANGUAGE),
-            lambda doc: self.add_comment(doc, '.0', 'bar', 'zh-CN')
-        )
-        prj.controller.tags[self.TAG_NAME][0].description = None
-        self.assert_localized_comment(prj.doc, '.0', 'bar', 'zh-CN')
+        self.set_multilanguage
+        self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
+        self.add_comment('.0', 'bar', 'zh-CN')
+        self.tag[0].description = None
+        self.assert_localized_comment('.0', 'bar', 'zh-CN')
 
-    def add_comment(self, doc, operand, text, language=None):
+    def add_comment(self, operand, text, language=None):
         """Creates a comment assigned to a given operand."""
         # Locate the Comments element, creating one if necessary.
-        try:
-            comments = doc.getElementsByTagName('Comments')[0]
-        except IndexError:
-            comments = doc.createElement('Comments')
-            tag = doc.getElementsByTagName('Tag')[0]
-            tag.appendChild(comments)
+        comments = self.tag.element.find('Comments')
+        if comments is None:
+            comments = ElementTree.SubElement(self.tag.element, 'Comments')
 
         # Find the Comment element with the matching operand, or
         # create a new one if needed.
-        try:
-            comment = [e for e in comments.getElementsByTagName('Comment')
-                       if e.getAttribute('Operand') == operand][0]
-        except IndexError:
-            comment = doc.createElement('Comment')
-            comment.setAttribute('Operand', operand)
-            comments.appendChild(comment)
+        path = "Comment[@Operand='{0}']".format(operand)
+        comment = comments.find(path)
+        if comment is None:
+            attr = {'Operand':operand}
+            comment = ElementTree.SubElement(comments, 'Comment', attr)
 
-        cdata = doc.createCDATASection(text)
+        cdata = ElementTree.Element(dom.CDATA_TAG)
+        cdata.text = text
 
         # Put the CDATA directly under the Comment element for single-language
         # projects.
         if language is None:
-            comment.appendChild(cdata)
+            comment.append(cdata)
 
         # Create a localized comment for multi-language projects.
         else:
-            localized = doc.createElement('LocalizedComment')
-            localized.setAttribute('Lang', language)
-            localized.appendChild(cdata)
-            comment.appendChild(localized)
+            attr = {'Lang':language}
+            localized = ElementTree.SubElement(comment, 'LocalizedComment',
+                                               attr)
+            localized.append(cdata)
 
-    def assert_comment(self, doc, operand, text):
+    def assert_comment(self, operand, text):
         """
         Verifies a single Comment element exists under the Comments parent
         with a given operand attribute and text content.
         """
-        comment = self.get_comment(doc, operand)
+        comment = self.get_comment(operand)
         self.assert_cdata_content(comment, text)
 
-    def assert_localized_comment(self, doc, operand, text, language):
+    def assert_localized_comment(self, operand, text, language):
         """
         Verifies a single LocalizedComment element exists under the Comments
         element with a language attribute and matching text.
         """
-        comment = self.get_comment(doc, operand)
-        localized = [e for e in comment.getElementsByTagName('LocalizedComment')
-                     if e.getAttribute('Lang') == language]
+        comment = self.get_comment(operand)
+        path = "LocalizedComment[@Lang='{0}']".format(language)
+        localized = comment.findall(path)
         self.assertEqual(len(localized), 1)
         self.assert_cdata_content(localized[0], text)
 
-    def get_comment(self, doc, operand):
+    def get_comment(self, operand):
         """Finds a Comment element with a matching operand attribute."""
-        comments = doc.getElementsByTagName('Comments')
-        self.assertEqual(len(comments), 1)
-        target = [e for e in comments[0].getElementsByTagName('Comment')
-                  if e.getAttribute('Operand') == operand]
-        self.assertEqual(len(target), 1)
-        return target[0]
+        path = "Comments/Comment[@Operand='{0}']".format(operand)
+        comment = self.tag.element.findall(path)
+        self.assertEqual(len(comment), 1)
+        return comment[0]
