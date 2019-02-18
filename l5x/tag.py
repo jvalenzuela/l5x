@@ -4,6 +4,7 @@ Objects implementing tag access.
 
 from l5x import dom
 import ctypes
+import xml.etree.ElementTree as ElementTree
 
 
 class Scope(object):
@@ -137,9 +138,8 @@ class Comment(object):
     def __get__(self, instance, owner=None):
         """Returns the data's description."""
         # Acquire the overall Comments parent element.
-        try:
-            comments = self.get_comments(instance)
-        except AttributeError:
+        comments = instance.tag.element.find('Comments')
+        if comments is None:
             return None
 
         # Locate the Comment child with the matching operand.
@@ -148,7 +148,9 @@ class Comment(object):
         except KeyError:
             return None
 
-        cdata = get_localized_cdata(element, instance.tag.lang)
+        cdata = dom.get_localized_cdata(element, instance.tag.lang)
+        if cdata is None:
+            return None
         return str(cdata)
 
     def __set__(self, instance, value):
@@ -164,10 +166,9 @@ class Comment(object):
     def create(self, instance, text):
         """Creates a new comment."""
         # Get the parent Comments element, creating one if necessary.
-        try:
-            comments_parent = self.get_comments(instance)
-        except AttributeError:
-            comments_parent = self.create_comments(instance)
+        comments = instance.tag.element.find('Comments')
+        if comments is None:
+            comments = self.create_comments(instance)
 
         # Find or create a Comment element with matching operand to store
         # the new comment text.
@@ -181,55 +182,41 @@ class Comment(object):
             # A matching Comment element may already exist in multilanguage
             # projects, containing comments in other languages.
             else:
-                comment = self.get_comment_element(instance, comments_parent)
+                comment = self.get_comment_element(instance, comments)
 
         # Create a new Comment element with the target operand.
         except KeyError:
-            comment = instance.create_element('Comment',
-                                              {'Operand':instance.operand})
-            comments_parent.element.appendChild(comment)
+            comment = ElementTree.SubElement(comments, 'Comment',
+                                             {'Operand':instance.operand})
 
         dom.create_localized_cdata(comment, instance.tag.lang, text)
 
     def modify(self, instance, text):
         """Alters an existing comment."""
-        comments_parent = self.get_comments(instance)
+        comments_parent = instance.tag.element.find('Comments')
         comment = self.get_comment_element(instance, comments_parent)
         dom.modify_localized_cdata(comment, instance.tag.lang, text)
 
     def delete(self, instance):
         """Removes a comment."""
         # Acquire the overall Comments parent element.
-        try:
-            comments_parent = self.get_comments(instance)
-        except AttributeError:
+        comments = instance.tag.element.find('Comments')
+        if comments is None:
             return
 
         # Locate the Comment child with the matching operand.
         try:
-            e = self.get_comment_element(instance, comments_parent)
+            comment = self.get_comment_element(instance, comments)
         except KeyError:
             return
-        else:
-            comment = dom.ElementAccess(e)
 
         # Remove the Comment or LocalizedComment containing the actual text.
-        dom.remove_localized_cdata(comment, instance.tag.lang)
+        dom.remove_localized_cdata(comments, comment, instance.tag.lang)
 
         # Remove the entire Comments parent element if no other comments for any
         # operands remain.
-        if not comments_parent.child_elements:
-            instance.tag.element.removeChild(comments_parent.element)
-            comments_parent.element.unlink()
-
-    def get_comments(self, instance):
-        """Acquires an access object for the tag's Comments element."""
-        try:
-            element =  instance.tag.get_child_element('Comments')
-        except KeyError:
-            raise AttributeError()
-
-        return dom.ElementAccess(element)
+        if len(comments) == 0:
+            instance.tag.element.remove(comments)
 
     def create_comments(self, instance):
         """Creates a new Comments container element.
@@ -238,18 +225,22 @@ class Comment(object):
         The Comments element must be located immediately before any Data
         elements.
         """
-        new = instance.create_element('Comments')
-        data = instance.tag.get_child_element('Data')
-        instance.tag.element.insertBefore(new, data)
-        return dom.ElementAccess(new)
+        comments = ElementTree.Element('Comments')
+
+        # Locate the index of the Data child element.
+        child_tags = [e.tag for e in instance.tag.element.iterfind('*')]
+        data_index = child_tags.index('Data')
+
+        instance.tag.element.insert(data_index, comments)
+        return comments
 
     def get_comment_element(self, instance, comments):
         """Acquires the Comment element of the instance's operand."""
-        for element in comments.child_elements:
-            if element.getAttribute('Operand') == instance.operand:
-                return element
-
-        raise KeyError()
+        path = "Comment[@Operand='{0}']".format(instance.operand)
+        element = comments.find(path)
+        if element is None:
+            raise KeyError()
+        return element
 
 
 class Data(object):

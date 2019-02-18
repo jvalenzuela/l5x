@@ -87,8 +87,12 @@ class CDATAElement(object):
         # Create a new element and CDATA grandchild under the parent if no
         # element was given.
         except AttributeError:
-            element = ElementTree.SubElement(parent, name, attributes)
-            self.cdata_element = ElementTree.SubElement(element, CDATA_TAG)
+            self.cdata_parent = ElementTree.SubElement(parent, name, attributes)
+            self.cdata_element = ElementTree.SubElement(self.cdata_parent,
+                                                        CDATA_TAG)
+
+        else:
+            self.cdata_parent = element
 
     def __str__(self):
         """Returns the current string content."""
@@ -111,7 +115,7 @@ def get_localized_cdata(parent, language):
     # Multi-language projects keep text for each language in child
     # elements identified by the Lang attribute.
     else:
-        path = "*[@Lang]='{0}'".format(language)
+        path = "*[@Lang='{0}']".format(language)
         element = parent.find(path)
         if element is None:
             return None
@@ -127,43 +131,35 @@ def modify_localized_cdata(parent, language, text):
 
 def create_localized_cdata(parent, language, text):
     """Creates new CDATA content under a parent element."""
-    parent = ElementAccess(parent)
-    cdata = parent.doc.createCDATASection(text)
-
     # Single-language projects store the CDATA directly under the
     # parent element.
     if language is None:
-        parent.append_child(cdata)
+        ElementTree.SubElement(parent, CDATA_TAG)
+        cdata = CDATAElement(parent)
 
     # Multi-language projects keep the CDATA in localized child elements
     # identified with the Lang attribute.
     else:
-        tag_name = ''.join(('Localized', parent.element.tagName))
+        tag_name = ''.join(('Localized', parent.tag))
         attr = {'Lang':language}
-        localized_element = parent.create_element(tag_name, attr)
-        localized_element.appendChild(cdata)
-        parent.append_child(localized_element)
+        cdata = CDATAElement(parent=parent, name=tag_name, attributes=attr)
+
+    cdata.set(text)
 
 
-def remove_localized_cdata(parent, language):
+def remove_localized_cdata(grandparent, parent, language):
     """Removes an element containing CDATA content."""
     # For multi-language projects, remove only the child associated
     # with the given language.
     if language is not None:
-        parent_dict = ElementDict(parent.element, 'Lang', CDATAElement)
-        try:
-            target = parent_dict[language]
-        except KeyError:
-            pass
-        else:
-            parent.element.removeChild(target.element)
-            target.element.unlink()
+        cdata = get_localized_cdata(parent, language)
+        if cdata is not None:
+            parent.remove(cdata.cdata_parent)
 
     # Remove the entire parent element for single-language projects,
     # or if no comments remain in other languages.
-    if (language is None) or (not parent.child_elements):
-        parent.element.parentNode.removeChild(parent.element)
-        parent.element.unlink()
+    if (language is None) or (len(parent) == 0):
+        grandparent.remove(parent)
 
 
 class ElementDescription(object):
@@ -178,13 +174,13 @@ class ElementDescription(object):
 
     def __get__(self, instance, owner=None):
         """Returns the current description string."""
-        try:
-            desc = instance.get_child_element('Description')
-        except KeyError:
-            return None
+        desc = instance.element.find('Description')
+        if desc is not None:
+            cdata = get_localized_cdata(desc, instance.lang)
+            if cdata is not None:
+                return str(cdata)
 
-        cdata = get_localized_cdata(desc, instance.lang)
-        return str(cdata)
+        return None
 
     def __set__(self, instance, value):
         """Modifies the description text."""
@@ -206,7 +202,7 @@ class ElementDescription(object):
 
     def modify(self, instance, value):
         """Alters the content of an existing description."""
-        desc = instance.get_child_element('Description')
+        desc = instance.element.find('Description')
         modify_localized_cdata(desc, instance.lang, value)
 
     def create(self, instance, value):
@@ -214,18 +210,17 @@ class ElementDescription(object):
 
         # The Description element directly contains the text content in
         # single-language projects.
-        if language is None:
-            desc = instance.create_element('Description')
+        if instance.lang is None:
+            desc = ElementTree.Element('Description')
             self.insert_description(instance, desc)
 
         # Multi-language projects use localized child elements under
         # Description for each language.
         else:
             # Locate the Description tag, or create a new one if necessary.
-            try:
-                desc = instance.get_child_element('Description')
-            except KeyError:
-                desc = instance.create_element('Description')
+            desc = instance.element.find('Description')
+            if desc is None:
+                desc = ElementTree.Element('Description')
                 self.insert_description(instance, desc)
 
         create_localized_cdata(desc, instance.lang, value)
@@ -235,33 +230,27 @@ class ElementDescription(object):
         Inserts the Description element as a child of the parent instance
         based on any elements that must come first.
         """
-        # Search for any elements listed in the follow attribute.
-        follow = None
-        for e in instance.child_elements:
-            if e.tagName in self.follow:
-                follow = e
+        # Capture the highest child index for any elements listed in the
+        # follow attribute.
+        child_tags = [e.tag for e in instance.element.iterfind('*')]
+        indices = []
+        for tag in self.follow:
+            try:
+                indices.append(child_tags.index(tag))
+            except ValueError:
+                pass
+        try:
+            index = max(indices)
+        except ValueError:
+            index = 0
 
-        # Create as first child if no elements to follow were found.
-        if follow is None:
-            instance.element.insertBefore(desc, instance.element.firstChild)
-
-        # If any follow elements exist, insert the new description
-        # element after the last one found. DOM node operations do not
-        # provide an append-after method so an insert-remove-insert
-        # procedure is used.
-        else:
-            instance.element.insertBefore(desc, follow)
-            instance.element.removeChild(follow)
-            instance.element.insertBefore(follow, desc)
+        instance.element.insert(index, desc)
 
     def remove(self, instance):
-        """Implements removing a comment by deleting the enclosing element."""
-        try:
-            element = instance.get_child_element('Description')
-        except KeyError:
-            return
-        desc = ElementAccess(element)
-        remove_localized_cdata(desc, instance.lang)
+        """Implements deleting a description."""
+        desc = instance.element.find('Description')
+        if desc is not None:
+            remove_localized_cdata(instance.element, desc, instance.lang)
 
 
 class AttributeDescriptor(object):
