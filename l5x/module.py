@@ -9,18 +9,24 @@ class SafetyNetworkNumber(object):
     """Descriptor class for accessing safety network numbers."""
     ATTRIBUTE_NAME = 'SafetyNetwork'
     PREFIX = '16#0000'
+
+    def __init__(self, element_path='.'):
+        self.element_path = element_path
+
     def __get__(self, instance, owner=None):
         """Returns the current SNN.
 
         Removes the prefix, unused 16 most-significant bits, and underscores.
         """
-        self.check_is_safety(instance.element)
-        snn = instance.element.attrib[self.ATTRIBUTE_NAME][len(self.PREFIX):]
+        element = self.get_target_element(instance)
+        self.check_is_safety(element)
+        snn = element.attrib[self.ATTRIBUTE_NAME][len(self.PREFIX):]
         return snn.replace('_', '')
 
     def __set__(self, instance, value):
         """Sets a new SNN."""
-        self.check_is_safety(instance.element)
+        element = self.get_target_element(instance)
+        self.check_is_safety(element)
         if not isinstance(value, str):
             raise TypeError('Safety network number must be a hex string')
         new = value.replace('_', '')
@@ -43,7 +49,11 @@ class SafetyNetworkNumber(object):
             end = start + 4
             fields.append(padded[start:end])
 
-        instance.element.attrib[self.ATTRIBUTE_NAME] = '_'.join(fields)
+        element.attrib[self.ATTRIBUTE_NAME] = '_'.join(fields)
+
+    def get_target_element(self, instance):
+        """Finds the element containing the safety network number attribute."""
+        return instance.element.find(self.element_path)
 
     def check_is_safety(self, element):
         """Confirms the target port/module is safety and has a SNN."""

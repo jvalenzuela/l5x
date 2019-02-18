@@ -171,33 +171,10 @@ class Project(ElementAccess):
         return buf.getvalue().decode('UTF-8')
 
 
-class ControllerSafetyNetworkNumber(SafetyNetworkNumber):
-    """Descriptor class for accessing a controller's safety network number.
-
-    This class handles the fact that the controller's safety network number
-    is stored as an attribute of the controller's module element rather than
-    the top-level controller element. Some additional work is needed to
-    direct the superclass's interface to the correct element.
-    """
-    def __get__(self, instance, owner=None):
-        mod = self.get_ctl_module(instance)
-        return super(ControllerSafetyNetworkNumber, self).__get__(mod)
-
-    def __set__(self, instance, value):
-        mod = self.get_ctl_module(instance)
-        super(ControllerSafetyNetworkNumber, self).__set__(mod, value)
-
-    def get_ctl_module(self, instance):
-        """Generates an object to access the controller module element.
-
-        While the module's name varies, the controller module is always
-        the first child within the Modules element.
-        """
-        modules = ElementAccess(instance.get_child_element('Modules'))
-        return ElementAccess(modules.child_elements[0])
-
-
 class Controller(Scope):
     """Accessor object for the controller device."""
     comm_path = AttributeDescriptor('CommPath')
-    snn = ControllerSafetyNetworkNumber()
+
+    # The safety network number is stored in the first module element,
+    # not the Controller element.
+    snn = SafetyNetworkNumber('Modules/Module')
