@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ElementTree
 class Scope(object):
     """Container to hold a group of tags within a specific scope."""
     def __init__(self, element, lang):
+        self.element = element
         tag_element = element.find('Tags')
         self.tags = dom.ElementDict(tag_element, 'Name', Tag,
                                     value_args=[lang])
