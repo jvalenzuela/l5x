@@ -171,14 +171,6 @@ class Project(ElementAccess):
         return buf.getvalue().decode('UTF-8')
 
 
-def append_child_element(name, parent):
-    """Creates and appends a new child XML element."""
-    doc = get_doc(parent)
-    new = doc.createElement(name)
-    parent.appendChild(new)
-    return new
-
-
 class ControllerSafetyNetworkNumber(SafetyNetworkNumber):
     """Descriptor class for accessing a controller's safety network number.
 
