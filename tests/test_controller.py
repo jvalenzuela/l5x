@@ -2,61 +2,65 @@
 Unit tests for a project's controller object.
 """
 
-from tests import fixture
+from l5x import project
 import unittest
+import xml.etree.ElementTree as ElementTree
 
 
 class Controller(unittest.TestCase):
     """Tests for the controller container object."""
     def setUp(self):
-        prj = fixture.setup()
-        self.controller = prj.controller
+        ctl_element = ElementTree.Element('Controller')
+
+        # Add a controller module.
+        modules = ElementTree.SubElement(ctl_element, 'Modules')
+        ElementTree.SubElement(modules, 'Module')
+
+        # Add an empty Tags parent.
+        ElementTree.SubElement(ctl_element, 'Tags')
+
+        self.controller = project.Controller(ctl_element, None)
 
     def test_read_comm_path(self):
-        """Ensure comm_path attribute is a non-empty string."""
-        path = self.controller.comm_path
-        self.assertIsInstance(path, str)
-        self.assertGreater(len(path), 0)
+        """Ensure comm_path returns the correct attribute value."""
+        self.controller.element.attrib['CommPath'] = 'foo'
+        self.assertEqual(self.controller.comm_path, 'foo')
 
-    def test_set_comm_path(self):
+    def test_read_nonexistent_comm_path(self):
+        """Ensure reading a nonexistent communication path returns None."""
+        self.assertIsNone(self.controller.comm_path)
+
+    def test_new_comm_path(self):
         """Test setting a new communication path."""
-        old = self.controller.comm_path
-        new = '\\'.join((old, '1'))
-        self.controller.comm_path = new
-        self.assertEqual(self.controller.comm_path, new)
+        self.controller.comm_path = 'new'
+        self.assertEqual(self.controller.element.attrib['CommPath'], 'new')
+
+    def test_overwrite_comm_path(self):
+        """Test modifying an existing communication path."""
+        self.controller.element.attrib['CommPath'] = 'old'
+        self.controller.comm_path = 'new'
+        self.assertEqual(self.controller.element.attrib['CommPath'], 'new')
 
     def test_comm_path_type(self):
         """Test setting comm_path to a non-string raises an exception."""
         with self.assertRaises(TypeError):
             self.controller.comm_path = 0
 
-    def test_del_comm_path(self):
-        """Test deleting comm_path."""
+    def test_remove_existing_comm_path(self):
+        """Test deleting an existing communication path."""
+        self.controller.element.attrib['CommPath'] = 'foo'
         self.controller.comm_path = None
-        self.assertIsNone(self.controller.comm_path)
+        with self.assertRaises(KeyError):
+            self.controller.element.attrib['CommPath']
 
-        # Ensure deleting a nonexistent path succeeds.
+    def test_remove_nonexistent_comm_path(self):
+        """Test deleting a communication path when one does not exist."""
         self.controller.comm_path = None
+        with self.assertRaises(KeyError):
+            self.controller.element.attrib['CommPath']
 
     def test_snn_read(self):
         """Test reading the safety network number."""
-        snn = self.controller.snn
-
-    def test_snn_write(self):
-        """Test writing the safety network number."""
-        self.controller.snn = '000011110000'
-
-    @classmethod
-    def tearDownClass(cls):
-        """Changes the output project."""
-        prj = fixture.setup()
-
-        # Communication path.
-        old = prj.controller.comm_path
-        new = '\\'.join(('output', old, '42'))
-        prj.controller.comm_path = new
-
-        # Safety network number.
-        prj.controller.snn = '000A0BADD00D'
-
-        fixture.teardown(prj)
+        module = self.controller.element.find('Modules/Module')
+        module.attrib['SafetyNetwork'] = '16#0000_0000_1111_2222'
+        self.assertEqual(self.controller.snn, '000011112222')
