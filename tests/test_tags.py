@@ -815,7 +815,7 @@ class LanguageBase(unittest.TestCase):
 
     def set_multilanguage(self):
         """Enables multilingual comments."""
-        self.tag.lang = TARGET_LANGUAGE
+        self.tag.lang = self.TARGET_LANGUAGE
 
     def assert_cdata_content(self, parent, text):
         """
@@ -846,7 +846,7 @@ class DescriptionLanguage(LanguageBase):
         Confirm reading a description from a multi-language project returns
         only content from the current language.
         """
-        self.set_multilanguage,
+        self.set_multilanguage()
         self.add_description('pass', self.TARGET_LANGUAGE)
         self.add_description('fail', 'es-AR')
         self.assertEqual(self.tag.description, 'pass')
@@ -861,7 +861,7 @@ class DescriptionLanguage(LanguageBase):
         """
         Confirm reading an empty description from a multi-language project.
         """
-        self.set_multilanguage,
+        self.set_multilanguage()
         self.assertIsNone(self.tag.description)
 
     def test_multi_read_none_foreign(self):
@@ -869,7 +869,7 @@ class DescriptionLanguage(LanguageBase):
         Confirm reading an empty description from a multi-language project
         that has descriptions in other languages.
         """
-        self.set_multilanguage,
+        self.set_multilanguage()
         self.add_description('other', 'es-AR')
         self.assertIsNone(self.tag.description)
 
@@ -880,7 +880,7 @@ class DescriptionLanguage(LanguageBase):
 
     def test_multi_new(self):
         """Confirm adding a description to a multi-language project."""
-        self.set_multilanguage,
+        self.set_multilanguage()
         self.tag.description = 'new'
         self.assert_localized_description('new', self.TARGET_LANGUAGE)
 
@@ -889,7 +889,7 @@ class DescriptionLanguage(LanguageBase):
         Confirm adding a description to a multi-language project that has
         descriptions in other languages.
         """
-        self.set_multilanguage,
+        self.set_multilanguage()
         self.add_description('other', 'es-AR')
         self.tag.description = 'new'
         self.assert_localized_description('new', self.TARGET_LANGUAGE)
@@ -909,7 +909,7 @@ class DescriptionLanguage(LanguageBase):
         Confirm overwriting an existing description in a multi-language
         project.
         """
-        self.set_multilanguage,
+        self.set_multilanguage()
         self.add_description('old', self.TARGET_LANGUAGE)
         self.tag.description = 'new'
         self.assert_localized_description('new', self.TARGET_LANGUAGE)
@@ -920,7 +920,7 @@ class DescriptionLanguage(LanguageBase):
         project that has descriptions on other languages only affects
         the description in the current language.
         """
-        self.set_multilanguage,
+        self.set_multilanguage()
         self.add_description('old', self.TARGET_LANGUAGE),
         self.add_description('other', 'es-AR')
         self.tag.description = 'new'
@@ -936,7 +936,7 @@ class DescriptionLanguage(LanguageBase):
 
     def test_multi_delete(self):
         """Confirm removing a description from a multi-language project."""
-        self.set_multilanguage,
+        self.set_multilanguage()
         self.add_description('foo', self.TARGET_LANGUAGE)
         self.tag.description = None
         desc = self.tag.element.findall('Description')
@@ -947,7 +947,7 @@ class DescriptionLanguage(LanguageBase):
         Confirm removing a description from a multi-language project affects
         only descriptions in the current language.
         """
-        self.set_multilanguage,
+        self.set_multilanguage()
         self.add_description('foo', self.TARGET_LANGUAGE),
         self.add_description('other', 'es-AR')
         self.tag.description = None
@@ -1017,7 +1017,7 @@ class CommentLanguage(LanguageBase):
         Confirm reading a comment from a multi-language project returns
         only content from the current language.
         """
-        self.set_multilanguage
+        self.set_multilanguage()
         self.add_comment('.0', 'pass', self.TARGET_LANGUAGE),
         self.add_comment('.0', 'fail', 'zh-CN')
         self.assertEqual(self.tag[0].description, 'pass')
@@ -1033,7 +1033,7 @@ class CommentLanguage(LanguageBase):
         Confirm reading a nonexistent comment from a multi-language project
         that has comments in other languages.
         """
-        self.set_multilanguage
+        self.set_multilanguage()
         self.add_comment('.0', 'other', 'zh-CN')
         self.assertIsNone(self.tag[0].description)
 
@@ -1044,7 +1044,7 @@ class CommentLanguage(LanguageBase):
 
     def test_multi_new(self):
         """Confirm adding a comment to a multi-language project."""
-        self.set_multilanguage
+        self.set_multilanguage()
         self.tag[0].description = 'new'
         self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
 
@@ -1053,7 +1053,7 @@ class CommentLanguage(LanguageBase):
         Confirm adding a comment to a multi-language project that has
         comments in other languages.
         """
-        self.set_multilanguage
+        self.set_multilanguage()
         self.add_comment('.0', 'other', 'zh-CN')
         self.tag[0].description = 'new'
         self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
@@ -1073,7 +1073,7 @@ class CommentLanguage(LanguageBase):
         Confirm overwriting an existing comment in a multi-language
         project.
         """
-        self.set_multilanguage
+        self.set_multilanguage()
         self.add_comment('.0', 'old', self.TARGET_LANGUAGE)
         self.tag[0].description = 'new'
         self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
@@ -1084,7 +1084,7 @@ class CommentLanguage(LanguageBase):
         project that has comments on other languages only affects
         the comment in the current language.
         """
-        self.set_multilanguage
+        self.set_multilanguage()
         self.add_comment('.0', 'old', self.TARGET_LANGUAGE)
         self.add_comment('.0', 'other', 'zh-CN')
         self.tag[0].description = 'new'
@@ -1128,7 +1128,7 @@ class CommentLanguage(LanguageBase):
 
     def test_multi_delete(self):
         """Confirm removing a comment from a multi-language project."""
-        self.set_multilanguage
+        self.set_multilanguage()
         self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
         self.tag[0].description = None
         target = self.tag.element.find('Comments')
@@ -1139,7 +1139,7 @@ class CommentLanguage(LanguageBase):
         Confirm removing a comment from a multi-language project
         does not affect comments for other operands.
         """
-        self.set_multilanguage
+        self.set_multilanguage()
         self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
         self.add_comment('.1', 'bar', self.TARGET_LANGUAGE)
         self.tag[0].description = None
@@ -1158,7 +1158,7 @@ class CommentLanguage(LanguageBase):
         Confirm removing the last comment in a multi-language project
         also removes the overall Comments parent element.
         """
-        self.set_multilanguage
+        self.set_multilanguage()
         self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
         self.add_comment('.1', 'bar', self.TARGET_LANGUAGE)
         self.tag[0].description = None
@@ -1171,7 +1171,7 @@ class CommentLanguage(LanguageBase):
         Confirm removing a comment from a multi-language project affects
         only comments in the current language.
         """
-        self.set_multilanguage
+        self.set_multilanguage()
         self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
         self.add_comment('.0', 'bar', 'zh-CN')
         self.tag[0].description = None
