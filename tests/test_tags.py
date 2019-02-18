@@ -833,6 +833,11 @@ class LanguageBase(unittest.TestCase):
         # Confirm the content of the new CDATA section.
         self.assertEqual(children[0].text, text)
 
+    def assert_no_matching_element(self, path):
+        """Verifies a given XPath does not match under the mock tag element."""
+        result = self.tag.element.findall(path)
+        self.assertEqual(len(result), 0)
+
 
 class DescriptionLanguage(LanguageBase):
     """Tests for multilanguage descriptions."""
@@ -931,16 +936,14 @@ class DescriptionLanguage(LanguageBase):
         """Confirm removing a description from a single-language project."""
         self.add_description('foo')
         self.tag.description = None
-        desc = self.tag.element.findall('Description')
-        self.assertEqual(len(desc), 0)
+        self.assert_no_matching_element('Description')
 
     def test_multi_delete(self):
         """Confirm removing a description from a multi-language project."""
         self.set_multilanguage()
         self.add_description('foo', self.TARGET_LANGUAGE)
         self.tag.description = None
-        desc = self.tag.element.findall('Description')
-        self.assertEqual(len(desc), 0)
+        self.assert_no_matching_element('Description')
 
     def test_multi_delete_foreign(self):
         """
@@ -955,8 +958,7 @@ class DescriptionLanguage(LanguageBase):
         # Ensure no localized description remains in the current language.
         path = "Description/LocalizedDescription[@Lang='{0}']".format(
             self.TARGET_LANGUAGE)
-        targets = self.tag.element.findall(path)
-        self.assertEqual(len(targets), 0)
+        self.assert_no_matching_element(path)
 
         # Ensure descriptions in other languages are unaffected.
         self.assert_localized_description('other', 'es-AR')
@@ -1095,8 +1097,7 @@ class CommentLanguage(LanguageBase):
         """Confirm removing a comment from a single-language project."""
         self.add_comment('.0', 'foo')
         self.tag[0].description = None
-        comments = self.tag.element.findall('Comments')
-        self.assertEqual(len(comments), 0)
+        self.assert_no_matching_element('Comments')
 
     def test_single_delete_other_operand(self):
         """
@@ -1108,8 +1109,7 @@ class CommentLanguage(LanguageBase):
         self.tag[0].description = None
 
         # Confirm the target comment was removed.
-        target = self.tag.element.findall("Comments/Comment[@Operand='.0']")
-        self.assertEqual(len(target), 0)
+        self.assert_no_matching_element("Comments/Comment[@Operand='.0']")
 
         # Confirm the unaffected comment remains.
         self.assert_comment('.1', 'bar')
@@ -1123,16 +1123,14 @@ class CommentLanguage(LanguageBase):
         self.add_comment('.1', 'bar')
         self.tag[0].description = None
         self.tag[1].description = None
-        target = self.tag.element.find('Comments')
-        self.assertEqual(len(target), 0)
+        self.assert_no_matching_element('Comments')
 
     def test_multi_delete(self):
         """Confirm removing a comment from a multi-language project."""
         self.set_multilanguage()
         self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
         self.tag[0].description = None
-        target = self.tag.element.find('Comments')
-        self.assertEqual(len(target), 0)
+        self.assert_no_matching_element('Comments')
 
     def test_multi_delete_other_operand(self):
         """
@@ -1147,8 +1145,7 @@ class CommentLanguage(LanguageBase):
         # Confirm the target comment was removed.
         path = "Comments/Comment[@Operand='.0']" \
                "/LocalizedComment[@Lang='{0}']".format(self.TARGET_LANGUAGE)
-        target = self.tag.element.findall(path)
-        self.assertEqual(len(target), 0)
+        self.assert_no_matching_element(path)
 
         # Confirm the unaffected comment remains.
         self.assert_localized_comment('.1', 'bar', self.TARGET_LANGUAGE)
@@ -1163,8 +1160,7 @@ class CommentLanguage(LanguageBase):
         self.add_comment('.1', 'bar', self.TARGET_LANGUAGE)
         self.tag[0].description = None
         self.tag[1].description = None
-        target = self.tag.element.find('Comments')
-        self.assertEqual(len(target), 0)
+        self.assert_no_matching_element('Comments')
 
     def test_multi_delete_foreign(self):
         """
