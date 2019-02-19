@@ -48,9 +48,6 @@ class Scope(unittest.TestCase):
 
 class Tag(object):
     """Base class for testing a tag."""
-    def setUp(self):
-        self.tag = prj.controller.tags[self.name]
-
     def test_desc(self):
         """Test reading and writing tag's description."""
         desc = 'description'
@@ -89,18 +86,6 @@ class Tag(object):
             if (e.tagName == 'Data') and (not e.hasAttribute('Format')):
                 exists = True
         return exists
-
-    @classmethod
-    def tearDownClass(cls):
-        """Sets tag's final value for the output project."""
-        tag = prj.controller.tags[cls.name]
-        tag.description = ' '.join((cls.name, 'description'))
-        try:
-            output_value = cls.output_value
-        except AttributeError:
-            pass
-        else:
-            tag.value = output_value
 
 
 class Data(unittest.TestCase):
@@ -150,7 +135,14 @@ class Data(unittest.TestCase):
 
 class Integer(Tag):
     """Base class for testing integer data types."""
-    output_value = -1
+    def setUp(self):
+        """Creates a mock integer tag."""
+        attr = {'Name':'test_tag',
+                'DataType':self.data_type}
+        element = ElementTree.Element('Tag', attr)
+        data = ElementTree.SubElement(element, 'Data', {'Format':'Decorated'})
+        ElementTree.SubElement(data, 'DataValue', {'Value':'0'})
+        self.tag = tag.Tag(element, None)
 
     def test_type(self):
         """Verify correct data type string."""
@@ -160,14 +152,25 @@ class Integer(Tag):
         """Test len() returns number of bits."""
         self.assertEqual(len(self.tag), self.bits)
 
-    def test_value_type(self):
-        """Verify value access uses integers."""
-        self.assertIsInstance(self.tag.value, int)
-        with self.assertRaises(TypeError):
-            self.tag.value = 'not an int'
+    def test_value_read(self):
+        """Verify value read returns the attribute converted to an integer."""
+        value = 42
+        self.set_value(value)
+        self.assertEqual(self.tag.value, value)
 
-    def test_value_range(self):
-        """Ensure setting out-of-range values raises an exception."""
+    def test_value_write(self):
+        """Verify new values are properly written to the correct attribute."""
+        self.tag.value = 42
+        value = self.get_value()
+        self.assertEqual(value, 42)
+
+    def test_value_write_type(self):
+        """Verify setting the value to a non-integer raises an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.value = '42'
+
+    def test_value_out_of_range(self):
+        """Ensure setting out-of-range values raise an exception."""
         try:
             with self.assertRaises(ValueError):
                 self.tag.value = self.value_min - 1
@@ -179,56 +182,90 @@ class Integer(Tag):
         except TypeError:
             pass
                 
-    def test_value(self):
-        """Test setting and getting of valid values."""
-        for value in [0, self.value_min, self.value_max]:
-            self.tag.value = value
-            self.assertEqual(self.tag.value, value)
+    def test_value_min(self):
+        """Confirm the minimum value is accepted."""
+        self.tag.value = self.value_min
+
+    def test_value_max(self):
+        """Confirm the maximum value is accepted."""
+        self.tag.value = self.value_max
 
     def test_invalid_bit_indices(self):
         """Verify invalid bit indices raise an exception."""
         with self.assertRaises(IndexError):
             self.tag[-1]
         with self.assertRaises(IndexError):
-            self.tag[len(self.tag)]
+            self.tag[self.bits]
 
     def test_bit_index_type(self):
-        """Verity non-integer bit indices raise an exception."""
+        """Verify non-integer bit indices raise an exception."""
         with self.assertRaises(TypeError):
             self.tag['foo']
 
-    def test_bit_value_type(self):
-        """Ensure bit values are expressed as integers."""
-        self.assertIsInstance(self.tag[0].value, int)
+    def test_bit_value_read(self):
+        """Confirm non-sign bits reflect the current integer value."""
+        for bit in range(self.bits - 1):
+            # Check setting only the target bit.
+            value = 1 << bit
+            self.set_value(value)
+            for test_bit in range(self.bits):
+                if test_bit == bit:
+                    test_value = 1
+                else:
+                    test_value = 0
+                self.assertEqual(self.tag[test_bit].value, test_value)
+
+            # Check setting all except the target bit.
+            value = ~(1 << bit)
+            self.set_value(value)
+            for test_bit in range(self.bits):
+                if test_bit == bit:
+                    test_value = 0
+                else:
+                    test_value = 1
+                self.assertEqual(self.tag[test_bit].value, test_value)
+
+    def test_bit_value_write(self):
+        """Confirm writing non-sign bits properly update the integer value."""
+        for bit in range(self.bits - 1):
+            # Check setting only the target bit.
+            self.set_value(0)
+            self.tag[bit].value = 1
+            value = self.get_value()
+            self.assertEqual(value, 1 << bit)
+
+            # Check clearing only the target bit.
+            self.set_value(-1)
+            self.tag[bit].value = 0
+            value = self.get_value()
+            self.assertEqual(value, ~(1 << bit))
+
+    def test_sign_bit_read(self):
+        """Confirm MSB is treated as the sign when reading a value."""
+        sign_bit = self.bits - 1
+        min_negative = -(1 << sign_bit)
+        self.set_value(min_negative)
+        self.assertEqual(self.tag[sign_bit].value, 1)
+
+    def test_sign_bit_write(self):
+        """Confirm MSB is treated as the sign bit when writing a value."""
+        sign_bit = self.bits - 1
+        min_negative = -(1 << sign_bit)
+        self.tag[sign_bit].value = 1
+        value = self.get_value()
+        self.assertEqual(value, min_negative)
+
+    def test_bit_write_type(self):
+        """Confirm an exception is raised when setting a bit to a non-integer."""
         with self.assertRaises(TypeError):
-            self.tag[0] = 'foo'
+            self.tag[0].value = 'foo'
 
     def test_bit_value_range(self):
-        """Ensure bit values accept only 0 or 1."""
-        self.tag[0].value = 0
-        self.tag[0].value = 1
+        """Ensure bit values other than 0 or 1 raise an exception."""
+        with self.assertRaises(ValueError):
+            self.tag[0].value = -1
         with self.assertRaises(ValueError):
             self.tag[0].value = 2
-
-    def test_bit_values(self):
-        """Verify bit values are reflected in the full integer."""
-        # Start with all bits cleared.
-        self.tag.value = 0
-        sign_bit = len(self.tag) - 1
-
-        for bit in range(len(self.tag)):
-            # The bit should start at zero.
-            self.assertEqual(self.tag[bit].value, 0)
-
-            for bit_value in [1, 0]:
-                self.tag[bit].value = bit_value
-                self.assertEqual(self.tag[bit].value, bit_value)
-
-                # Compare the tag's full value with a bit mask using
-                # ctypes to ensure correct sign bit operation.
-                cvalue = self.ctype(self.tag.value)
-                mask = self.ctype(bit_value << bit)
-                self.assertEqual(cvalue.value, mask.value)
 
     def test_bit_desc(self):
         """Test accessing bit descriptions."""
@@ -244,30 +281,38 @@ class Integer(Tag):
         tag[0].value = 0
         self.assertFalse(self.raw_data_exists(tag))
 
+    def get_value_element(self):
+        """Locates the element containing the integer value."""
+        return self.tag.element.find('Data/DataValue')
+
+    def get_value(self):
+        """Returns the value currently stored in the XML attribute."""
+        element = self.get_value_element()
+        return int(element.attrib['Value'])
+
+    def set_value(self, value):
+        """Updates the value stored in the XML attribute."""
+        element = self.get_value_element()
+        element.attrib['Value'] = str(value)
+
 
 class TestSINT(Integer, unittest.TestCase):
-    name = 'sint'
     data_type = 'SINT'
     bits = 8
-    ctype = ctypes.c_int8
     value_min = -128
     value_max = 127
 
 
 class TestINT(Integer, unittest.TestCase):
-    name = 'int'
     data_type = 'INT'
     bits = 16
-    ctype = ctypes.c_int16
     value_min = -32768
     value_max = 32767
 
 
 class TestDINT(Integer, unittest.TestCase):
-    name = 'dint'
     data_type = 'DINT'
     bits = 32
-    ctype = ctypes.c_int32
     value_min = -2147483648
     value_max = 2147483647
 
