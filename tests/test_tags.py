@@ -89,18 +89,14 @@ class Tag(object):
 
     def test_remove_raw_data(self):
         """Ensure setting top-level tag value removes undecorated data."""
-        clean = l5x.Project(fixture.INPUT_FILE)
-        tag = clean.controller.tags[self.name]
-        tag.value = tag.value
-        self.assertFalse(self.raw_data_exists(tag))
+        self.tag.value = self.tag.value
+        self.assert_no_raw_data_element()
 
-    def raw_data_exists(self, tag):
-        """Checks to see if a tag contans an undecorated data element."""
-        exists = False
-        for e in tag.child_elements:
-            if (e.tagName == 'Data') and (not e.hasAttribute('Format')):
-                exists = True
-        return exists
+    def assert_no_raw_data_element(self):
+        """Confirms any undecorated data element has been removed."""
+        data = self.tag.element.findall('Data')
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0].attrib['Format'], 'Decorated')
 
 
 class Data(unittest.TestCase):
@@ -286,10 +282,8 @@ class Integer(Tag):
 
     def test_bit_value_raw_data(self):
         """Ensure undecorated data is cleared when setting a single bit."""
-        clean = l5x.Project(fixture.INPUT_FILE)
-        tag = clean.controller.tags[self.name]
-        tag[0].value = 0
-        self.assertFalse(self.raw_data_exists(tag))
+        self.tag[0].value = 1
+        self.assert_no_raw_data_element()
 
     def get_value_element(self):
         """Locates the element containing the integer value."""
