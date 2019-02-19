@@ -48,6 +48,21 @@ class Scope(unittest.TestCase):
 
 class Tag(object):
     """Base class for testing a tag."""
+    def setUp(self):
+        """Creates a mock tag object."""
+        attr = {'Name':'test_tag',
+                'DataType':self.data_type}
+        element = ElementTree.Element('Tag', attr)
+
+        # Create a raw Data element.
+        ElementTree.SubElement(element, 'Data')
+
+        # Add the decorated Data element with an initial value.
+        data = ElementTree.SubElement(element, 'Data', {'Format':'Decorated'})
+        self.set_initial_value(data)
+
+        self.tag = tag.Tag(element, None)
+
     def test_desc(self):
         """Test reading and writing tag's description."""
         desc = 'description'
@@ -135,14 +150,9 @@ class Data(unittest.TestCase):
 
 class Integer(Tag):
     """Base class for testing integer data types."""
-    def setUp(self):
-        """Creates a mock integer tag."""
-        attr = {'Name':'test_tag',
-                'DataType':self.data_type}
-        element = ElementTree.Element('Tag', attr)
-        data = ElementTree.SubElement(element, 'Data', {'Format':'Decorated'})
+    def set_initial_value(self, data):
+        """Creates an initial value subelement for the mock tag."""
         ElementTree.SubElement(data, 'DataValue', {'Value':'0'})
-        self.tag = tag.Tag(element, None)
 
     def test_type(self):
         """Verify correct data type string."""
