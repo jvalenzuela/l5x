@@ -844,13 +844,11 @@ class Consumed(unittest.TestCase):
             self.tag.producer
 
     def test_element_order(self):
-        """Ensure ConsumedInfo element is before a Description."""
-        # Force creation of a new description by first removing any
-        # existing one.
-        self.tag.description = None
+        """Ensure a Description element is placed after ConsumedInfo."""
         self.tag.description = 'description'
-
-        self.assertEqual(self.tag.child_elements[0].tagName, 'ConsumeInfo')
+        child_tags = [e.tag for e in self.tag.element.findall('*')]
+        self.assertLess(child_tags.index('ConsumeInfo'),
+                        child_tags.index('Description'))
 
 
 class LanguageBase(unittest.TestCase):
