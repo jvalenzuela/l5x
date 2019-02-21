@@ -12,15 +12,34 @@ import xml.dom.minidom
 import xml.etree.ElementTree as ElementTree
 
 
+def create_tag(name, data_type, parent=None, attrs={}, value=None):
+    """Creates a mock tag object."""
+    attrs['Name'] = name
+    attrs['DataType'] = data_type
+    tag_element = ElementTree.Element('Tag', attrs)
+
+    if parent is not None:
+        parent.append(tag_element)
+
+    # Create a raw Data element.
+    ElementTree.SubElement(tag_element, 'Data')
+
+    # Add the decorated Data element with an initial value.
+    data = ElementTree.SubElement(tag_element, 'Data', {'Format':'Decorated'})
+    if value is None:
+        ElementTree.SubElement(data, 'DataValue')
+    else:
+        data.append(value)
+
+    return l5x.tag.Tag(tag_element, None)
+
+
 class Scope(unittest.TestCase):
     """Tests for a tag scope."""
     def setUp(self):
         parent = ElementTree.Element('parent')
         tags = ElementTree.SubElement(parent, 'Tags')
-        for name in ['foo', 'bar', 'baz']:
-            attrs = {'Name':name, 'DataType':'DINT'}
-            tag = ElementTree.SubElement(tags, 'Tag', attrs)
-            ElementTree.SubElement(tag, 'Data', {'Format':'Decorated'})
+        [create_tag(name, 'DINT', tags) for name in ['foo', 'bar', 'baz']]
         self.scope = l5x.tag.Scope(parent)
 
     def test_names(self):
@@ -49,19 +68,8 @@ class Scope(unittest.TestCase):
 class Tag(object):
     """Base class for testing a tag."""
     def setUp(self):
-        """Creates a mock tag object."""
-        attr = {'Name':'test_tag',
-                'DataType':self.data_type}
-        element = ElementTree.Element('Tag', attr)
-
-        # Create a raw Data element.
-        ElementTree.SubElement(element, 'Data')
-
-        # Add the decorated Data element with an initial value.
-        data = ElementTree.SubElement(element, 'Data', {'Format':'Decorated'})
-        self.set_initial_value(data)
-
-        self.tag = tag.Tag(element, None)
+        initial_value = self.initial_value()
+        self.tag = create_tag('test_tag', self.data_type, value=initial_value)
 
     def test_desc(self):
         """Test reading and writing tag's description."""
@@ -146,9 +154,9 @@ class Data(unittest.TestCase):
 
 class Integer(Tag):
     """Base class for testing integer data types."""
-    def set_initial_value(self, data):
-        """Creates an initial value subelement for the mock tag."""
-        ElementTree.SubElement(data, 'DataValue', {'Value':'0'})
+    def initial_value(self):
+        """Creates an initial value element for the mock tag."""
+        return ElementTree.Element('DataValue', {'Value':'0'})
 
     def test_type(self):
         """Verify correct data type string."""
@@ -794,11 +802,10 @@ class Base(Tag, unittest.TestCase):
 class Consumed(unittest.TestCase):
     """Tests for attributes specific to consumed tags."""
     def setUp(self):
-        attrs = {'Name':'tagName', 'TagType':'Consumed', 'DataType':'DINT'}
-        tag_element = ElementTree.Element('Tag', attrs)
-        self.consume_info = ElementTree.SubElement(tag_element, 'ConsumeInfo')
-        ElementTree.SubElement(tag_element, 'Data', {'Format':'Decorated'})
-        self.tag = tag.Tag(tag_element)
+        attrs = {'TagType':'Consumed'}
+        self.tag = create_tag('tag_name', 'DINT', attrs=attrs)
+        self.consume_info = ElementTree.SubElement(self.tag.element,
+                                                   'ConsumeInfo')
 
     def test_get_producer(self):
         """Confirm producer returns the correct attribute value."""
@@ -848,19 +855,10 @@ class Consumed(unittest.TestCase):
 
 class LanguageBase(unittest.TestCase):
     """Base class for tests involving multilanguage comments and descriptions."""
-    TAG_NAME = 'test_tag'
     TARGET_LANGUAGE = 'en-US'
 
     def setUp(self):
-        """Creates a mock controller tag."""
-        attr = {'Name':'tag_name',
-                'DataType':'DINT'}
-        tag_element = ElementTree.Element('Tag', attr)
-
-        attr = {'Format':'Decorated'}
-        data = ElementTree.SubElement(tag_element, 'Data', attr)
-
-        self.tag = tag.Tag(tag_element, None)
+        self.tag = create_tag('tag_name', 'DINT')
 
     def set_multilanguage(self):
         """Enables multilingual comments."""
