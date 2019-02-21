@@ -232,7 +232,7 @@ class ElementDescription(object):
         """
         # Capture the highest child index for any elements listed in the
         # follow attribute.
-        child_tags = [e.tag for e in instance.element.iterfind('*')]
+        child_tags = [e.tag for e in instance.element.findall('*')]
         indices = []
         for tag in self.follow:
             try:
@@ -242,9 +242,9 @@ class ElementDescription(object):
         try:
             index = max(indices)
         except ValueError:
-            index = 0
-
-        instance.element.insert(index, desc)
+            instance.element.append(desc)
+        else:
+            instance.element.insert(index + 1, desc)
 
     def remove(self, instance):
         """Implements deleting a description."""
