@@ -322,7 +322,7 @@ class IntegerValue(object):
 
     def __set__(self, instance, value):
         """Sets a new value."""
-        if not isinstance(value, int):
+        if (not isinstance(value, int)) or isinstance(value, bool):
             raise TypeError('Value must be an integer')
         if (value < instance.value_min) or (value > instance.value_max):
             raise ValueError('Value out of range')
