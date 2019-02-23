@@ -281,12 +281,53 @@ class Integer(Tag):
         with self.assertRaises(ValueError):
             self.tag[0].value = 2
 
-    def test_bit_desc(self):
-        """Test accessing bit descriptions."""
+    def test_bit_desc_read(self):
+        """Confirm reading an existing bit description."""
         for bit in range(self.bits):
-            desc = ' '.join((self.name, str(bit), 'description'))
-            self.tag[bit].description = desc
-            self.assertEqual(self.tag[bit].description, desc)
+            comment_text = "comment for bit {0}".format(bit)
+            self.add_bit_description(bit, comment_text)
+            self.assertEqual(self.tag[bit].description, comment_text)
+
+    def test_bit_desc_read_none(self):
+        """Confirm reading a nonexistent bit description."""
+        for bit in range(self.bits):
+            self.assertIsNone(self.tag[bit].description)
+
+    def test_bit_desc_read_none_other(self):
+        """Confirm reading a nonexistent bit comment when other comments exist."""
+        for bit in range(self.bits):
+            self.assertIsNone(self.tag[bit].description)
+
+            # Add the comment after checking to create unrelated comments
+            # for the next bit.
+            comment_text = "comment for bit {0}".format(bit)
+            self.add_bit_description(bit, comment_text)
+
+    def test_bit_desc_write_new(self):
+        """Confirm creating a new bit description."""
+        for bit in range(self.bits):
+            comment = "bit {0}".format(bit)
+            self.tag[bit].description = comment
+            self.assert_bit_description(bit, comment)
+
+    def test_bit_desc_overwrite(self):
+        """Confirm overwriting an existing bit description."""
+        for bit in range(self.bits):
+            old = "old bit {0} comment".format(bit)
+            self.add_bit_description(bit, old)
+            new = "new bit {0} comment".format(bit)
+            self.tag[bit].description = new
+            self.assert_bit_description(bit, new)
+
+    def test_bit_desc_del(self):
+        """Confirm removal of an existing bit description."""
+        for bit in range(self.bits):
+            desc = "bit {0} comment".format(bit)
+            self.add_bit_description(bit, desc)
+            self.tag[bit].description = None
+            path = "Comments/Comment[@Operand='.{0}']".format(bit)
+            comment = self.tag.element.findall(path)
+            self.assertEqual(len(comment), 0)
 
     def test_bit_value_raw_data(self):
         """Ensure undecorated data is cleared when setting a single bit."""
@@ -306,6 +347,35 @@ class Integer(Tag):
         """Updates the value stored in the XML attribute."""
         element = self.get_value_element()
         element.attrib['Value'] = str(value)
+
+    def add_bit_description(self, bit, text):
+        """Creates a bit description."""
+        comments = self.tag.element.find('Comments')
+        if comments is None:
+            comments = ElementTree.SubElement(self.tag.element, 'Comments')
+        operand = ".{0}".format(bit)
+        comment = ElementTree.SubElement(comments, 'Comment',
+                                         {'Operand':operand})
+        cdata = ElementTree.SubElement(comment, dom.CDATA_TAG)
+        cdata.text = text
+
+    def assert_bit_description(self, bit, text):
+        """Tests to ensure a description for a specific bit exists."""
+        # Confirm a single Comments element under the tag parent.
+        comments = self.tag.element.findall('Comments')
+        self.assertEqual(len(comments), 1)
+
+        # Confirm a single Comment with matching operand.
+        path = "Comment[@Operand='.{0}']".format(bit)
+        comment = comments[0].findall(path)
+        self.assertEqual(len(comment), 1)
+
+        # Confirm a single CDATA child with matching text.
+        cdata = [e for e in comment[0].iter()]
+        del cdata[0] # Exclude the Comment parent.
+        self.assertEqual(len(cdata), 1)
+        self.assertEqual(cdata[0].tag, dom.CDATA_TAG)
+        self.assertEqual(cdata[0].text, text)
 
 
 class TestSINT(Integer, unittest.TestCase):
