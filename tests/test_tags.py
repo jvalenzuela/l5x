@@ -106,6 +106,16 @@ class Tag(object):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0].attrib['Format'], 'Decorated')
 
+    def get_value_element(self):
+        """Finds the element containing the top-level decorated value.
+
+        The tag name will vary depending on data type, however, it will always
+        be the only child of the decorated Data element.
+        """
+        parent = self.tag.element.find("Data[@Format='Decorated']")
+        children = parent.findall('*')
+        return children[0]
+
 
 class Data(unittest.TestCase):
     """Unit tests for the base Data class."""
@@ -333,10 +343,6 @@ class Integer(Tag):
         """Ensure undecorated data is cleared when setting a single bit."""
         self.tag[0].value = 1
         self.assert_no_raw_data_element()
-
-    def get_value_element(self):
-        """Locates the element containing the integer value."""
-        return self.tag.element.find('Data/DataValue')
 
     def get_value(self):
         """Returns the value currently stored in the XML attribute."""
