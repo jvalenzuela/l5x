@@ -439,20 +439,28 @@ class TestBOOL(Tag, unittest.TestCase):
 
 class TestREAL(Tag, unittest.TestCase):
     """REAL type tests."""
-    name = 'real'
-    output_value = math.pi
+    data_type = 'REAL'
 
-    def test_value_type(self):
-        """Confirm values are floats."""
-        self.assertIsInstance(self.tag.value, float)
+    def initial_value(self):
+        """Creates an initial value element for the mock tag."""
+        return ElementTree.Element('DataValue', {'Value':'0.0'})
+
+    def test_value_read(self):
+        """Confirm reading the current value."""
+        value = self.get_value_element()
+        value.attrib['Value'] = str(math.pi)
+        self.assertAlmostEqual(self.tag.value, math.pi)
+
+    def test_value_write(self):
+        """Confirm writing a new value."""
+        self.tag.value = math.e
+        value = self.get_value_element()
+        self.assertAlmostEqual(float(value.attrib['Value']), math.e)
+
+    def test_value_invalid_type(self):
+        """Confirm an exception is raised when writing a non-float value."""
         with self.assertRaises(TypeError):
             self.tag.value = 'not a float'
-
-    def test_value(self):
-        """Test setting and reading some legal values."""
-        for x in [0.0, -1.5, math.pi, math.e]:
-            self.tag.value = x
-            self.assertAlmostEqual(self.tag.value, x)
 
     def test_invalid_values(self):
         """Ensure NaN and infinite values raise an exception."""
