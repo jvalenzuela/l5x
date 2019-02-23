@@ -407,26 +407,34 @@ class TestDINT(Integer, unittest.TestCase):
 
 class TestBOOL(Tag, unittest.TestCase):
     """BOOL type tests."""
-    name = 'bool'
-    output_value = 1
+    data_type = 'BOOL'
 
-    def test_value_type(self):
-        """Confirm values are integers."""
-        self.assertIsInstance(self.tag.value, int)
+    def initial_value(self):
+        """Creates an initial value element for the mock tag."""
+        return ElementTree.Element('DataValue', {'Value':'0'})
+
+    def test_value_read(self):
+        """Confirm reading the current value."""
+        value = self.get_value_element()
+        value.attrib['Value'] = '1'
+        self.assertEqual(self.tag.value, 1)
+
+    def test_value_write(self):
+        """Confirm writing a new value."""
+        self.tag.value = 1
+        value = self.get_value_element()
+        self.assertEqual(int(value.attrib['Value']), 1)
+
+    def test_value_invalid_type(self):
+        """Confirm an exception is raised when writing a non-integer value."""
         with self.assertRaises(TypeError):
-            self.tag.value = 'not an int'
+            self.tag.value = False
 
-    def test_value_range(self):
+    def test_out_of_range_value(self):
         """Test exception when setting values other than 0 or 1."""
         for x in [-1, 2]:
             with self.assertRaises(ValueError):
                 self.tag.value = x
-
-    def test_value(self):
-        """Test setting legal values."""
-        for x in [0, 1]:
-            self.tag.value = x
-            self.assertEqual(self.tag.value, x)
 
 
 class TestREAL(Tag, unittest.TestCase):
