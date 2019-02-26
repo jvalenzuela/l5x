@@ -3,6 +3,7 @@ Objects implementing tag access.
 """
 
 from l5x import dom
+import copy
 import ctypes
 import xml.etree.ElementTree as ElementTree
 
@@ -552,7 +553,7 @@ class ArrayShape(object):
 
     def __set__(self, array, value):
         # Prevent resizing UDT array members.
-        if not array.element.tagName == 'Array':
+        if not array.element.tag == 'Array':
             raise AttributeError('Member arrays cannot be resized.')
 
         self.check_shape(value)
@@ -584,11 +585,9 @@ class Array(Data):
     def __init__(self, data_class, element, tag, parent=None, address=[]):
         Data.__init__(self, element, tag, parent)
         self.data_class = data_class
-        self.dims = [int(d) for d in
-                     element.getAttribute('Dimensions').split(',')]
+        self.dims = [int(d) for d in element.attrib['Dimensions'].split(',')]
         self.dims.reverse()
         self.address = address
-        self.init_members()
 
         # Array members are identified in XML by the Index attribute,
         # not element order, and may include more than one dimension, so
@@ -641,15 +640,13 @@ class Array(Data):
         self.tag.clear_raw_data()
 
         # Make a copy of the first element before stripping all old values.
-        template = self.get_child_element('Element').cloneNode(True)
+        template = self.find('Element')
 
         self.remove_elements()
 
         # Generate new elements based on a new set of indices.
         indices = self.build_new_indices(new_shape)
         [self.append_element(template, i) for i in indices]
-
-        template.unlink()
 
     def set_dimensions(self, shape):
         """Updates the Dimensions attributes with a given shape.
@@ -662,17 +659,15 @@ class Array(Data):
 
         # Top-level Tag element uses space for separators.
         value = ' '.join(new)
-        self.tag.element.setAttribute('Dimensions', value)
+        self.tag.element.attrib['Dimensions'] = value
 
         # Array element uses comma for separators.
         value = ','.join(new)
-        self.element.setAttribute('Dimensions', value)
+        self.element.attrib['Dimensions'] = value
 
     def remove_elements(self):
         """Deletes all (array)Element elements."""
-        for e in self.child_elements:
-            self.element.removeChild(e)
-            e.unlink()
+        [self.element.remove(e) for e in self.element.findall('*')]
 
     def build_new_indices(self, shape):
         """Constructs a set of indices based on a given array shape.
@@ -710,10 +705,10 @@ class Array(Data):
 
     def append_element(self, template, index):
         """Generates and appends a new element from a template."""
-        new = template.cloneNode(True)
+        new = copy.deepcopy(template)
         index_attr = "[{0}]".format(','.join([str(i) for i in index]))
-        new.setAttribute('Index', index_attr)
-        self.element.appendChild(new)
+        new.attrib['Index'] = index_attr
+        self.element.append(new)
 
 
 class ArrayMember(Array):
