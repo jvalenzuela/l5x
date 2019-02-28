@@ -12,10 +12,12 @@ import xml.dom.minidom
 import xml.etree.ElementTree as ElementTree
 
 
-def create_tag(name, data_type, parent=None, attrs={}, value=None):
+def create_tag(name, data_type, parent=None, attrs={}, value=None, dim=None):
     """Creates a mock tag object."""
     attrs['Name'] = name
     attrs['DataType'] = data_type
+    if dim is not None:
+        attrs['Dimensions'] = dim
     tag_element = ElementTree.Element('Tag', attrs)
 
     if parent is not None:
@@ -69,6 +71,10 @@ class Tag(object):
     """Base class for testing a tag."""
     def setUp(self):
         initial_value = self.initial_value()
+        try:
+            dim = self.dim
+        except AttributeError:
+            dim = None
         self.tag = create_tag('test_tag', self.data_type, value=initial_value)
 
     def test_desc(self):
@@ -498,26 +504,27 @@ class ArrayOutputValue(object):
         return value
 
 
-class TestArray1(Tag, unittest.TestCase):
+class TestSingleDimensionalArray(Tag, unittest.TestCase):
     """Single-dimensional array tests."""
-    name = 'array1'
-    output_value = ArrayOutputValue()
+    data_type = 'DINT'
+    dim = '3'
 
-    def test_shape_type(self):
-        """Ensure shape is a tuple."""
-        self.assertIsInstance(self.tag.shape, tuple)
+    def initial_value(self):
+        """Generates an initial array value element."""
+        attr = {'DataType':'DINT',
+                'Dimensions':self.dim}
+        array = ElementTree.Element('Array', attr)
 
-    def test_shape_size(self):
-        """Verify shape length is equal to the number of dimensions."""
-        self.assertEqual(len(self.tag.shape), 1)
+        for i in range(int(self.dim)):
+            attr = {'Index':"[{0}]".format(i),
+                    'Value':'0'}
+            ElementTree.SubElement(array, 'Element', attr)
 
-    def test_shape_value_type(self):
-        """Shape members must be integers."""
-        self.assertIsInstance(self.tag.shape[0], int)
+        return array
 
-    def test_shape_value(self):
-        """Verify correct dimension value."""
-        self.assertEqual(self.tag.shape[0], 10)
+    def test_shape(self):
+        """Ensure shape is a tuple with the correct dimensions.."""
+        self.assertEqual(self.tag.shape, (int(self.dim),))
 
     def test_resize_invalid_type(self):
         """Test attempting to resize with a non-tuple raises an exception."""
@@ -547,31 +554,64 @@ class TestArray1(Tag, unittest.TestCase):
             
     def test_index_range(self):
         """Ensure negative and indices beyond the end raise exceptions."""
-        for i in [-1, self.tag.shape[0]]:
+        for i in [-1, int(self.dim)]:
             with self.assertRaises(IndexError):
                 self.tag[i]
 
-    def test_value_type(self):
-        """Verify value is a list of correct length."""
-        self.assertIsInstance(self.tag.value, list)
-        self.assertEqual(len(self.tag.value), self.tag.shape[0])
+    def test_value_read(self):
+        """Confirm reading the top-level value returns a list of values."""
+        new = [100 + i for i in range(int(self.dim))]
+        for i in range(len(new)):
+            element = self.get_value_element(i)
+            element.attrib['Value'] = str(new[i])
+        self.assertEqual(self.tag.value, new)
+
+    def test_element_value_read(self):
+        """Confirm reading a single value."""
+        for i in range(int(self.dim)):
+            value = i + 10
+            element = self.get_value_element(i)
+            element.attrib['Value'] = str(value)
+            self.assertEqual(self.tag[i].value, value)
+
+    def test_value_write(self):
+        """Confirm setting a new value to all elements with a list."""
+        new = [100 + i for i in range(int(self.dim))]
+        self.tag.value = new
+        for i in range(len(new)):
+            element = self.get_value_element(i)
+            value = int(element.attrib['Value'])
+            self.assertEqual(value, new[i])
+
+    def test_value_write_short(self):
+        """Confirm setting a value to a list with fewer elements starts overwriting at the beginning."""
+        new = [100 + i for i in range(int(self.dim) - 1)]
+        self.tag.value = new
+        for i in range(int(self.dim)):
+            element = self.get_value_element(i)
+            try:
+                value = new[i]
+            except IndexError:
+                value = 0
+            self.assertEqual(value, int(element.attrib['Value']))
+
+    def test_value_write_too_long(self):
+        """Confirm an exception is raised when setting the value to a list that is too long."""
+        with self.assertRaises(IndexError):
+            self.tag.value = [0] * (int(self.dim) + 1)
+
+    def test_element_value_write(self):
+        """Confirm writing a single element."""
+        for i in range(int(self.dim)):
+            new_value = i * 2
+            self.tag[i].value = new_value
+            element = self.get_value_element(i)
+            self.assertEqual(new_value, int(element.attrib['Value']))
 
     def test_invalid_value_type(self):
         """Test setting value to a non-list raises an exception."""
         with self.assertRaises(TypeError):
             self.tag.value = 'not a list'
-
-    def test_invalid_value_size(self):
-        """Test setting value with an oversize source raises an exception."""
-        x = [0] * (self.tag.shape[0] + 1)
-        with self.assertRaises(IndexError):
-            self.tag.value = x
-
-    def test_value(self):
-        """Test setting and getting list values."""
-        for v in [[0] * self.tag.shape[0], range(self.tag.shape[0])]:
-            self.value = v
-            self.assertEqual(self.value, v)
 
     def test_element_description(self):
         """Test setting and getting element descriptions."""
@@ -582,10 +622,13 @@ class TestArray1(Tag, unittest.TestCase):
 
     def test_element_value_raw_data(self):
         """Ensure setting a single element clears undecorated data."""
-        clean = l5x.Project(fixture.INPUT_FILE)
-        tag = clean.controller.tags[self.name]
-        tag[0].value = tag[0].value
-        self.assertFalse(self.raw_data_exists(tag))
+        self.tag[0].value = 0
+        self.assert_no_raw_data_element()
+
+    def get_value_element(self, index):
+        """Finds the element containing an element value."""
+        path = "Data/Array/Element[@Index='[{0}]']".format(index)
+        return self.tag.element.find(path)
 
 
 class TestArray3(Tag, unittest.TestCase):
