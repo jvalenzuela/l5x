@@ -613,12 +613,41 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
         with self.assertRaises(TypeError):
             self.tag.value = 'not a list'
 
-    def test_element_description(self):
-        """Test setting and getting element descriptions."""
-        for i in range(self.tag.shape[0]):
-            new_desc = ' '.join(('element', str(i)))
-            self.tag[i].description = new_desc
-            self.assertEqual(self.tag[i].description, new_desc)
+    def test_element_description_read(self):
+        """Test reading an existing element description."""
+        desc = 'some comment'
+        self.set_comment(0, desc)
+        self.assertEqual(self.tag[0].description, desc)
+
+    def test_element_description_read_none(self):
+        """Test reading a nonexistent element description."""
+        self.assertIsNone(self.tag[0].description)
+
+    def test_element_description_new(self):
+        """Test creating a new element description."""
+        self.tag[0].description = 'foo'
+        desc = self.get_comment(0)
+        self.assertEqual(desc, 'foo')
+
+    def test_element_description_overwrite(self):
+        """Test overwriting an existing element description."""
+        self.set_comment(0, 'old')
+        self.tag[0].description = 'new'
+        desc = self.get_comment(0)
+        self.assertEqual(desc, 'new')
+
+    def test_element_description_delete(self):
+        """Test removing an existing element description."""
+        self.set_comment(0, 'spam')
+        self.tag[0].description = None
+        desc = self.get_comment(0)
+        self.assertIsNone(desc)
+
+    def test_element_description_delete_none(self):
+        """Test removing a nonexistent element description."""
+        self.tag[0].description = None
+        desc = self.get_comment(0)
+        self.assertIsNone(desc)
 
     def test_element_value_raw_data(self):
         """Ensure setting a single element clears undecorated data."""
@@ -629,6 +658,25 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
         """Finds the element containing an element value."""
         path = "Data/Array/Element[@Index='[{0}]']".format(index)
         return self.tag.element.find(path)
+
+    def set_comment(self, index, text):
+        """Creates a comment for a single element."""
+        comments = ElementTree.SubElement(self.tag.element, 'Comments')
+        operand = "[{0}]".format(index)
+        comment = ElementTree.SubElement(comments, 'Comment',
+                                         {'Operand':operand})
+        cdata = ElementTree.SubElement(comment, dom.CDATA_TAG)
+        cdata.text = text
+
+    def get_comment(self, index):
+        """Finds a comment for a single element."""
+        path = "Comments/Comment[@Operand='[{0}]']/{1}".format(index,
+                                                               dom.CDATA_TAG)
+        element = self.tag.element.find(path)
+        try:
+            return element.text
+        except AttributeError:
+            return None
 
 
 class TestArray3(Tag, unittest.TestCase):
