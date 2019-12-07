@@ -42,7 +42,7 @@ class Scope(unittest.TestCase):
         parent = ElementTree.Element('parent')
         tags = ElementTree.SubElement(parent, 'Tags')
         [create_tag(name, 'DINT', tags) for name in ['foo', 'bar', 'baz']]
-        self.scope = l5x.tag.Scope(parent)
+        self.scope = l5x.tag.Scope(parent, None)
 
     def test_names(self):
         """Test names attribute returns a non-empty list of strings."""
