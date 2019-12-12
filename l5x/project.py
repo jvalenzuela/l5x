@@ -10,7 +10,7 @@ __get__() method. In this way the application can process L5X projects
 without worrying about low-level XML handling.
 """
 
-from .dom import (CDATA_TAG, ElementAccess, ElementDict, AttributeDescriptor)
+from .dom import (CDATA_TAG, ElementDict, AttributeDescriptor)
 from .module import (Module, SafetyNetworkNumber)
 from .tag import Scope
 import io
@@ -25,7 +25,7 @@ class InvalidFile(Exception):
     pass
 
 
-class Project(ElementAccess):
+class Project(object):
     """Top-level container for an entire Logix project."""
     def __init__(self, filename):
         # Dummy document used only for generating replacement CDATA sections.
