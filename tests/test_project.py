@@ -177,3 +177,40 @@ class CDATAInsertion(unittest.TestCase):
         """
         doc = self.project.convert_to_cdata_section(src)
         self.assertEqual(doc, '<root><![CDATA[]]></root>')
+
+
+class ContentElements(unittest.TestCase):
+    """Tests to verify access to top-level content elements."""
+    def test_controller(self):
+        """Confirm access to the controller."""
+        prj = fixture.create_project(self.add_mock_controller_path)
+        self.assertEqual(prj.controller.comm_path, 'this is the controller')
+
+    def add_mock_controller_path(self, doc):
+        """Creates a dummy controller path for the controller test case."""
+        controller = doc.getElementsByTagName('Controller')[0]
+        controller.setAttribute('CommPath', 'this is the controller')
+
+    def test_programs(self):
+        """Confirm access to the set of programs."""
+        prj = fixture.create_project(self.add_mock_program)
+        prj.programs['Some Program']
+
+    def add_mock_program(self, doc):
+        """Creates a dummy program for the programs test case."""
+        parent = doc.getElementsByTagName('Programs')[0]
+        prog = doc.createElement('Program')
+        prog.setAttribute('Name', 'Some Program')
+        parent.appendChild(prog)
+
+    def test_modules(self):
+        """Confirm access to the set of I/O modules."""
+        prj = fixture.create_project(self.add_mock_module)
+        prj.modules['SpamModule']
+
+    def add_mock_module(self, doc):
+        """Creates a dummy module for the modules test case."""
+        parent = doc.getElementsByTagName('Modules')[0]
+        mod = doc.createElement('Module')
+        mod.setAttribute('Name', 'SpamModule')
+        parent.appendChild(mod)
