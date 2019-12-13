@@ -2,7 +2,6 @@
 Internal XML DOM helper inteface objects.
 """
 
-import xml.dom
 import xml.etree.ElementTree as ElementTree
 
 
@@ -17,48 +16,6 @@ import xml.etree.ElementTree as ElementTree
 # then back to CDATA when the project is written. This is the tag name
 # used do enclose the original CDATA content.
 CDATA_TAG = 'CDATAContent'
-
-
-class ChildElements(object):
-    """Descriptor class to acquire a list of child elements."""
-    def __get__(self, accessor, owner=None):
-        nodes = accessor.element.childNodes
-        return [n for n in nodes if n.nodeType == n.ELEMENT_NODE]
-
-        
-class ElementAccess(object):
-    """Generic base interface for accessing an XML element."""
-    child_elements = ChildElements()
-
-    def __init__(self, element):
-        self.element = element
-        self.get_doc()
-
-    def get_doc(self):
-        """Extracts a reference to the top-level XML document."""
-        node = self.element
-        while node.parentNode != None:
-            node = node.parentNode
-        self.doc = node
-
-    def get_child_element(self, name):
-        """Finds a child element with a specific tag name."""
-        for e in self.child_elements:
-            if (e.tagName == name):
-                return e
-
-        raise KeyError()
-
-    def create_element(self, name, attributes={}):
-        """Wrapper to create a new element with a set of attributes."""
-        new = self.doc.createElement(name)
-        for attr in attributes.keys():
-            new.setAttribute(attr, attributes[attr])
-        return new
-
-    def append_child(self, node):
-        """Appends a node to the element's set of children."""
-        self.element.appendChild(node)
 
 
 class CDATAElement(object):

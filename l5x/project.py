@@ -17,7 +17,6 @@ import io
 import re
 import xml.etree.ElementTree as ElementTree
 import xml.dom.minidom
-import xml.parsers.expat
 
 
 class InvalidFile(Exception):
