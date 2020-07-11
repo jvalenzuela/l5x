@@ -5,6 +5,7 @@ Objects implementing tag access.
 from l5x import dom
 import copy
 import ctypes
+import itertools
 import xml.etree.ElementTree as ElementTree
 
 
@@ -673,38 +674,10 @@ class Array(Data):
         [self.element.remove(e) for e in self.element.findall('*')]
 
     def build_new_indices(self, shape):
-        """Constructs a set of indices based on a given array shape.
-
-        This method recursively iterates through every value of every
-        dimension. The returned list contains every index combination
-        ordered by iterating through dimensions from least to
-        most-significant. This order is important because Logix requires
-        indices to be arranged in this manner.
-        """
-        # Extract the most-significant dimension to iterate though, returning
-        # an empty list if all dimension levels have been consumed.
-        try:
-            dim = shape[-1]
-        except IndexError:
-            return []
-
-        indices = []
-        for i in range(dim):
-
-            # If additional dimension levels remain, create indices
-            # for each combination.
-            next = self.build_new_indices(shape[:-1])
-            for j in next:
-                l = [i]
-                l.extend(j)
-                indices.append(l)
-
-            # If only one dimension level was given, the index contains
-            # only the dimension's current value.
-            if not next:
-                indices.append([i])
-
-        return indices
+        """Constructs a set of all indices for a given array shape."""
+        indices = [range(x) for x in shape]
+        indices.reverse() # Indices are listed most-significant first.
+        return itertools.product(*indices)
 
     def append_element(self, template, index):
         """Generates and appends a new element from a template."""
