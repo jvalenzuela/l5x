@@ -566,26 +566,6 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
     def test_shape(self):
         """Ensure shape is a tuple with the correct dimensions.."""
         self.assertEqual(self.tag.shape, (int(self.dim),))
-
-    def test_resize_invalid_type(self):
-        """Test attempting to resize with a non-tuple raises an exception."""
-        with self.assertRaises(TypeError):
-            self.tag.shape = 5
-
-    def test_resize_num_dims(self):
-        """Test resizing with invalid dimension quantity raises an exception."""
-        for shape in [(), (1, 2, 3, 4)]:
-            with self.assertRaises(ValueError):
-                self.tag.shape = shape
-
-    def test_resize_dim_type(self):
-        """Ensure resizing with non-integer dimensions raises an exception."""
-        with self.assertRaises(TypeError):
-            self.tag.shape = ('foo',)
-
-    def test_resize_dim_range(self):
-        """Test resizing with dimensions less than 1 raises an exception."""
-        with self.assertRaises(ValueError):
             self.tag.shape = (0,)
             
     def test_index_type(self):
@@ -948,6 +928,45 @@ class ArrayResizeReduce(Tag, ArrayResize, unittest.TestCase):
         """Shrinks a dimension."""
         self.dim = (2, 3)
         self.tag.shape = self.dim
+
+
+class ArrayResizeInvalid(Tag, unittest.TestCase):
+    """Tests for illegal array resizing."""
+    data_type = 'DINT'
+
+    def initial_value(self):
+        """Creates an initial mock array."""
+        return create_array_tag([1, 2, 3])
+
+    def test_too_many_dimensions(self):
+        """Confirm an exception is raised for more than 3 dimensions."""
+        with self.assertRaises(ValueError):
+            self.tag.shape = (1, 2, 3, 4)
+
+    def test_zero_dimensions(self):
+        """Confirm an exception is raised for no dimensions."""
+        with self.assertRaises(ValueError):
+            self.tag.shape = ()
+
+    def test_non_tuple(self):
+        """Confirm an exception is raised for a non-tuple shape."""
+        with self.assertRaises(TypeError):
+            self.tag.shape = 42
+
+    def test_negative_size(self):
+        """Confirm an exception is raised for a negative dimension."""
+        with self.assertRaises(ValueError):
+            self.tag.shape = (-1,)
+
+    def test_zero_size(self):
+        """Confirm an exception is raised for a dimension of zero."""
+        with self.assertRaises(ValueError):
+            self.tag.shape = (0,)
+
+    def test_non_integer(self):
+        """Confirm an exception is raised for a non-integer dimension."""
+        with self.assertRaises(TypeError):
+            self.tag.shape = (5.0,)
 
 
 class Structure(Tag, unittest.TestCase):
