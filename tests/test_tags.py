@@ -5,6 +5,7 @@ Unittests for tag access.
 import ctypes
 from tests import fixture
 from l5x import (dom, tag)
+import itertools
 import l5x
 import math
 import unittest
@@ -17,7 +18,7 @@ def create_tag(name, data_type, parent=None, attrs={}, value=None, dim=None):
     attrs['Name'] = name
     attrs['DataType'] = data_type
     if dim is not None:
-        attrs['Dimensions'] = dim
+        attrs['Dimensions'] = ' '.join([str(x) for x in dim])
     tag_element = ElementTree.Element('Tag', attrs)
 
     if parent is not None:
@@ -75,7 +76,8 @@ class Tag(object):
             dim = self.dim
         except AttributeError:
             dim = None
-        self.tag = create_tag('test_tag', self.data_type, value=initial_value)
+        self.tag = create_tag('test_tag', self.data_type, value=initial_value,
+                              dim=dim)
 
     def test_desc(self):
         """Test reading and writing tag's description."""
@@ -504,10 +506,49 @@ class ArrayOutputValue(object):
         return value
 
 
+def create_array_tag(values):
+    """Constructs a DINT array data element.
+
+    The src must be a Python iterable; multi-dimensional arrays are
+    expressed as nested iterables, such as lists of lists.
+    """
+    # Determine the dimensions of the given source iterable by counting
+    # how many times the first element can be indexed while descending.
+    dim = []
+    x = values
+    while True:
+        try:
+            dim.insert(0, len(x))
+        except TypeError:
+            break
+        x = x[0]
+
+    attr = {'DataType':'DINT',
+            'Dimensions':','.join(reversed([str(x) for x in dim]))}
+    array = ElementTree.Element('Array', attr)
+
+    # Generate value elements for every member.
+    indices = [range(dim[i]) for i in range(len(dim))]
+    for subscript in itertools.product(*indices):
+        index = "[{0}]".format(','.join(reversed([str(i) for i in subscript])))
+
+        # Descend through the source list to select the single value
+        # for the given subscript.
+        value = values
+        for i in reversed(subscript):
+            value = value[i]
+
+        attr = {'Index':index,
+                'Value':str(value)}
+        ElementTree.SubElement(array, 'Element', attr)
+
+    return array
+
+
 class TestSingleDimensionalArray(Tag, unittest.TestCase):
     """Single-dimensional array tests."""
     data_type = 'DINT'
-    dim = '3'
+    dim = (3,)
 
     def initial_value(self):
         """Generates an initial array value element."""
@@ -679,38 +720,117 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
             return None
 
 
-class TestArray3(Tag, unittest.TestCase):
-    """Multidimensional array tests"""
-    name = 'array3'
-    output_value = ArrayOutputValue()
+class TestMultiDimensionalArray(Tag, unittest.TestCase):
+    """Multi-dimensional array tests"""
+    data_type = 'DINT'
+    dim = (4, 3, 2)
 
-    def test_shape_size(self):
-        """Verify shape length is equal to the number of dimensions."""
-        self.assertEqual(len(self.tag.shape), 3)
+    def initial_value(self):
+        """Creates a three-dimensional mock array."""
+        self.src_array = [
+            [
+                [1, 2, 3, 4],
+                [5, 6, 7, 8],
+                [9, 10, 11, 12]
+            ],
+            [
+                [13, 14, 15, 16],
+                [17, 18, 19, 20],
+                [21, 22, 23, 24]
+            ]
+        ]
+        return create_array_tag(self.src_array)
 
     def test_shape_values(self):
         """Verify correct dimension values."""
-        self.assertEqual(self.tag.shape[0], 2)
-        self.assertEqual(self.tag.shape[1], 3)
-        self.assertEqual(self.tag.shape[2], 4)
+        self.assertEqual(self.tag.shape[0], len(self.src_array[0][0]))
+        self.assertEqual(self.tag.shape[1], len(self.src_array[0]))
+        self.assertEqual(self.tag.shape[2], len(self.src_array))
 
-    def test_dim_value(self):
-        """Verify values for each dimension are correctly sized lists."""
-        value = self.tag.value
-        for dim in range(len(self.tag.shape) - 1, -1):
-            self.assertIsInstance(value, list)
-            self.assertEqual(len(value), self.tag.shape[dim])
-            value = value[0]
+    def test_value_read(self):
+        """Verify reading values for each dimension."""
+        self.assertEqual(self.tag.value, self.src_array)
 
-    def test_dim_description(self):
-        """Confirm descriptions are not permitted for whole dimensions."""
-        dim = self.tag
+        for i in range(len(self.tag.value)):
+            self.assertEqual(self.tag.value[i], self.src_array[i])
+
+            for j in range(len(self.tag.value[i])):
+                self.assertEqual(self.tag.value[i][j], self.src_array[i][j])
+
+    def test_value_write_single(self):
+        """Verify writing a single element value."""
+        self.src_array[1][2][3] = 123
+        self.tag[1][2][3].value = 123
+        self.assert_element_values()
+
+    def test_value_write_subarray(self):
+        """Verify writing a subarray value."""
+        self.src_array[0][0] = [1000, 1001, 1002, 1003]
+        self.tag[0][0].value = [1000, 1001, 1002, 1003]
+        self.assert_element_values()
+
+    def test_value_write_all(self):
+        """Verify writing a nested list to the top-level value."""
+        new_values = [
+            [
+                [-1, -2, -3, -4],
+                [-5, -6, -7, -8],
+                [-9, -10, -11, -12]
+            ],
+            [
+                [-13, -14, -15, -16],
+                [-17, -18, -19, -20],
+                [-21, -22, -23, -24]
+            ]
+        ]
+        self.src_array = new_values
+        self.tag.value = new_values
+        self.assert_element_values()
+
+    def assert_element_values(self):
+        """Confirms all element values match the source array."""
+        # Iterate though all the source array values and confirm a
+        # matching XML element value.
+        indices = [range(self.tag.shape[x]) for x in range(len(self.tag.shape))]
+        indices.reverse()
+        for subscript in itertools.product(*indices):
+            # Acquire the value stored in the XML attribute.
+            index = "[{0}]".format(','.join([str(i) for i in subscript]))
+            element = self.tag.element.find(
+                'Data/Array/*[@Index="{0}"]'.format(index))
+            xml_value = int(element.attrib['Value'])
+
+            # Descend through the source array to select the single value
+            # for the given subscript.
+            src_value = self.src_array
+            for i in subscript:
+                src_value = src_value[i]
+
+            self.assertEqual(xml_value, src_value)
+
+        # Iterate through all the XML value elements and confirm a
+        # matching source array value.
+        for element in self.tag.element.findall('Data/Array/*'):
+            index = [int(x) for x in element.attrib['Index'][1:-1].split(',')]
+            xml_value = int(element.attrib['Value'])
+
+            # Descend through the source array to select the single value
+            # for the given index.
+            src_value = self.src_array
+            for i in index:
+                src_value = src_value[i]
+
+            self.assertEqual(xml_value, src_value)
+
+    def test_subarray_description(self):
+        """Confirm descriptions are not permitted for subarrays."""
+        ar = self.tag
         for i in range(len(self.tag.shape) - 1):
-            dim = dim[0]
+            ar = ar[0]
             with self.assertRaises(TypeError):
-                dim.description
+                ar.description
             with self.assertRaises(TypeError):
-                dim.description = 'test'
+                ar.description = 'test'
 
 
 class ArrayResize(object):
