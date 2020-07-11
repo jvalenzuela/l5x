@@ -835,100 +835,119 @@ class TestMultiDimensionalArray(Tag, unittest.TestCase):
 
 class ArrayResize(object):
     """Base class for array resizing tests."""
-    @classmethod
-    def setUpClass(cls):
-        cls.tag = prj.controller.tags[cls.name]
-        cls.tag.shape = cls.target
-        cls.target_strings = [str(s) for s in cls.target]
-        cls.target_strings.reverse()
-
     def test_shape(self):
         """Ensure the tag's shape value is updated."""
-        self.assertEqual(self.tag.shape, self.target)
+        self.resize()
+        self.assertEqual(self.tag.shape, self.dim)
 
     def test_tag_dimensions_attr(self):
         """Ensure the top-level Tag element's Dimensions attribute is set."""
-        attr = self.tag.element.getAttribute('Dimensions')
-        dims = ' '.join(self.target_strings)
-        self.assertEqual(attr, dims)
+        self.resize()
+        dims = ' '.join(reversed([str(x) for x in self.dim]))
+        self.assertEqual(dims, self.tag.element.attrib['Dimensions'])
 
     def test_array_dimensions_attr(self):
         """Ensures the Array element's Dimensions attribute is set."""
-        attr = self.tag.data.element.getAttribute('Dimensions')
-        dims = ','.join(self.target_strings)
-        self.assertEqual(attr, dims)
+        self.resize()
+        dims = ','.join(reversed([str(x) for x in self.dim]))
+        array = self.tag.element.find('Data/Array')
+        self.assertEqual(dims, array.attrib['Dimensions'])
 
     def test_raw_data_removed(self):
         """Ensure the original raw data array is deleted."""
-        for e in self.tag.child_elements:
-            if e.tagName == 'Data':
-                self.assertTrue(e.hasAttribute('Format'))
+        self.resize()
+        for e in self.tag.element:
+            self.assertTrue(e.attrib['Format'], 'Decorated')
 
-    def test_index_order(self):
-        """Confirm the correct order of generated indices."""
-        indices = self.get_indices()
-        self.assertEqual(indices, sorted(indices))
+    def test_indices(self):
+        """Confirm element indices match the new shape."""
+        self.resize()
 
-    def test_element_number(self):
-        """Confirm the correct number of elements were generated."""
-        for i in self.tag.shape:
-            try:
-                num *= i
-            except UnboundLocalError:
-                num = i
+        # Get indices from all the XML elements.
+        array = self.tag.element.find('Data/Array')
+        xml_idx = set([e.attrib['Index'] for e in array])
 
-        self.assertEqual(num, len(self.get_indices()))
+        # Create indices from the expected dimensions.
+        ranges = [range(self.dim[i]) for i in range(len(self.dim))]
+        ranges.reverse()
+        new_idx = set()
+        for idx in itertools.product(*ranges):
+            new_idx.add("[{0}]".format(','.join([str(x) for x in idx])))
 
-    def test_index_range(self):
-        """Confirm the generated indices are within the resized shape."""
-        for idx in self.get_indices():
-            # Reverse the order of dimensions to convert back from the
-            # attribute presentation format. Required to match the order
-            # of significance used for the array's shape tuple.
-            idx = tuple(reversed(idx))
-
-            for dim in range(len(idx)):
-                x = idx[dim]
-                self.assertGreaterEqual(x, 0)
-                self.assertLess(x, self.tag.shape[dim])
-
-    def test_index_length(self):
-        """Confirm generated indices have the correct number of dimensions."""
-        indices = self.get_indices()
-        [self.assertEqual(len(i), len(self.tag.shape)) for i in indices]
-
-    def test_index_unique(self):
-        """Confirm all generated indices are unique."""
-        s = set()
-        for idx in self.get_indices():
-            self.assertNotIn(idx, s)
-            s.add(idx)
-        
-    def get_indices(self):
-        """Extracts the list of element indices from the array elements.
-
-        Indices are converted into a tuple of integers. Dimension order
-        remains the same as the string presentation from the attribute
-        value: most-significant dimension stored in the least-significant
-        tuple index.
-        """
-        indices = []
-        for e in self.tag.data.child_elements:
-            attr = e.getAttribute('Index')[1:-1] # Remove braces.
-            indices.append(tuple([int(i) for i in attr.split(',')]))
-        return indices
+        self.assertEqual(xml_idx, new_idx)
 
 
-class ArrayResizeSimple(ArrayResize, unittest.TestCase):
-    """Tests for resizing an array of simple data types."""
-    name = 'array_resize_simple'
-    target = (5,)
+class ArrayResizeAddDimension(Tag, ArrayResize, unittest.TestCase):
+    """Tests for resizing an array by adding a dimension."""
+    data_type = 'DINT'
+    dim = (2,)
+
+    def initial_value(self):
+        """Creates an initial mock array."""
+        return create_array_tag([0, 1])
+
+    def resize(self):
+        """Adds a new dimension."""
+        self.dim = (3, 4)
+        self.tag.shape = self.dim
 
 
-class ArrayResizeStruct(ArrayResize, unittest.TestCase):
-    """Tests to resizing an array of structured data types."""
-    name = 'array_resize_struct'
-    target = (5, 6, 7)
+class ArrayResizeRemoveDimension(Tag, ArrayResize, unittest.TestCase):
+    """Tests for resizing an array by removing a dimension."""
+    data_type = 'DINT'
+    dim = (2, 3)
+
+    def initial_value(self):
+        """Creates an initial mock array."""
+        return create_array_tag([
+            [0, 1],
+            [2, 3],
+            [4, 5]
+        ])
+
+    def resize(self):
+        """Removes a dimension."""
+        self.dim = (2,)
+        self.tag.shape = self.dim
+
+
+class ArrayResizeEnlarge(Tag, ArrayResize, unittest.TestCase):
+    """Tests for resizing an array by enlarging a dimension."""
+    data_type = 'DINT'
+    dim = (2, 3)
+
+    def initial_value(self):
+        """Creates an initial mock array."""
+        return create_array_tag([
+            [0, 1],
+            [2, 3],
+            [4, 5]
+        ])
+
+    def resize(self):
+        """Enlarges a dimension."""
+        self.dim = (2, 4)
+        self.tag.shape = self.dim
+
+
+class ArrayResizeReduce(Tag, ArrayResize, unittest.TestCase):
+    """Tests for resizing an array by shrinking a dimension."""
+    data_type = 'DINT'
+    dim = (2, 4)
+
+    def initial_value(self):
+        """Creates an initial mock array."""
+        return create_array_tag([
+            [0, 1],
+            [2, 3],
+            [4, 5],
+            [6, 7]
+        ])
+
+    def resize(self):
+        """Shrinks a dimension."""
+        self.dim = (2, 3)
+        self.tag.shape = self.dim
 
 
 class Structure(Tag, unittest.TestCase):
