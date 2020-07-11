@@ -643,7 +643,7 @@ class Array(Data):
         self.tag.clear_raw_data()
 
         # Make a copy of the first element before stripping all old values.
-        template = self.find('Element')
+        template = self.element.find('Element')
 
         self.remove_elements()
 
