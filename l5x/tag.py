@@ -514,8 +514,8 @@ class Structure(Data):
 class ArrayValue(object):
     """Descriptor class for accessing multiple values in an array."""
     def __get__(self, array, owner=None):
-        dim = len(array.dims) - len(array.address) - 1
-        return [array[i].value for i in range(array.dims[dim])]
+        dim = len(array.shape) - len(array.address) - 1
+        return [array[i].value for i in range(array.shape[dim])]
 
     def __set__(self, array, value):
         if not isinstance(value, list):
@@ -549,7 +549,13 @@ class ArrayDescription(Comment):
 class ArrayShape(object):
     """Descriptor class to acquire an array's dimensions."""
     def __get__(self, array, owner=None):
-        return tuple(array.dims)
+        dims = [int(d) for d in array.element.attrib['Dimensions'].split(',')]
+
+        # Dimensions are stored most-significant first(Dim2, Dim1, Dim0) in the
+        # XML attribute; reversing them makes DimX = shape[X].
+        dims.reverse()
+
+        return tuple(dims)
 
     def __set__(self, array, value):
         # Prevent resizing UDT array members.
@@ -585,8 +591,6 @@ class Array(Data):
     def __init__(self, data_class, element, tag, parent=None, address=[]):
         Data.__init__(self, element, tag, parent)
         self.data_class = data_class
-        self.dims = [int(d) for d in element.attrib['Dimensions'].split(',')]
-        self.dims.reverse()
         self.address = address
 
         # Array members are identified in XML by the Index attribute,
@@ -609,15 +613,15 @@ class Array(Data):
             raise TypeError('Array indices must be integers')
 
         # Add the given index to the current accumulated address.
-        dim = len(self.dims) - len(self.address) - 1
-        if (index < 0) or (index >= self.dims[dim]):
+        dim = len(self.shape) - len(self.address) - 1
+        if (index < 0) or (index >= self.shape[dim]):
             raise IndexError('Array index out of range')
         new_address = list(self.address)
         new_address.insert(0, index)
 
         # If the newly formed address set satisifies all dimensions
         # return an access object for the member.
-        if len(new_address) == len(self.dims):
+        if len(new_address) == len(self.shape):
             # Address values are reversed because the display order is
             # most-significant first.
             new_address.reverse()
@@ -635,7 +639,6 @@ class Array(Data):
 
     def resize(self, new_shape):
         """Alters the array's size."""
-        self.dims = new_shape
         self.set_dimensions(new_shape)
         self.tag.clear_raw_data()
 
