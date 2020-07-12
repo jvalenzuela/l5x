@@ -566,7 +566,6 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
     def test_shape(self):
         """Ensure shape is a tuple with the correct dimensions.."""
         self.assertEqual(self.tag.shape, (int(self.dim),))
-            self.tag.shape = (0,)
             
     def test_index_type(self):
         """Ensure non-integer indices raise an exception."""
