@@ -187,21 +187,17 @@ class ElementDescription(object):
         Inserts the Description element as a child of the parent instance
         based on any elements that must come first.
         """
-        # Capture the highest child index for any elements listed in the
-        # follow attribute.
-        child_tags = [e.tag for e in instance.element.findall('*')]
-        indices = []
-        for tag in self.follow:
-            try:
-                indices.append(child_tags.index(tag))
-            except ValueError:
-                pass
-        try:
-            index = max(indices)
-        except ValueError:
-            instance.element.append(desc)
-        else:
-            instance.element.insert(index + 1, desc)
+        dest_index = 0 # Default to the first child.
+
+        # Iterate through the child elements looking for any that
+        # need to preceed the description.
+        i = 0
+        for e in instance.element:
+            if e.tag in self.follow:
+                dest_index = i + 1
+            i += 1
+
+        instance.element.insert(dest_index, desc)
 
     def remove(self, instance):
         """Implements deleting a description."""
