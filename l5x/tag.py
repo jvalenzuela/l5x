@@ -498,12 +498,12 @@ class Structure(Data):
         # is just the enclosing array member; the XML element directly
         # holding the structure's data is the first child: a Structure
         # XML element.
-        if element.tagName == 'Element':
-            self.element = self.get_child_element('Structure')
+        if element.tag == 'Element':
+            self.element = element.find('Structure')
 
         self.members = dom.ElementDict(self.element, 'Name', base_data_types,
                                    'DataType', Structure,
-                                   member_args=[tag, self])
+                                   value_args=[tag, self])
 
     def __getitem__(self, member):
         """Indexing a structure yields an individual member."""
