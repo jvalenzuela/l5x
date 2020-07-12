@@ -565,7 +565,7 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
 
     def test_shape(self):
         """Ensure shape is a tuple with the correct dimensions.."""
-        self.assertEqual(self.tag.shape, (int(self.dim),))
+        self.assertEqual(self.tag.shape, self.dim)
             
     def test_index_type(self):
         """Ensure non-integer indices raise an exception."""
@@ -574,13 +574,13 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
             
     def test_index_range(self):
         """Ensure negative and indices beyond the end raise exceptions."""
-        for i in [-1, int(self.dim)]:
+        for i in [-1, self.dim[0]]:
             with self.assertRaises(IndexError):
                 self.tag[i]
 
     def test_value_read(self):
         """Confirm reading the top-level value returns a list of values."""
-        new = [100 + i for i in range(int(self.dim))]
+        new = [100 + i for i in range(self.dim[0])]
         for i in range(len(new)):
             element = self.get_value_element(i)
             element.attrib['Value'] = str(new[i])
@@ -588,7 +588,7 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
 
     def test_element_value_read(self):
         """Confirm reading a single value."""
-        for i in range(int(self.dim)):
+        for i in range(self.dim[0]):
             value = i + 10
             element = self.get_value_element(i)
             element.attrib['Value'] = str(value)
@@ -596,7 +596,7 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
 
     def test_value_write(self):
         """Confirm setting a new value to all elements with a list."""
-        new = [100 + i for i in range(int(self.dim))]
+        new = [100 + i for i in range(self.dim[0])]
         self.tag.value = new
         for i in range(len(new)):
             element = self.get_value_element(i)
@@ -605,9 +605,9 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
 
     def test_value_write_short(self):
         """Confirm setting a value to a list with fewer elements starts overwriting at the beginning."""
-        new = [100 + i for i in range(int(self.dim) - 1)]
+        new = [100 + i for i in range(self.dim[0] - 1)]
         self.tag.value = new
-        for i in range(int(self.dim)):
+        for i in range(self.dim[0]):
             element = self.get_value_element(i)
             try:
                 value = new[i]
@@ -618,11 +618,11 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
     def test_value_write_too_long(self):
         """Confirm an exception is raised when setting the value to a list that is too long."""
         with self.assertRaises(IndexError):
-            self.tag.value = [0] * (int(self.dim) + 1)
+            self.tag.value = [0] * (self.dim[0] + 1)
 
     def test_element_value_write(self):
         """Confirm writing a single element."""
-        for i in range(int(self.dim)):
+        for i in range(self.dim[0]):
             new_value = i * 2
             self.tag[i].value = new_value
             element = self.get_value_element(i)
