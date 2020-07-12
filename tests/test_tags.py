@@ -477,91 +477,52 @@ class TestREAL(Tag, unittest.TestCase):
                 self.tag.value = float(value)
 
 
-class ArrayOutputValue(object):
-    """Descriptor class to generate n-dimensional array output values.
-
-    Creates unique values for each element by incrementing an accumulator
-    while iterating through members of each dimension.
-    """
-    def __get__(self, instance, owner=None):
-        self.tag = prj.controller.tags[owner.name]
-        self.acc = 0
-        return self.build_dim(len(self.tag.shape) - 1)
-        
-    def build_dim(self, dim):
-        """Generates a set of values for elements of a single dimension."""
-        elements = range(self.tag.shape[dim])
-
-        # The lowest order dimension results in integer values for each
-        # element.
-        if dim == 0:
-            value = [x + self.acc for x in elements]
-            self.acc = value[-1] + 1
-
-        # All other higher order dimensions recursively build a list for each
-        # element.
-        else:
-            value = [self.build_dim(dim - 1) for x in elements]
-
-        return value
-
-
-def create_array_tag(values):
-    """Constructs a DINT array data element.
-
-    The src must be a Python iterable; multi-dimensional arrays are
-    expressed as nested iterables, such as lists of lists.
-    """
-    # Determine the dimensions of the given source iterable by counting
-    # how many times the first element can be indexed while descending.
-    dim = []
-    x = values
-    while True:
-        try:
-            dim.insert(0, len(x))
-        except TypeError:
-            break
-        x = x[0]
-
-    attr = {'DataType':'DINT',
-            'Dimensions':','.join(reversed([str(x) for x in dim]))}
-    array = ElementTree.Element('Array', attr)
-
-    # Generate value elements for every member.
-    indices = [range(dim[i]) for i in range(len(dim))]
-    for subscript in itertools.product(*indices):
-        index = "[{0}]".format(','.join(reversed([str(i) for i in subscript])))
-
-        # Descend through the source list to select the single value
-        # for the given subscript.
-        value = values
-        for i in reversed(subscript):
-            value = value[i]
-
-        attr = {'Index':index,
-                'Value':str(value)}
-        ElementTree.SubElement(array, 'Element', attr)
-
-    return array
-
-
-class TestSingleDimensionalArray(Tag, unittest.TestCase):
-    """Single-dimensional array tests."""
-    data_type = 'DINT'
-    dim = (3,)
-
+class Array(Tag):
+    """Base class for array tests."""
     def initial_value(self):
         """Generates an initial array value element."""
+        self.generate_dimensions()
         attr = {'DataType':'DINT',
-                'Dimensions':self.dim}
+                'Dimensions':','.join(reversed([str(x) for x in self.dim]))}
         array = ElementTree.Element('Array', attr)
 
-        for i in range(int(self.dim)):
-            attr = {'Index':"[{0}]".format(i),
-                    'Value':'0'}
+        # Generate value elements for every member.
+        indices = [range(self.dim[i]) for i in range(len(self.dim))]
+        for subscript in itertools.product(*indices):
+            index = "[{0}]".format(','.join(
+                reversed([str(i) for i in subscript])))
+
+            # Descend through the source list to select the single value
+            # for the given subscript.
+            value = self.src_array
+            for i in reversed(subscript):
+                value = value[i]
+
+            attr = {'Index':index,
+                    'Value':str(value)}
             ElementTree.SubElement(array, 'Element', attr)
 
         return array
+
+    def generate_dimensions(self):
+        """Computes the dimensions tuple based on the source array."""
+        # Determine the dimensions of the source array by counting
+        # how many times the first element can be indexed while descending.
+        acc = []
+        x = self.src_array
+        while True:
+            try:
+                acc.insert(0, len(x))
+            except TypeError:
+                break
+            x = x[0]
+        self.dim = tuple(acc)
+
+
+class TestSingleDimensionalArray(Array, unittest.TestCase):
+    """Single-dimensional array tests."""
+    data_type = 'DINT'
+    src_array = [0, 0, 0]
 
     def test_shape(self):
         """Ensure shape is a tuple with the correct dimensions.."""
@@ -699,26 +660,21 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
             return None
 
 
-class TestMultiDimensionalArray(Tag, unittest.TestCase):
+class TestMultiDimensionalArray(Array, unittest.TestCase):
     """Multi-dimensional array tests"""
     data_type = 'DINT'
-    dim = (4, 3, 2)
-
-    def initial_value(self):
-        """Creates a three-dimensional mock array."""
-        self.src_array = [
-            [
-                [1, 2, 3, 4],
-                [5, 6, 7, 8],
-                [9, 10, 11, 12]
-            ],
-            [
-                [13, 14, 15, 16],
-                [17, 18, 19, 20],
-                [21, 22, 23, 24]
-            ]
+    src_array = [
+        [
+            [1, 2, 3, 4],
+            [5, 6, 7, 8],
+            [9, 10, 11, 12]
+        ],
+        [
+            [13, 14, 15, 16],
+            [17, 18, 19, 20],
+            [21, 22, 23, 24]
         ]
-        return create_array_tag(self.src_array)
+    ]
 
     def test_shape_values(self):
         """Verify correct dimension values."""
@@ -812,7 +768,7 @@ class TestMultiDimensionalArray(Tag, unittest.TestCase):
                 ar.description = 'test'
 
 
-class ArrayResize(object):
+class ArrayResize(Array):
     """Base class for array resizing tests."""
     def test_shape(self):
         """Ensure the tag's shape value is updated."""
@@ -835,8 +791,7 @@ class ArrayResize(object):
     def test_raw_data_removed(self):
         """Ensure the original raw data array is deleted."""
         self.resize()
-        for e in self.tag.element:
-            self.assertTrue(e.attrib['Format'], 'Decorated')
+        self.assert_no_raw_data_element()
 
     def test_indices(self):
         """Confirm element indices match the new shape."""
@@ -856,14 +811,10 @@ class ArrayResize(object):
         self.assertEqual(xml_idx, new_idx)
 
 
-class ArrayResizeAddDimension(Tag, ArrayResize, unittest.TestCase):
+class ArrayResizeAddDimension(ArrayResize, unittest.TestCase):
     """Tests for resizing an array by adding a dimension."""
     data_type = 'DINT'
-    dim = (2,)
-
-    def initial_value(self):
-        """Creates an initial mock array."""
-        return create_array_tag([0, 1])
+    src_array = [0, 1]
 
     def resize(self):
         """Adds a new dimension."""
@@ -871,18 +822,14 @@ class ArrayResizeAddDimension(Tag, ArrayResize, unittest.TestCase):
         self.tag.shape = self.dim
 
 
-class ArrayResizeRemoveDimension(Tag, ArrayResize, unittest.TestCase):
+class ArrayResizeRemoveDimension(ArrayResize, unittest.TestCase):
     """Tests for resizing an array by removing a dimension."""
     data_type = 'DINT'
-    dim = (2, 3)
-
-    def initial_value(self):
-        """Creates an initial mock array."""
-        return create_array_tag([
-            [0, 1],
-            [2, 3],
-            [4, 5]
-        ])
+    src_array = [
+        [0, 1],
+        [2, 3],
+        [4, 5]
+    ]
 
     def resize(self):
         """Removes a dimension."""
@@ -890,18 +837,14 @@ class ArrayResizeRemoveDimension(Tag, ArrayResize, unittest.TestCase):
         self.tag.shape = self.dim
 
 
-class ArrayResizeEnlarge(Tag, ArrayResize, unittest.TestCase):
+class ArrayResizeEnlarge(ArrayResize, unittest.TestCase):
     """Tests for resizing an array by enlarging a dimension."""
     data_type = 'DINT'
-    dim = (2, 3)
-
-    def initial_value(self):
-        """Creates an initial mock array."""
-        return create_array_tag([
-            [0, 1],
-            [2, 3],
-            [4, 5]
-        ])
+    src_array = [
+        [0, 1],
+        [2, 3],
+        [4, 5]
+    ]
 
     def resize(self):
         """Enlarges a dimension."""
@@ -909,19 +852,15 @@ class ArrayResizeEnlarge(Tag, ArrayResize, unittest.TestCase):
         self.tag.shape = self.dim
 
 
-class ArrayResizeReduce(Tag, ArrayResize, unittest.TestCase):
+class ArrayResizeReduce(ArrayResize, unittest.TestCase):
     """Tests for resizing an array by shrinking a dimension."""
     data_type = 'DINT'
-    dim = (2, 4)
-
-    def initial_value(self):
-        """Creates an initial mock array."""
-        return create_array_tag([
-            [0, 1],
-            [2, 3],
-            [4, 5],
-            [6, 7]
-        ])
+    src_array = [
+        [0, 1],
+        [2, 3],
+        [4, 5],
+        [6, 7]
+    ]
 
     def resize(self):
         """Shrinks a dimension."""
@@ -929,13 +868,10 @@ class ArrayResizeReduce(Tag, ArrayResize, unittest.TestCase):
         self.tag.shape = self.dim
 
 
-class ArrayResizeInvalid(Tag, unittest.TestCase):
+class ArrayResizeInvalid(Array, unittest.TestCase):
     """Tests for illegal array resizing."""
     data_type = 'DINT'
-
-    def initial_value(self):
-        """Creates an initial mock array."""
-        return create_array_tag([1, 2, 3])
+    src_array = [1, 2, 3]
 
     def test_too_many_dimensions(self):
         """Confirm an exception is raised for more than 3 dimensions."""
