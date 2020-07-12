@@ -1117,27 +1117,38 @@ class DescriptionRemoval(Tag, unittest.TestCase):
                     struct[member][bit].description = None
 
 
-class Base(Tag, unittest.TestCase):
-    """Tests for base tags."""
-    name = 'base'
-    attrs = ['producer', 'remote_tag']
+class Base(unittest.TestCase):
+    """Tests for base, i.e. not produced or consumed, tags."""
+    def setUp(self):
+        """Creates a mock base tag."""
+        attrs = {'TagType':'Base'}
+        self.tag = create_tag('tag_name', 'DINT', attrs=attrs)
 
-    def test_access(self):
-        """Confirms getting and setting an attribute raises an exception."""
-        for attr in self.attrs:
-            with self.assertRaises(TypeError):
-                getattr(self.tag, attr)
-            with self.assertRaises(TypeError):
-                setattr(self.tag, '')
+    def test_producer_read(self):
+        """Confirm reading the producer attribute raises an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.producer
 
-    def test_element_order(self):
-        """Ensure Description is the first element."""
-        # Force creation of a new description by first removing any
-        # existing one.
-        self.tag.description = None
+    def test_producer_write(self):
+        """Confirm writing the producer attribute raises an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.producer = 'foo'
+
+    def test_remote_tag_read(self):
+        """Confirm reading the remote tag attribute raises an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.remote_tag
+
+    def test_remote_tag_write(self):
+        """Confirm writing the remote tag attribute raises an exception."""
+        with self.assertRaises(TypeError):
+            self.tag.remote_tag = 'foo'
+
+    def test_description_element_order(self):
+        """Ensure a description is created as tag element's first child."""
         self.tag.description = 'description'
-
-        self.assertEqual(self.tag.child_elements[0].tagName, 'Description')
+        first_child = self.tag.element.find('*')
+        self.assertEqual(first_child.tag, 'Description')
 
 
 class Consumed(unittest.TestCase):
