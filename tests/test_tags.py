@@ -906,31 +906,62 @@ class ArrayResizeInvalid(Array, unittest.TestCase):
 
 class Structure(Tag, unittest.TestCase):
     """Structured data tag tests."""
-    name = 'timer'
-    output_value = {'PRE':-1, 'ACC':-2, 'EN':1, 'TT':1, 'DN':1}
+    data_type = 'TIMER'
 
-    def test_value_type(self):
-        """Verify value is returned as a non-empty dict."""
-        self.assertIsInstance(self.tag.value, dict)
-        self.assertGreater(len(self.tag.value), 0)
+    def initial_value(self):
+        """Creates a mock structured data tag(TIMER)."""
+        attr = {'DataType':'TIMER'}
+        st = ElementTree.Element('Structure', attr)
+
+        self.src_value = {
+            'PRE':-1,
+            'ACC':-2,
+            'EN':1,
+            'TT':1,
+            'DN':1
+            }
+
+        members = [
+            ('PRE', 'DINT'),
+            ('ACC', 'DINT'),
+            ('EN', 'BOOL'),
+            ('TT', 'BOOL'),
+            ('DN', 'BOOL')
+        ]
+
+        for name, datatype in members:
+            attr = {
+                'Name':name,
+                'DataType':datatype,
+                'Value':str(self.src_value[name])
+            }
+            ElementTree.SubElement(st, 'DataValueMember', attr)
+
+        return st
 
     def test_invalid_value_type(self):
         """Test setting value to a non-dict raises an exception."""
         with self.assertRaises(TypeError):
             self.tag.value = 'not a dict'
 
-    def test_value(self):
-        """Test setting and getting dict values."""
-        x = {'PRE':42, 'ACC':142, 'EN':1, 'TT':0, 'DN':1}
-        self.tag.value = x
-        self.assertDictEqual(self.tag.value, x)
+    def test_value_read(self):
+        """Confirm reading the top-level value returns a correct dict."""
+        self.assertDictEqual(self.tag.value, self.src_value)
 
-    def test_member_names_type(self):
-        """Verify keys for value dict are strings."""
-        for member in self.tag.value.keys():
-            self.assertIsInstance(member, str)
+    def test_value_write(self):
+        """Confirm writing a dict to the top-level value.."""
+        self.src_value = {'PRE':42, 'ACC':142, 'EN':0, 'TT':0, 'DN':0}
+        self.tag.value = self.src_value
+        self.assert_member_values()
 
-    def test_index_type(self):
+    def test_value_write_partial(self):
+        """Confirm writing a partial dict to the top-level value."""
+        new_values = {'PRE':-100}
+        self.tag.value = new_values
+        self.src_value.update(new_values)
+        self.assert_member_values()
+
+    def test_nonstring_index(self):
         """Verify non-string indices raise an exception."""
         with self.assertRaises(TypeError):
             self.tag[0].value
@@ -940,33 +971,67 @@ class Structure(Tag, unittest.TestCase):
         with self.assertRaises(KeyError):
             self.tag['foo'].value
 
-    def test_indices(self):
-        """Test indices of valid members."""
-        for member in self.output_value.keys():
-            self.tag[member].value
+    def test_member_value_read(self):
+        """Test reading individual member values."""
+        for name in self.src_value:
+            self.assertEqual(self.tag[name].value, self.src_value[name])
 
-    def test_member_values(self):
-        """Test setting and getting member values."""
-        for member in self.output_value.keys():
-            for x in range(2):
-                self.tag[member].value = x
-                self.assertEqual(self.tag[member].value, x)
+    def test_member_value_write(self):
+        """Test writing individual member values."""
+        new_values = {
+            'PRE':200,
+            'ACC':300,
+            'EN':0,
+            'TT':0,
+            'DN':0
+        }
 
-    def test_names(self):
-        """Verify names attributes returns an iterable of non-empty strings."""
-        self.assertGreater(len(self.tag.names), 0)
-        for member in self.tag.names:
-            self.assertIsInstance(member, str)
-            self.assertGreater(len(member), 0)
+        for name in self.src_value:
+            self.tag[name].value = new_values[name]
+            self.src_value[name] = new_values[name]
+            self.assert_member_values()
+
+    def test_names_read(self):
+        """Confirm the names attributes contains all members."""
+        src_names = set(self.src_value.keys())
+        tag_names = set(self.tag.names)
+        self.assertEqual(src_names, tag_names)
+
+    def test_names_write(self):
+        """
+        Confirm an exception is raised when attempting to write to the
+        names attribute.
+        """
         with self.assertRaises(AttributeError):
             self.tag.names = 'fail'
 
-    def test_element_value_raw_data(self):
+    def test_write_clear_raw_data(self):
+        """
+        Confirm writing a dict to the top-level value clears undecorated data.
+        """
+        self.tag.value = self.src_value
+        self.assert_no_raw_data_element()
+
+    def test_member_write_clear_raw_data(self):
         """Ensure setting a single member clears undecorated data."""
-        clean = l5x.Project(fixture.INPUT_FILE)
-        tag = clean.controller.tags[self.name]
-        tag['PRE'].value = tag['PRE'].value
-        self.assertFalse(self.raw_data_exists(tag))
+        self.tag['PRE'].value = 0
+        self.assert_no_raw_data_element()
+
+    def assert_member_values(self):
+        """Confirms the value of all data members match the source dict."""
+        st = self.tag.element.find('Data/Structure')
+
+        # Confirm all XML values match the source dict.
+        for e in st:
+            value = int(e.attrib['Value'])
+            name = e.attrib['Name']
+            self.assertEqual(self.src_value[name], value)
+
+        # Confirm all source dict members match the XML values.
+        for name in self.src_value:
+            e = st.find('*[@Name="{0}"]'.format(name))
+            value = int(e.attrib['Value'])
+            self.assertEqual(self.src_value[name], value)
 
 
 class ComplexOutputValue(object):
