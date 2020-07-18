@@ -1034,47 +1034,39 @@ class Structure(Tag, unittest.TestCase):
             self.assertEqual(self.src_value[name], value)
 
 
-class ComplexOutputValue(object):
-    """Generates the final complex UDT output value."""
-    def __get__(self, instance, owner=None):
-        self.tag = prj.controller.tags[owner.name]
-        return [self.udt(i) for i in range(self.tag.shape[0])]
+class Compound(Tag, unittest.TestCase):
+    """Tests for a data types containing nested arrays and structures."""
+    data_type = 'udt'
 
-    def udt(self, index):
-        """Builds a value for one UDT element."""
-        x = index * 1000
-        value = {}
-        value['dint_array'] = [i + x for i in
-                               range(self.tag[index]['dint_array'].shape[0])]
-        value['timer'] = {'PRE':x, 'ACC':x + 1, 'EN':1, 'TT':1, 'DN':1}
-        value['counter_array'] = [
-            {'PRE':x + (i * 100),
-             'ACC':x + (i * 100) + 1,
-             'CU':1, 'CD':1, 'DN':1, 'OV':1, 'UN':1}
-            for i in range(self.tag[index]['counter_array'].shape[0])]
-        value['real'] = 1.0 / float(index + 1)
-        return value
+    def initial_value(self):
+        """Generates a mock UDT."""
+        self.src_value = {
+            'dint_array':list(range(10)),
+            }
 
-        
-class Complex(Tag, unittest.TestCase):
-    """Tests for a complex data type."""
-    name = 'udt'
-    output_value = ComplexOutputValue()
+        attr = {'DataType':'udt'}
+        udt = ElementTree.Element('Structure', attr)
 
-    def test_array_member_value_type(self):
-        """Check array members yield list values."""
-        self.assertIsInstance(self.tag.value, list)
-        self.assertIsInstance(self.tag[0]['dint_array'].value, list)
+        # Add DINT array.
+        attr = {
+            'Name':'dint_array',
+            'DataType':'DINT',
+            'Dimensions':str(len(self.src_value['dint_array']))
+        }
+        ar = ElementTree.SubElement(udt, 'ArrayMember', attr)
+        for i in range(len(self.src_value['dint_array'])):
+            attr = {
+                'Index':"[{0}]".format(i),
+                'Value':str(self.src_value['dint_array'][i])
+            }
+            e = ElementTree.SubElement(ar, 'Element', attr)
 
-    def test_struct_member_value_type(self):
-        """Check UDT members yield dict values."""
-        self.assertIsInstance(self.tag[0].value, dict)
-        self.assertIsInstance(self.tag[0]['timer'].value, dict)
+        return udt
 
     def test_member_array_resize(self):
         """Ensure member arrays cannot be resized."""
         with self.assertRaises(AttributeError):
-            self.tag[0]['dint_array'].shape = (1,)
+            self.tag['dint_array'].shape = (1,)
 
 
 class DescriptionRemoval(Tag, unittest.TestCase):
