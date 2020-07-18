@@ -2,6 +2,7 @@
 Unittests for tag access.
 """
 
+import copy
 import ctypes
 from tests import fixture
 from l5x import (dom, tag)
@@ -9,41 +10,38 @@ import itertools
 import l5x
 import math
 import unittest
-import xml.dom.minidom
 import xml.etree.ElementTree as ElementTree
-
-
-def create_tag(name, data_type, parent=None, attrs={}, value=None, dim=None):
-    """Creates a mock tag object."""
-    attrs['Name'] = name
-    attrs['DataType'] = data_type
-    if dim is not None:
-        attrs['Dimensions'] = ' '.join([str(x) for x in dim])
-    tag_element = ElementTree.Element('Tag', attrs)
-
-    if parent is not None:
-        parent.append(tag_element)
-
-    # Create a raw Data element.
-    ElementTree.SubElement(tag_element, 'Data')
-
-    # Add the decorated Data element with an initial value.
-    data = ElementTree.SubElement(tag_element, 'Data', {'Format':'Decorated'})
-    if value is None:
-        ElementTree.SubElement(data, 'DataValue')
-    else:
-        data.append(value)
-
-    return l5x.tag.Tag(tag_element, None)
 
 
 class Scope(unittest.TestCase):
     """Tests for a tag scope."""
     def setUp(self):
-        parent = ElementTree.Element('parent')
-        tags = ElementTree.SubElement(parent, 'Tags')
-        [create_tag(name, 'DINT', tags) for name in ['foo', 'bar', 'baz']]
-        self.scope = l5x.tag.Scope(parent, None)
+        e = fixture.parse_xml("""<Program Name="MainProgram" TestEdits="false" MainRoutineName="MainRoutine" Disabled="false">
+<Tags>
+<Tag Name="bar" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="baz" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+<Tag Name="foo" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>
+</Tags>
+<Routines>
+<Routine Name="MainRoutine" Type="RLL"/>
+</Routines>
+</Program>""")
+        self.scope = l5x.tag.Scope(e, None)
 
     def test_names(self):
         """Test names attribute returns a non-empty list of strings."""
@@ -71,13 +69,14 @@ class Scope(unittest.TestCase):
 class Tag(object):
     """Base class for testing a tag."""
     def setUp(self):
-        initial_value = self.initial_value()
+        e = fixture.parse_xml(self.src_xml)
+        self.tag = l5x.tag.Tag(e, None)
+
+        # Initialize a fresh copy of the source XML value, if available.
         try:
-            dim = self.dim
+            self.src_value = copy.deepcopy(self.xml_value)
         except AttributeError:
-            dim = None
-        self.tag = create_tag('test_tag', self.data_type, value=initial_value,
-                              dim=dim)
+            pass
 
     def test_desc(self):
         """Test reading and writing tag's description."""
@@ -133,13 +132,17 @@ class Data(unittest.TestCase):
 
     def test_array(self):
         """Confirm array data is delegated to an Array object."""
-        element = ElementTree.Element('Array', {'Dimensions':'1'})
+        element = fixture.parse_xml("""<Array DataType="DINT" Dimensions="1" Radix="Decimal">
+<Element Index="[0]" Value="0"/>
+</Array>""")
         data = self.DummyType(element, None)
         self.assertIsInstance(data, l5x.tag.Array)
 
     def test_array_member(self):
         """Confirm array member data is delegated to an ArrayMember object."""
-        element = ElementTree.Element('ArrayMember', {'Dimensions':'1'})
+        element = fixture.parse_xml("""<ArrayMember Name="dint_array" DataType="DINT" Dimensions="1" Radix="Decimal">
+<Element Index="[0]" Value="0"/>
+</ArrayMember>""")
         data = self.DummyType(element, None)
         self.assertIsInstance(data, l5x.tag.ArrayMember)
 
@@ -172,10 +175,6 @@ class Data(unittest.TestCase):
 
 class Integer(Tag):
     """Base class for testing integer data types."""
-    def initial_value(self):
-        """Creates an initial value element for the mock tag."""
-        return ElementTree.Element('DataValue', {'Value':'0'})
-
     def test_type(self):
         """Verify correct data type string."""
         self.assertEqual(self.tag.data_type, self.data_type)
@@ -393,21 +392,45 @@ class Integer(Tag):
 
 
 class TestSINT(Integer, unittest.TestCase):
+    src_xml = """<Tag Name="sint" TagType="Base" DataType="SINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00</Data>
+<Data Format="Decorated">
+<DataValue DataType="SINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>"""
+
     data_type = 'SINT'
+    xml_value = 0
     bits = 8
     value_min = -128
     value_max = 127
 
 
 class TestINT(Integer, unittest.TestCase):
+    src_xml = """<Tag Name="int" TagType="Base" DataType="INT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="INT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>"""
+
     data_type = 'INT'
+    xml_value = 0
     bits = 16
     value_min = -32768
     value_max = 32767
 
 
 class TestDINT(Integer, unittest.TestCase):
+    src_xml = """<Tag Name="dint" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>"""
+
     data_type = 'DINT'
+    xml_value = 0
     bits = 32
     value_min = -2147483648
     value_max = 2147483647
@@ -415,11 +438,15 @@ class TestDINT(Integer, unittest.TestCase):
 
 class TestBOOL(Tag, unittest.TestCase):
     """BOOL type tests."""
-    data_type = 'BOOL'
+    src_xml = """<Tag Name="bool" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00</Data>
+<Data Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>"""
 
-    def initial_value(self):
-        """Creates an initial value element for the mock tag."""
-        return ElementTree.Element('DataValue', {'Value':'0'})
+    data_type = 'BOOL'
+    xml_value = 0
 
     def test_value_read(self):
         """Confirm reading the current value."""
@@ -447,7 +474,15 @@ class TestBOOL(Tag, unittest.TestCase):
 
 class TestREAL(Tag, unittest.TestCase):
     """REAL type tests."""
+    src_xml = """<Tag Name="real" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</Data>
+</Tag>"""
+
     data_type = 'REAL'
+    xml_value = 0.0
 
     def initial_value(self):
         """Creates an initial value element for the mock tag."""
@@ -477,56 +512,25 @@ class TestREAL(Tag, unittest.TestCase):
                 self.tag.value = float(value)
 
 
-class Array(Tag):
-    """Base class for array tests."""
-    def initial_value(self):
-        """Generates an initial array value element."""
-        self.generate_dimensions()
-        attr = {'DataType':'DINT',
-                'Dimensions':','.join(reversed([str(x) for x in self.dim]))}
-        array = ElementTree.Element('Array', attr)
-
-        # Generate value elements for every member.
-        indices = [range(self.dim[i]) for i in range(len(self.dim))]
-        for subscript in itertools.product(*indices):
-            index = "[{0}]".format(','.join(
-                reversed([str(i) for i in subscript])))
-
-            # Descend through the source list to select the single value
-            # for the given subscript.
-            value = self.src_array
-            for i in reversed(subscript):
-                value = value[i]
-
-            attr = {'Index':index,
-                    'Value':str(value)}
-            ElementTree.SubElement(array, 'Element', attr)
-
-        return array
-
-    def generate_dimensions(self):
-        """Computes the dimensions tuple based on the source array."""
-        # Determine the dimensions of the source array by counting
-        # how many times the first element can be indexed while descending.
-        acc = []
-        x = self.src_array
-        while True:
-            try:
-                acc.insert(0, len(x))
-            except TypeError:
-                break
-            x = x[0]
-        self.dim = tuple(acc)
-
-
-class TestSingleDimensionalArray(Array, unittest.TestCase):
+class TestSingleDimensionalArray(Tag, unittest.TestCase):
     """Single-dimensional array tests."""
+    src_xml = """<Tag Name="array" TagType="Base" DataType="DINT" Dimensions="3" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00 00 00 00 00 00 00 00 00</Data>
+<Data Format="Decorated">
+<Array DataType="DINT" Dimensions="3" Radix="Decimal">
+<Element Index="[0]" Value="0"/>
+<Element Index="[1]" Value="0"/>
+<Element Index="[2]" Value="0"/>
+</Array>
+</Data>
+</Tag>"""
+
     data_type = 'DINT'
-    src_array = [0, 0, 0]
+    xml_value = [0, 0, 0]
 
     def test_shape(self):
         """Ensure shape is a tuple with the correct dimensions.."""
-        self.assertEqual(self.tag.shape, self.dim)
+        self.assertEqual(self.tag.shape, (3,))
             
     def test_index_type(self):
         """Ensure non-integer indices raise an exception."""
@@ -535,13 +539,13 @@ class TestSingleDimensionalArray(Array, unittest.TestCase):
             
     def test_index_range(self):
         """Ensure negative and indices beyond the end raise exceptions."""
-        for i in [-1, self.dim[0]]:
+        for i in [-1, self.tag.shape[0]]:
             with self.assertRaises(IndexError):
                 self.tag[i]
 
     def test_value_read(self):
         """Confirm reading the top-level value returns a list of values."""
-        new = [100 + i for i in range(self.dim[0])]
+        new = [100 + i for i in range(self.tag.shape[0])]
         for i in range(len(new)):
             element = self.get_value_element(i)
             element.attrib['Value'] = str(new[i])
@@ -549,7 +553,7 @@ class TestSingleDimensionalArray(Array, unittest.TestCase):
 
     def test_element_value_read(self):
         """Confirm reading a single value."""
-        for i in range(self.dim[0]):
+        for i in range(self.tag.shape[0]):
             value = i + 10
             element = self.get_value_element(i)
             element.attrib['Value'] = str(value)
@@ -557,7 +561,7 @@ class TestSingleDimensionalArray(Array, unittest.TestCase):
 
     def test_value_write(self):
         """Confirm setting a new value to all elements with a list."""
-        new = [100 + i for i in range(self.dim[0])]
+        new = [100 + i for i in range(self.tag.shape[0])]
         self.tag.value = new
         for i in range(len(new)):
             element = self.get_value_element(i)
@@ -566,9 +570,9 @@ class TestSingleDimensionalArray(Array, unittest.TestCase):
 
     def test_value_write_short(self):
         """Confirm setting a value to a list with fewer elements starts overwriting at the beginning."""
-        new = [100 + i for i in range(self.dim[0] - 1)]
+        new = [100 + i for i in range(self.tag.shape[0] - 1)]
         self.tag.value = new
-        for i in range(self.dim[0]):
+        for i in range(self.tag.shape[0]):
             element = self.get_value_element(i)
             try:
                 value = new[i]
@@ -579,11 +583,11 @@ class TestSingleDimensionalArray(Array, unittest.TestCase):
     def test_value_write_too_long(self):
         """Confirm an exception is raised when setting the value to a list that is too long."""
         with self.assertRaises(IndexError):
-            self.tag.value = [0] * (self.dim[0] + 1)
+            self.tag.value = [0] * (self.tag.shape[0] + 1)
 
     def test_element_value_write(self):
         """Confirm writing a single element."""
-        for i in range(self.dim[0]):
+        for i in range(self.tag.shape[0]):
             new_value = i * 2
             self.tag[i].value = new_value
             element = self.get_value_element(i)
@@ -660,10 +664,47 @@ class TestSingleDimensionalArray(Array, unittest.TestCase):
             return None
 
 
-class TestMultiDimensionalArray(Array, unittest.TestCase):
+class TestMultiDimensionalArray(Tag, unittest.TestCase):
     """Multi-dimensional array tests"""
+    src_xml = """<Tag Name="array" TagType="Base" DataType="DINT" Dimensions="2 3 4" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>01 00 00 00 02 00 00 00 03 00 00 00 04 00 00 00 
+05 00 00 00 06 00 00 00 07 00 00 00 08 00 00 00 
+09 00 00 00 0A 00 00 00 0B 00 00 00 0C 00 00 00 
+0D 00 00 00 0E 00 00 00 0F 00 00 00 10 00 00 00 
+11 00 00 00 12 00 00 00 13 00 00 00 14 00 00 00 
+15 00 00 00 16 00 00 00 17 00 00 00 18 00 00 00</Data>
+<Data Format="Decorated">
+<Array DataType="DINT" Dimensions="2,3,4" Radix="Decimal">
+<Element Index="[0,0,0]" Value="1"/>
+<Element Index="[0,0,1]" Value="2"/>
+<Element Index="[0,0,2]" Value="3"/>
+<Element Index="[0,0,3]" Value="4"/>
+<Element Index="[0,1,0]" Value="5"/>
+<Element Index="[0,1,1]" Value="6"/>
+<Element Index="[0,1,2]" Value="7"/>
+<Element Index="[0,1,3]" Value="8"/>
+<Element Index="[0,2,0]" Value="9"/>
+<Element Index="[0,2,1]" Value="10"/>
+<Element Index="[0,2,2]" Value="11"/>
+<Element Index="[0,2,3]" Value="12"/>
+<Element Index="[1,0,0]" Value="13"/>
+<Element Index="[1,0,1]" Value="14"/>
+<Element Index="[1,0,2]" Value="15"/>
+<Element Index="[1,0,3]" Value="16"/>
+<Element Index="[1,1,0]" Value="17"/>
+<Element Index="[1,1,1]" Value="18"/>
+<Element Index="[1,1,2]" Value="19"/>
+<Element Index="[1,1,3]" Value="20"/>
+<Element Index="[1,2,0]" Value="21"/>
+<Element Index="[1,2,1]" Value="22"/>
+<Element Index="[1,2,2]" Value="23"/>
+<Element Index="[1,2,3]" Value="24"/>
+</Array>
+</Data>
+</Tag>"""
+
     data_type = 'DINT'
-    src_array = [
+    xml_value = [
         [
             [1, 2, 3, 4],
             [5, 6, 7, 8],
@@ -678,29 +719,29 @@ class TestMultiDimensionalArray(Array, unittest.TestCase):
 
     def test_shape_values(self):
         """Verify correct dimension values."""
-        self.assertEqual(self.tag.shape[0], len(self.src_array[0][0]))
-        self.assertEqual(self.tag.shape[1], len(self.src_array[0]))
-        self.assertEqual(self.tag.shape[2], len(self.src_array))
+        self.assertEqual(self.tag.shape[0], len(self.src_value[0][0]))
+        self.assertEqual(self.tag.shape[1], len(self.src_value[0]))
+        self.assertEqual(self.tag.shape[2], len(self.src_value))
 
     def test_value_read(self):
         """Verify reading values for each dimension."""
-        self.assertEqual(self.tag.value, self.src_array)
+        self.assertEqual(self.tag.value, self.src_value)
 
         for i in range(len(self.tag.value)):
-            self.assertEqual(self.tag.value[i], self.src_array[i])
+            self.assertEqual(self.tag.value[i], self.src_value[i])
 
             for j in range(len(self.tag.value[i])):
-                self.assertEqual(self.tag.value[i][j], self.src_array[i][j])
+                self.assertEqual(self.tag.value[i][j], self.src_value[i][j])
 
     def test_value_write_single(self):
         """Verify writing a single element value."""
-        self.src_array[1][2][3] = 123
+        self.src_value[1][2][3] = 123
         self.tag[1][2][3].value = 123
         self.assert_element_values()
 
     def test_value_write_subarray(self):
         """Verify writing a subarray value."""
-        self.src_array[0][0] = [1000, 1001, 1002, 1003]
+        self.src_value[0][0] = [1000, 1001, 1002, 1003]
         self.tag[0][0].value = [1000, 1001, 1002, 1003]
         self.assert_element_values()
 
@@ -718,7 +759,7 @@ class TestMultiDimensionalArray(Array, unittest.TestCase):
                 [-21, -22, -23, -24]
             ]
         ]
-        self.src_array = new_values
+        self.src_value = new_values
         self.tag.value = new_values
         self.assert_element_values()
 
@@ -737,7 +778,7 @@ class TestMultiDimensionalArray(Array, unittest.TestCase):
 
             # Descend through the source array to select the single value
             # for the given subscript.
-            src_value = self.src_array
+            src_value = self.src_value
             for i in subscript:
                 src_value = src_value[i]
 
@@ -751,7 +792,7 @@ class TestMultiDimensionalArray(Array, unittest.TestCase):
 
             # Descend through the source array to select the single value
             # for the given index.
-            src_value = self.src_array
+            src_value = self.src_value
             for i in index:
                 src_value = src_value[i]
 
@@ -768,7 +809,7 @@ class TestMultiDimensionalArray(Array, unittest.TestCase):
                 ar.description = 'test'
 
 
-class ArrayResize(Array):
+class ArrayResize(Tag):
     """Base class for array resizing tests."""
     def test_shape(self):
         """Ensure the tag's shape value is updated."""
@@ -813,8 +854,18 @@ class ArrayResize(Array):
 
 class ArrayResizeAddDimension(ArrayResize, unittest.TestCase):
     """Tests for resizing an array by adding a dimension."""
+    src_xml = """<Tag Name="array" TagType="Base" DataType="DINT" Dimensions="2" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00 01 00 00 00</Data>
+<Data Format="Decorated">
+<Array DataType="DINT" Dimensions="2" Radix="Decimal">
+<Element Index="[0]" Value="0"/>
+<Element Index="[1]" Value="1"/>
+</Array>
+</Data>
+</Tag>"""
+
     data_type = 'DINT'
-    src_array = [0, 1]
+    xml_value = [0, 1]
 
     def resize(self):
         """Adds a new dimension."""
@@ -824,8 +875,23 @@ class ArrayResizeAddDimension(ArrayResize, unittest.TestCase):
 
 class ArrayResizeRemoveDimension(ArrayResize, unittest.TestCase):
     """Tests for resizing an array by removing a dimension."""
+    src_xml = """<Tag Name="array" TagType="Base" DataType="DINT" Dimensions="3 2" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00 01 00 00 00 02 00 00 00 03 00 00 00 
+04 00 00 00 05 00 00 00</Data>
+<Data Format="Decorated">
+<Array DataType="DINT" Dimensions="3,2" Radix="Decimal">
+<Element Index="[0,0]" Value="0"/>
+<Element Index="[0,1]" Value="1"/>
+<Element Index="[1,0]" Value="2"/>
+<Element Index="[1,1]" Value="3"/>
+<Element Index="[2,0]" Value="4"/>
+<Element Index="[2,1]" Value="5"/>
+</Array>
+</Data>
+</Tag>"""
+
     data_type = 'DINT'
-    src_array = [
+    xml_value = [
         [0, 1],
         [2, 3],
         [4, 5]
@@ -839,8 +905,23 @@ class ArrayResizeRemoveDimension(ArrayResize, unittest.TestCase):
 
 class ArrayResizeEnlarge(ArrayResize, unittest.TestCase):
     """Tests for resizing an array by enlarging a dimension."""
+    src_xml = """<Tag Name="array" TagType="Base" DataType="DINT" Dimensions="3 2" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00 01 00 00 00 02 00 00 00 03 00 00 00 
+04 00 00 00 05 00 00 00</Data>
+<Data Format="Decorated">
+<Array DataType="DINT" Dimensions="3,2" Radix="Decimal">
+<Element Index="[0,0]" Value="0"/>
+<Element Index="[0,1]" Value="1"/>
+<Element Index="[1,0]" Value="2"/>
+<Element Index="[1,1]" Value="3"/>
+<Element Index="[2,0]" Value="4"/>
+<Element Index="[2,1]" Value="5"/>
+</Array>
+</Data>
+</Tag>"""
+
     data_type = 'DINT'
-    src_array = [
+    xml_value = [
         [0, 1],
         [2, 3],
         [4, 5]
@@ -854,8 +935,25 @@ class ArrayResizeEnlarge(ArrayResize, unittest.TestCase):
 
 class ArrayResizeReduce(ArrayResize, unittest.TestCase):
     """Tests for resizing an array by shrinking a dimension."""
+    src_xml = """<Tag Name="array" TagType="Base" DataType="DINT" Dimensions="4 2" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00 01 00 00 00 02 00 00 00 03 00 00 00 
+04 00 00 00 05 00 00 00 06 00 00 00 07 00 00 00</Data>
+<Data Format="Decorated">
+<Array DataType="DINT" Dimensions="4,2" Radix="Decimal">
+<Element Index="[0,0]" Value="0"/>
+<Element Index="[0,1]" Value="1"/>
+<Element Index="[1,0]" Value="2"/>
+<Element Index="[1,1]" Value="3"/>
+<Element Index="[2,0]" Value="4"/>
+<Element Index="[2,1]" Value="5"/>
+<Element Index="[3,0]" Value="6"/>
+<Element Index="[3,1]" Value="7"/>
+</Array>
+</Data>
+</Tag>"""
+
     data_type = 'DINT'
-    src_array = [
+    xml_value = [
         [0, 1],
         [2, 3],
         [4, 5],
@@ -868,10 +966,21 @@ class ArrayResizeReduce(ArrayResize, unittest.TestCase):
         self.tag.shape = self.dim
 
 
-class ArrayResizeInvalid(Array, unittest.TestCase):
+class ArrayResizeInvalid(Tag, unittest.TestCase):
     """Tests for illegal array resizing."""
+    src_xml = """<Tag Name="array" TagType="Base" DataType="DINT" Dimensions="3" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>01 00 00 00 02 00 00 00 03 00 00 00</Data>
+<Data Format="Decorated">
+<Array DataType="DINT" Dimensions="3" Radix="Decimal">
+<Element Index="[0]" Value="1"/>
+<Element Index="[1]" Value="2"/>
+<Element Index="[2]" Value="3"/>
+</Array>
+</Data>
+</Tag>"""
+
     data_type = 'DINT'
-    src_array = [1, 2, 3]
+    xml_value = [1, 2, 3]
 
     def test_too_many_dimensions(self):
         """Confirm an exception is raised for more than 3 dimensions."""
@@ -906,38 +1015,27 @@ class ArrayResizeInvalid(Array, unittest.TestCase):
 
 class Structure(Tag, unittest.TestCase):
     """Structured data tag tests."""
+    src_xml = """<Tag Name="timer" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 E0 FF FF FF FF FE FF FF FF</Data>
+<Data Format="Decorated">
+<Structure DataType="TIMER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="-1"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="-2"/>
+<DataValueMember Name="EN" DataType="BOOL" Value="1"/>
+<DataValueMember Name="TT" DataType="BOOL" Value="1"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="1"/>
+</Structure>
+</Data>
+</Tag>"""
+
     data_type = 'TIMER'
-
-    def initial_value(self):
-        """Creates a mock structured data tag(TIMER)."""
-        attr = {'DataType':'TIMER'}
-        st = ElementTree.Element('Structure', attr)
-
-        self.src_value = {
-            'PRE':-1,
-            'ACC':-2,
-            'EN':1,
-            'TT':1,
-            'DN':1
-            }
-
-        members = [
-            ('PRE', 'DINT'),
-            ('ACC', 'DINT'),
-            ('EN', 'BOOL'),
-            ('TT', 'BOOL'),
-            ('DN', 'BOOL')
-        ]
-
-        for name, datatype in members:
-            attr = {
-                'Name':name,
-                'DataType':datatype,
-                'Value':str(self.src_value[name])
-            }
-            ElementTree.SubElement(st, 'DataValueMember', attr)
-
-        return st
+    xml_value = {
+        'PRE':-1,
+        'ACC':-2,
+        'EN':1,
+        'TT':1,
+        'DN':1
+    }
 
     def test_invalid_value_type(self):
         """Test setting value to a non-dict raises an exception."""
@@ -1036,32 +1134,29 @@ class Structure(Tag, unittest.TestCase):
 
 class Compound(Tag, unittest.TestCase):
     """Tests for a data types containing nested arrays and structures."""
+    src_xml = """<Tag Name="udt" TagType="Base" DataType="udt" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00</Data>
+<Data Format="Decorated">
+<Structure DataType="udt">
+<ArrayMember Name="dint_array" DataType="DINT" Dimensions="10" Radix="Decimal">
+<Element Index="[0]" Value="0"/>
+<Element Index="[1]" Value="0"/>
+<Element Index="[2]" Value="0"/>
+<Element Index="[3]" Value="0"/>
+<Element Index="[4]" Value="0"/>
+<Element Index="[5]" Value="0"/>
+<Element Index="[6]" Value="0"/>
+<Element Index="[7]" Value="0"/>
+<Element Index="[8]" Value="0"/>
+<Element Index="[9]" Value="0"/>
+</ArrayMember>
+</Structure>
+</Data>
+</Tag>"""
+
     data_type = 'udt'
-
-    def initial_value(self):
-        """Generates a mock UDT."""
-        self.src_value = {
-            'dint_array':list(range(10)),
-            }
-
-        attr = {'DataType':'udt'}
-        udt = ElementTree.Element('Structure', attr)
-
-        # Add DINT array.
-        attr = {
-            'Name':'dint_array',
-            'DataType':'DINT',
-            'Dimensions':str(len(self.src_value['dint_array']))
-        }
-        ar = ElementTree.SubElement(udt, 'ArrayMember', attr)
-        for i in range(len(self.src_value['dint_array'])):
-            attr = {
-                'Index':"[{0}]".format(i),
-                'Value':str(self.src_value['dint_array'][i])
-            }
-            e = ElementTree.SubElement(ar, 'Element', attr)
-
-        return udt
 
     def test_member_array_resize(self):
         """Ensure member arrays cannot be resized."""
@@ -1113,8 +1208,13 @@ class Base(unittest.TestCase):
     """Tests for base, i.e. not produced or consumed, tags."""
     def setUp(self):
         """Creates a mock base tag."""
-        attrs = {'TagType':'Base'}
-        self.tag = create_tag('tag_name', 'DINT', attrs=attrs)
+        e = fixture.parse_xml("""<Tag Name="dint" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
+        self.tag = l5x.tag.Tag(e, None)
 
     def test_producer_read(self):
         """Confirm reading the producer attribute raises an exception."""
@@ -1146,30 +1246,35 @@ class Base(unittest.TestCase):
 class Consumed(unittest.TestCase):
     """Tests for attributes specific to consumed tags."""
     def setUp(self):
-        attrs = {'TagType':'Consumed'}
-        self.tag = create_tag('tag_name', 'DINT', attrs=attrs)
-        self.consume_info = ElementTree.SubElement(self.tag.element,
-                                                   'ConsumeInfo')
+        e = fixture.parse_xml("""<Tag Name="dint" TagType="Consumed" DataType="DINT" Radix="Decimal" ExternalAccess="Read/Write">
+<ConsumeInfo Producer="producer" RemoteTag="source_tag" RemoteInstance="0" RPI="20"/>
+<Data>00 00 00 00</Data>
+<ForceData>00 00 00 00 00 00 00 00 00 00 00 00</ForceData>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
+        self.tag = l5x.tag.Tag(e, None)
 
     def test_get_producer(self):
         """Confirm producer returns the correct attribute value."""
-        self.consume_info.attrib['Producer'] = 'foo'
-        self.assertEqual(self.tag.producer, 'foo')
+        self.assertEqual(self.tag.producer, 'producer')
 
     def test_set_producer(self):
         """Confirm setting the producer alters the correct attribute."""
         self.tag.producer = 'spam'
-        self.assertEqual(self.consume_info.attrib['Producer'], 'spam')
+        consume_info = self.tag.element.find('ConsumeInfo')
+        self.assertEqual(consume_info.attrib['Producer'], 'spam')
 
     def test_get_remote_tag(self):
         """Confirm remote tag returns the correct attribute value."""
-        self.consume_info.attrib['RemoteTag'] = 'bar'
-        self.assertEqual(self.tag.remote_tag, 'bar')
+        self.assertEqual(self.tag.remote_tag, 'source_tag')
 
     def test_set_remote_tag(self):
         """Confirm setting the remote tag alters the correct attribute."""
         self.tag.remote_tag = 'eggs'
-        self.assertEqual(self.consume_info.attrib['RemoteTag'], 'eggs')
+        consume_info = self.tag.element.find('ConsumeInfo')
+        self.assertEqual(consume_info.attrib['RemoteTag'], 'eggs')
 
     def test_set_nonstring(self):
         """Confirm an exception is raised when setting to a non-string."""

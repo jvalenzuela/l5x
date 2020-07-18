@@ -6,10 +6,29 @@ a single output file for final validation by RSLogix.
 import io
 import l5x
 import xml.dom.minidom
+import xml.etree.ElementTree as ElementTree
 
 
 INPUT_FILE = 'tests/test.L5X'
 OUTPUT_FILE = 'tests/output.L5X'
+
+
+def parse_xml(xml_str):
+    """Parses XML from a string."""
+    class Parser(l5x.Project):
+        """Use the Project class to handle CDATA conversion."""
+        def __init__(self, s):
+            # Swap out CDATA sections before parsing.
+            cdata_replaced = self.convert_to_cdata_element(s)
+
+            # The (unicode) string needs to be converted back to a series
+            # of bytes before ElementTree parses it.
+            encoded = cdata_replaced.encode('UTF-8')
+
+            self.doc = ElementTree.fromstring(encoded)
+
+    parser = Parser(xml_str)
+    return parser.doc
 
 
 def setup():
