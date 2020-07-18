@@ -78,18 +78,6 @@ class Tag(object):
         except AttributeError:
             pass
 
-    def test_desc(self):
-        """Test reading and writing tag's description."""
-        desc = 'description'
-        self.tag.description = desc
-        self.assertEqual(self.tag.description, desc)
-
-    def test_del_desc(self):
-        """Test removing a tag's description."""
-        self.tag.description = 'description'
-        self.tag.description = None
-        self.assertIsNone(self.tag.description)
-
     def test_invalid_desc(self):
         """Ensure non-string types raise an exception."""
         with self.assertRaises(TypeError):
@@ -1162,46 +1150,6 @@ class Compound(Tag, unittest.TestCase):
         """Ensure member arrays cannot be resized."""
         with self.assertRaises(AttributeError):
             self.tag['dint_array'].shape = (1,)
-
-
-class DescriptionRemoval(Tag, unittest.TestCase):
-    """Tests for deleting comments."""
-    name = 'desc'
-
-    def test_desc(self):
-        """Override for Tag method so no description is set."""
-        pass
-
-    def test_del_desc(self):
-        """Test deleting all member comments."""
-        member = self.tag['dint_array']
-        member.description = None
-        for i in range(member.shape[0]):
-            member[i].description = None
-            for bit in range(len(member[i])):
-                member[i][bit].description = None
-
-        self.clear_struct(self.tag['timer'])
-
-        member = self.tag['counter_array']
-        member.description = None
-        for i in range(member.shape[0]):
-            self.clear_struct(member[i])
-
-        self.tag['real'].description = None
-
-    def clear_struct(self, struct):
-        """Removes descriptions from a structured data type."""
-        struct.description = None
-        for member in struct.names:
-            struct[member].description = None
-            try:
-                bits = len(struct[member])
-            except TypeError:
-                pass
-            else:
-                for bit in range(bits):
-                    struct[member][bit].description = None
 
 
 class Base(unittest.TestCase):
