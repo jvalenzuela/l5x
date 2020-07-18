@@ -1304,8 +1304,9 @@ class LanguageBase(unittest.TestCase):
     """Base class for tests involving multilanguage comments and descriptions."""
     TARGET_LANGUAGE = 'en-US'
 
-    def setUp(self):
-        self.tag = create_tag('tag_name', 'DINT')
+    def create_tag(self, xml_str):
+        e = fixture.parse_xml(xml_str)
+        self.tag = l5x.tag.Tag(e, None)
 
     def set_multilanguage(self):
         """Enables multilingual comments."""
@@ -1337,7 +1338,15 @@ class DescriptionLanguage(LanguageBase):
     """Tests for multilanguage descriptions."""
     def test_single_read(self):
         """Confirm reading a description from a single-language project."""
-        self.add_description('foo')
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[foo]]>
+</Description>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.assertEqual(self.tag.description, 'foo')
 
     def test_multi_read(self):
@@ -1345,21 +1354,45 @@ class DescriptionLanguage(LanguageBase):
         Confirm reading a description from a multi-language project returns
         only content from the current language.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<LocalizedDescription Lang="en-US">
+<![CDATA[pass]]>
+</LocalizedDescription>
+<LocalizedDescription Lang="zh-CN">
+<![CDATA[fail]]>
+</LocalizedDescription>
+</Description>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_description('pass', self.TARGET_LANGUAGE)
-        self.add_description('fail', 'es-AR')
         self.assertEqual(self.tag.description, 'pass')
 
     def test_single_read_none(self):
         """
         Confirm reading an empty description from a single-language project.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.assertIsNone(self.tag.description)
 
     def test_multi_read_none(self):
         """
         Confirm reading an empty description from a multi-language project.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
         self.assertIsNone(self.tag.description)
 
@@ -1368,17 +1401,39 @@ class DescriptionLanguage(LanguageBase):
         Confirm reading an empty description from a multi-language project
         that has descriptions in other languages.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<LocalizedDescription Lang="zh-CN">
+<![CDATA[fail]]>
+</LocalizedDescription>
+</Description>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_description('other', 'es-AR')
         self.assertIsNone(self.tag.description)
 
     def test_single_new(self):
         """Confirm adding a description to a single-language project."""
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.tag.description = 'new'
         self.assert_description('new')
 
     def test_multi_new(self):
         """Confirm adding a description to a multi-language project."""
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
         self.tag.description = 'new'
         self.assert_localized_description('new', self.TARGET_LANGUAGE)
@@ -1388,18 +1443,36 @@ class DescriptionLanguage(LanguageBase):
         Confirm adding a description to a multi-language project that has
         descriptions in other languages.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<LocalizedDescription Lang="zh-CN">
+<![CDATA[other]]>
+</LocalizedDescription>
+</Description>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_description('other', 'es-AR')
         self.tag.description = 'new'
         self.assert_localized_description('new', self.TARGET_LANGUAGE)
-        self.assert_localized_description('other', 'es-AR')
+        self.assert_localized_description('other', 'zh-CN')
 
     def test_single_overwrite(self):
         """
         Confirm overwriting an existing description in a single-language
         project.
         """
-        self.add_description('old')
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[foo]]>
+</Description>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.tag.description = 'new'
         self.assert_description('new')
 
@@ -1408,8 +1481,18 @@ class DescriptionLanguage(LanguageBase):
         Confirm overwriting an existing description in a multi-language
         project.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<LocalizedDescription Lang="en-US">
+<![CDATA[old]]>
+</LocalizedDescription>
+</Description>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_description('old', self.TARGET_LANGUAGE)
         self.tag.description = 'new'
         self.assert_localized_description('new', self.TARGET_LANGUAGE)
 
@@ -1419,23 +1502,53 @@ class DescriptionLanguage(LanguageBase):
         project that has descriptions on other languages only affects
         the description in the current language.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<LocalizedDescription Lang="en-US">
+<![CDATA[old]]>
+</LocalizedDescription>
+<LocalizedDescription Lang="zh-CN">
+<![CDATA[other]]>
+</LocalizedDescription>
+</Description>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_description('old', self.TARGET_LANGUAGE),
-        self.add_description('other', 'es-AR')
         self.tag.description = 'new'
         self.assert_localized_description('new', self.TARGET_LANGUAGE)
-        self.assert_localized_description('other', 'es-AR')
+        self.assert_localized_description('other', 'zh-CN')
 
     def test_single_delete(self):
         """Confirm removing a description from a single-language project."""
-        self.add_description('foo')
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[foo]]>
+</Description>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.tag.description = None
         self.assert_no_matching_element('Description')
 
     def test_multi_delete(self):
         """Confirm removing a description from a multi-language project."""
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<LocalizedDescription Lang="en-US">
+<![CDATA[old]]>
+</LocalizedDescription>
+</Description>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_description('foo', self.TARGET_LANGUAGE)
         self.tag.description = None
         self.assert_no_matching_element('Description')
 
@@ -1444,9 +1557,21 @@ class DescriptionLanguage(LanguageBase):
         Confirm removing a description from a multi-language project affects
         only descriptions in the current language.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description>
+<LocalizedDescription Lang="en-US">
+<![CDATA[old]]>
+</LocalizedDescription>
+<LocalizedDescription Lang="zh-CN">
+<![CDATA[other]]>
+</LocalizedDescription>
+</Description>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_description('foo', self.TARGET_LANGUAGE),
-        self.add_description('other', 'es-AR')
         self.tag.description = None
 
         # Ensure no localized description remains in the current language.
@@ -1455,31 +1580,7 @@ class DescriptionLanguage(LanguageBase):
         self.assert_no_matching_element(path)
 
         # Ensure descriptions in other languages are unaffected.
-        self.assert_localized_description('other', 'es-AR')
-
-    def add_description(self, text, language=None):
-        """Adds a description to the mock controller tag."""
-        # Find the existing Description element, or create a new one if
-        # necessary.
-        desc = self.tag.element.find('Description')
-        if desc is None:
-            desc = ElementTree.SubElement(self.tag.element, 'Description')
-
-        cdata = ElementTree.Element(dom.CDATA_TAG)
-        cdata.text = text
-
-        # CDATA text goes directly under the Description element if no
-        # language is specified.
-        if language is None:
-            desc.append(cdata)
-
-        # Otherwise, create a localized element for the given language
-        # to contain the CDATA.
-        else:
-            attr = {'Lang':language}
-            local = ElementTree.SubElement(desc, 'LocalizedDescription',
-                                           attr)
-            local.append(cdata)
+        self.assert_localized_description('other', 'zh-CN')
 
     def assert_description(self, text):
         """
@@ -1505,7 +1606,17 @@ class CommentLanguage(LanguageBase):
     """Tests for multilanguage comments."""
     def test_single_read(self):
         """Confirm reading a comment from a single-language project."""
-        self.add_comment('.0', 'foo')
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<![CDATA[foo]]>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.assertEqual(self.tag[0].description, 'foo')
 
     def test_multi_read(self):
@@ -1513,15 +1624,35 @@ class CommentLanguage(LanguageBase):
         Confirm reading a comment from a multi-language project returns
         only content from the current language.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<LocalizedComment Lang="en-US">
+<![CDATA[pass]]>
+</LocalizedComment>
+<LocalizedComment Lang="zh-CN">
+<![CDATA[fail]]>
+</LocalizedComment>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_comment('.0', 'pass', self.TARGET_LANGUAGE),
-        self.add_comment('.0', 'fail', 'zh-CN')
         self.assertEqual(self.tag[0].description, 'pass')
 
     def test_single_read_none(self):
         """
         Confirm reading a nonexistent comment from a single-language project.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.assertIsNone(self.tag[0].description)
 
     def test_multi_read_none_foreign(self):
@@ -1529,17 +1660,41 @@ class CommentLanguage(LanguageBase):
         Confirm reading a nonexistent comment from a multi-language project
         that has comments in other languages.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<LocalizedComment Lang="zh-CN">
+<![CDATA[other]]>
+</LocalizedComment>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_comment('.0', 'other', 'zh-CN')
         self.assertIsNone(self.tag[0].description)
 
     def test_single_new(self):
         """Confirm adding a comment to a single-language project."""
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.tag[0].description = 'new'
         self.assert_comment('.0', 'new')
 
     def test_multi_new(self):
         """Confirm adding a comment to a multi-language project."""
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
         self.tag[0].description = 'new'
         self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
@@ -1549,8 +1704,20 @@ class CommentLanguage(LanguageBase):
         Confirm adding a comment to a multi-language project that has
         comments in other languages.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<LocalizedComment Lang="zh-CN">
+<![CDATA[other]]>
+</LocalizedComment>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_comment('.0', 'other', 'zh-CN')
         self.tag[0].description = 'new'
         self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
         self.assert_localized_comment('.0', 'other', 'zh-CN')
@@ -1560,7 +1727,17 @@ class CommentLanguage(LanguageBase):
         Confirm overwriting an existing comment in a single-language
         project.
         """
-        self.add_comment('.0', 'old')
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<![CDATA[foo]]>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.tag[0].description = 'new'
         self.assert_comment('.0', 'new')
 
@@ -1569,8 +1746,20 @@ class CommentLanguage(LanguageBase):
         Confirm overwriting an existing comment in a multi-language
         project.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<LocalizedComment Lang="en-US">
+<![CDATA[old]]>
+</LocalizedComment>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_comment('.0', 'old', self.TARGET_LANGUAGE)
         self.tag[0].description = 'new'
         self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
 
@@ -1580,16 +1769,40 @@ class CommentLanguage(LanguageBase):
         project that has comments on other languages only affects
         the comment in the current language.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<LocalizedComment Lang="en-US">
+<![CDATA[old]]>
+</LocalizedComment>
+<LocalizedComment Lang="zh-CN">
+<![CDATA[other]]>
+</LocalizedComment>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_comment('.0', 'old', self.TARGET_LANGUAGE)
-        self.add_comment('.0', 'other', 'zh-CN')
         self.tag[0].description = 'new'
         self.assert_localized_comment('.0', 'new', self.TARGET_LANGUAGE)
         self.assert_localized_comment('.0', 'other', 'zh-CN')
 
     def test_single_delete(self):
         """Confirm removing a comment from a single-language project."""
-        self.add_comment('.0', 'foo')
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<![CDATA[foo]]>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.tag[0].description = None
         self.assert_no_matching_element('Comments')
 
@@ -1598,8 +1811,20 @@ class CommentLanguage(LanguageBase):
         Confirm removing a comment from a single-language project
         does not affect comments for other operands.
         """
-        self.add_comment('.0', 'foo')
-        self.add_comment('.1', 'bar')
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<![CDATA[foo]]>
+</Comment>
+<Comment Operand=".1">
+<![CDATA[bar]]>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.tag[0].description = None
 
         # Confirm the target comment was removed.
@@ -1613,16 +1838,40 @@ class CommentLanguage(LanguageBase):
         Confirm removing the last comment in a single-language project
         also removes the overall Comments parent element.
         """
-        self.add_comment('.0', 'foo')
-        self.add_comment('.1', 'bar')
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<![CDATA[foo]]>
+</Comment>
+<Comment Operand=".1">
+<![CDATA[bar]]>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.tag[0].description = None
         self.tag[1].description = None
         self.assert_no_matching_element('Comments')
 
     def test_multi_delete(self):
         """Confirm removing a comment from a multi-language project."""
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<LocalizedComment Lang="en-US">
+<![CDATA[old]]>
+</LocalizedComment>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
         self.tag[0].description = None
         self.assert_no_matching_element('Comments')
 
@@ -1631,9 +1880,25 @@ class CommentLanguage(LanguageBase):
         Confirm removing a comment from a multi-language project
         does not affect comments for other operands.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<LocalizedComment Lang="en-US">
+<![CDATA[foo]]>
+</LocalizedComment>
+</Comment>
+<Comment Operand=".1">
+<LocalizedComment Lang="en-US">
+<![CDATA[bar]]>
+</LocalizedComment>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
-        self.add_comment('.1', 'bar', self.TARGET_LANGUAGE)
         self.tag[0].description = None
 
         # Confirm the target comment was removed.
@@ -1649,9 +1914,25 @@ class CommentLanguage(LanguageBase):
         Confirm removing the last comment in a multi-language project
         also removes the overall Comments parent element.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<LocalizedComment Lang="en-US">
+<![CDATA[foo]]>
+</LocalizedComment>
+</Comment>
+<Comment Operand=".1">
+<LocalizedComment Lang="en-US">
+<![CDATA[bar]]>
+</LocalizedComment>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
-        self.add_comment('.1', 'bar', self.TARGET_LANGUAGE)
         self.tag[0].description = None
         self.tag[1].description = None
         self.assert_no_matching_element('Comments')
@@ -1661,41 +1942,25 @@ class CommentLanguage(LanguageBase):
         Confirm removing a comment from a multi-language project affects
         only comments in the current language.
         """
+        self.create_tag("""<Tag Name="tag" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<LocalizedComment Lang="en-US">
+<![CDATA[foo]]>
+</LocalizedComment>
+<LocalizedComment Lang="zh-CN">
+<![CDATA[other]]>
+</LocalizedComment>
+</Comment>
+</Comments>
+<Data>00 00 00 00</Data>
+<Data Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</Data>
+</Tag>""")
         self.set_multilanguage()
-        self.add_comment('.0', 'foo', self.TARGET_LANGUAGE)
-        self.add_comment('.0', 'bar', 'zh-CN')
         self.tag[0].description = None
-        self.assert_localized_comment('.0', 'bar', 'zh-CN')
-
-    def add_comment(self, operand, text, language=None):
-        """Creates a comment assigned to a given operand."""
-        # Locate the Comments element, creating one if necessary.
-        comments = self.tag.element.find('Comments')
-        if comments is None:
-            comments = ElementTree.SubElement(self.tag.element, 'Comments')
-
-        # Find the Comment element with the matching operand, or
-        # create a new one if needed.
-        path = "Comment[@Operand='{0}']".format(operand)
-        comment = comments.find(path)
-        if comment is None:
-            attr = {'Operand':operand}
-            comment = ElementTree.SubElement(comments, 'Comment', attr)
-
-        cdata = ElementTree.Element(dom.CDATA_TAG)
-        cdata.text = text
-
-        # Put the CDATA directly under the Comment element for single-language
-        # projects.
-        if language is None:
-            comment.append(cdata)
-
-        # Create a localized comment for multi-language projects.
-        else:
-            attr = {'Lang':language}
-            localized = ElementTree.SubElement(comment, 'LocalizedComment',
-                                               attr)
-            localized.append(cdata)
+        self.assert_localized_comment('.0', 'other', 'zh-CN')
 
     def assert_comment(self, operand, text):
         """
