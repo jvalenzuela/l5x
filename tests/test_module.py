@@ -11,14 +11,66 @@ import unittest
 class Modules(unittest.TestCase):
     """Tests for the project's top-level modules container."""
     def setUp(self):
-        self.prj = fixture.setup()
+        self.prj = fixture.string_to_project("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="20.01" TargetName="test" TargetType="Controller" ContainsContext="false" Owner="admin" ExportDate="Mon Jul 20 02:35:01 2020" ExportOptions="DecoratedData ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Target" Name="test" ProcessorType="1756-L61" MajorRev="20" MinorRev="11" TimeSlice="20" ShareUnusedTimeSlice="1" ProjectCreationDate="Sat Jul 18 23:53:16 2020" LastModifiedDate="Sat Jul 18 23:53:18 2020" SFCExecutionControl="CurrentActive" SFCRestartPosition="MostRecent"
+ SFCLastScan="DontScan" ProjectSN="16#0000_0000" MatchProjectToController="false" CanUseRPIFromProducer="false" InhibitAutomaticFirmwareUpdate="0">
+<Modules>
+<Module Name="Local" CatalogNumber="1756-L61" Vendor="1" ProductType="14" ProductCode="54" Major="20" Minor="11" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="true"
+>
+<EKey State="ExactMatch"/>
+<Ports>
+<Port Id="1" Address="0" Type="ICP" Upstream="false">
+<Bus Size="10"/>
+</Port>
+</Ports>
+</Module>
+<Module Name="mod1" CatalogNumber="1756-ENBT/A" Vendor="1" ProductType="12" ProductCode="58" Major="5" Minor="1" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="false"
+>
+<EKey State="CompatibleModule"/>
+<Ports>
+<Port Id="1" Address="1" Type="ICP" Upstream="true"/>
+<Port Id="2" Type="Ethernet" Upstream="false">
+<Bus/>
+</Port>
+</Ports>
+<Communications CommMethod="536870914">
+<Connections/>
+</Communications>
+<ExtendedProperties>
+<public><ConfigID>4325481</ConfigID></public></ExtendedProperties>
+</Module>
+<Module Name="mod2" CatalogNumber="1756-ENBT/A" Vendor="1" ProductType="12" ProductCode="58" Major="5" Minor="1" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="false"
+>
+<EKey State="CompatibleModule"/>
+<Ports>
+<Port Id="1" Address="2" Type="ICP" Upstream="true"/>
+<Port Id="2" Type="Ethernet" Upstream="false">
+<Bus/>
+</Port>
+</Ports>
+<Communications CommMethod="536870914">
+<Connections/>
+</Communications>
+<ExtendedProperties>
+<public><ConfigID>4325481</ConfigID></public></ExtendedProperties>
+</Module>
+</Modules>
+<Tags/>
+<Programs/>
+</Controller>
+</RSLogix5000Content>
+""")
 
-    def test_names(self):
+    def test_names_read(self):
         """Ensure names attribute returns a non-empty set of strings."""
-        self.assertGreater(len(self.prj.modules.names), 0)
-        for mod in self.prj.modules.names:
-            self.assertIsInstance(mod, str)
-            self.assertGreater(len(mod), 0)
+        self.assertEqual(set(self.prj.modules.names),
+                         set(('Local', 'mod1', 'mod2')))
+
+    def test_names_readonly(self):
+        """Ensure an exception is raised when attempting to write to the names attribute."""
+        with self.assertRaises(AttributeError):
+            self.prj.modules.names = 'foo'
 
 
 class Module(unittest.TestCase):
