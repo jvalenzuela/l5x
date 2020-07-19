@@ -218,28 +218,17 @@ class PortStandard(unittest.TestCase):
 
 class SafetyNetworkNumber(unittest.TestCase):
     """Tests for safety network numbers."""
-    class DummyModule(object):
-        """Test fixture object."""
-        snn = module.SafetyNetworkNumber()
-
-        def __init__(self, element):
-            self.element = element
-
     def setUp(self):
-        attrs = {'SafetyNetwork':"16#0000_0000_0000_0000",
-                 'Name':'dummy'}
-        element = ElementTree.Element('Module', attrs)
-        self.module = self.DummyModule(element)
-
-    def test_snn_type(self):
-        """Confirm SNN is a 12 character string."""
-        snn = self.module.snn
-        self.assertIsInstance(snn, str)
-        self.assertEqual(len(snn), 12)
-
-    def test_snn_value(self):
-        """Confirm SNN number is a valid hex value."""
-        x = int(self.module.snn, 16)
+        element = fixture.parse_xml(r"""<Module Name="Local" CatalogNumber="1756-L61S" Vendor="1" ProductType="14" ProductCode="67" Major="20" Minor="11" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="true"
+ SafetyNetwork="16#0000_4544_03d1_e91a">
+<EKey State="ExactMatch"/>
+<Ports>
+<Port Id="1" Address="0" Type="ICP" Upstream="false" Width="2">
+<Bus Size="10"/>
+</Port>
+</Ports>
+</Module>""")
+        self.module = module.Module(element)
 
     def test_invalid_snn_type(self):
         """Confirm setting SNN to a non-string raises an exception."""
@@ -256,31 +245,8 @@ class SafetyNetworkNumber(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.module.snn = 'not hex'
 
-    def test_set_snn(self):
-        """Test setting SNN to a legal value."""
-        self.module.snn = '0000deadbeef'
-        self.assertEqual(self.module.element.attrib['SafetyNetwork'],
-                         '16#0000_0000_DEAD_BEEF')
-
     def test_set_snn_underscore(self):
         """Test setting SNN to a value including underscores."""
         self.module.snn = '0000_1111_2222'
         self.assertEqual(self.module.element.attrib['SafetyNetwork'],
                          '16#0000_0000_1111_2222')
-
-    def test_delete(self):
-        """Confirm SNN can not be removed by setting to None."""
-        with self.assertRaises(TypeError):
-            self.module.snn = None
-
-    def test_nonsafety_read(self):
-        """Confirm reading from a non-safety object raises an exception."""
-        del self.module.element.attrib['SafetyNetwork']
-        with self.assertRaises(TypeError):
-            self.module.snn
-
-    def test_nonsafety_write(self):
-        """Confirm writing a SNN to a non-safety object raises an exception."""
-        del self.module.element.attrib['SafetyNetwork']
-        with self.assertRaises(TypeError):
-            self.module.snn = '0000deadbeef'
