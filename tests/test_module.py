@@ -73,18 +73,34 @@ class Modules(unittest.TestCase):
             self.prj.modules.names = 'foo'
 
 
-class Module(unittest.TestCase):
-    """Tests for a single module instance."""
+class ModuleStandard(unittest.TestCase):
+    """Tests for a single, non-safety module instance."""
     def setUp(self):
-        element = ElementTree.Element('Module')
-        ElementTree.SubElement(element, 'Ports')
+        element = fixture.parse_xml("""<Module Name="mod1" CatalogNumber="1756-ENBT/A" Vendor="1" ProductType="12" ProductCode="58" Major="5" Minor="1" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="false"
+>
+<EKey State="CompatibleModule"/>
+<Ports>
+<Port Id="1" Address="1" Type="ICP" Upstream="true"/>
+<Port Id="2" Type="Ethernet" Upstream="false">
+<Bus/>
+</Port>
+</Ports>
+<Communications CommMethod="536870914">
+<Connections/>
+</Communications>
+<ExtendedProperties>
+<public><ConfigID>4325481</ConfigID></public></ExtendedProperties>
+</Module>""")
         self.module = module.Module(element)
 
-    def test_port_names(self):
-        """Ensure names returns a non-empty list of integers."""
-        ports = [1, 42]
-        [self.add_port(p) for p in ports]
-        self.assertEqual(set(ports), set(self.module.ports.names))
+    def test_port_names_read(self):
+        """Ensure names returns a list of port IDs."""
+        self.assertEqual(set(self.module.ports.names), set((1, 2)))
+
+    def test_port_names_readonly(self):
+        """Ensure an exception is raised when attempting to write to the port names attribute."""
+        with self.assertRaises(AttributeError):
+            self.module.ports.names = 'foo'
 
     def test_invalid_port_index(self):
         """Ensure invalid port indices raise an exception."""
@@ -93,19 +109,17 @@ class Module(unittest.TestCase):
 
     def test_port_type(self):
         """Confirm accessing a port returns a Port instance."""
-        self.add_port(100)
-        self.assertIsInstance(self.module.ports[100], module.Port)
+        self.assertIsInstance(self.module.ports[1], module.Port)
 
-    def test_snn(self):
-        """Confirm the snn attribute yields a safety network number."""
-        self.module.element.attrib['SafetyNetwork'] = '16#0000_1337_d00d_0100'
-        self.assertEqual(self.module.snn ,'1337d00d0100')
+    def test_snn_read(self):
+        """Confirm reading the SNN raises an exception."""
+        with self.assertRaises(TypeError):
+            self.module.snn
 
-    def add_port(self, id):
-        """Creates a dummy port."""
-        ports = self.module.element.find('Ports')
-        attr = {'Id':str(id)}
-        ElementTree.SubElement(ports, 'Port', attr)
+    def test_snn_write(self):
+        """Confirm writing the SNN raises an exception."""
+        with self.assertRaises(TypeError):
+            self.module.snn = 'foo'
 
 
 class Port(unittest.TestCase):
