@@ -179,36 +179,41 @@ class ModuleSafetyPortSNN(unittest.TestCase):
             self.module.snn = 'foo'
 
 
-class Port(unittest.TestCase):
-    """Tests for a module communication port."""
+class PortStandard(unittest.TestCase):
+    """Tests for a non-safety module communication port."""
     def setUp(self):
-        attrib = {'Type':'ICP',
-                  'Address':'1',
-                  'SafetyNetwork':'16#0000_1337_d00d_0100'}
-        element = ElementTree.Element('Port', attrib)
+        element = fixture.parse_xml(r"""<Port Id="2" Address="192.168.0.1" Type="Ethernet" Upstream="false">
+<Bus/>
+</Port>""")
         self.port = module.Port(element)
 
-    def test_type(self):
+    def test_type_read(self):
         """Type attribute return a the current attribute value."""
-        self.assertEqual(self.port.type, 'ICP')
+        self.assertEqual(self.port.type, 'Ethernet')
 
-    def test_type_access(self):
+    def test_type_write(self):
         """Attempting to modify port type should raise an exception."""
         with self.assertRaises(AttributeError):
             self.ports.type = 'foo'
 
     def test_address_read(self):
         """Confirm the current address is returned via the address attribute."""
-        self.assertEqual(self.port.address, '1')
+        self.assertEqual(self.port.address, '192.168.0.1')
 
     def test_address_write(self):
         """Confirm correct attribute is updated when setting a new address."""
         self.port.address = '42'
         self.assertEqual(self.port.element.attrib['Address'], '42')
 
-    def test_snn(self):
-        """Confirm the snn attribute yields the safety network number."""
-        self.assertEqual(self.port.snn, '1337d00d0100')
+    def test_snn_read(self):
+        """Confirm reading the SNN raises an exception."""
+        with self.assertRaises(TypeError):
+            self.port.snn
+
+    def test_snn_write(self):
+        """Confirm writing the SNN raises an exception."""
+        with self.assertRaises(TypeError):
+            self.port.snn = 'foo'
 
 
 class SafetyNetworkNumber(unittest.TestCase):
