@@ -9,10 +9,6 @@ import xml.dom.minidom
 import xml.etree.ElementTree as ElementTree
 
 
-INPUT_FILE = 'tests/test.L5X'
-OUTPUT_FILE = 'tests/output.L5X'
-
-
 def parse_xml(xml_str):
     """Parses XML from a string."""
     class Parser(l5x.Project):
@@ -31,18 +27,16 @@ def parse_xml(xml_str):
     return parser.doc
 
 
-def setup():
-    """Called by setUpModule to acquire the project for testing."""
+def string_to_project(s):
+    """Parses an XML string into a L5X project."""
+    # Convert to unicode as needed for Python 2.7.
     try:
-        prj = l5x.Project(OUTPUT_FILE)
-    except IOError:
-        prj = l5x.Project(INPUT_FILE)
-    return prj
+        s = unicode(s)
+    except NameError:
+        pass
 
-
-def teardown(prj):
-    """Called by tearDownModule to write the tests final output data."""
-    prj.write(OUTPUT_FILE)
+    buf = io.StringIO(s)
+    return l5x.Project(buf)
 
 
 def create_project(*populate):
