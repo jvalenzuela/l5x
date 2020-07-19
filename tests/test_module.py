@@ -179,17 +179,15 @@ class ModuleSafetyPortSNN(unittest.TestCase):
             self.module.snn = 'foo'
 
 
-class PortStandard(unittest.TestCase):
-    """Tests for a non-safety module communication port."""
+class Port(object):
+    """Base class with common test cases for both standard and safety ports."""
     def setUp(self):
-        element = fixture.parse_xml(r"""<Port Id="2" Address="192.168.0.1" Type="Ethernet" Upstream="false">
-<Bus/>
-</Port>""")
+        element = fixture.parse_xml(self.xml)
         self.port = module.Port(element)
 
     def test_type_read(self):
         """Type attribute return a the current attribute value."""
-        self.assertEqual(self.port.type, 'Ethernet')
+        self.assertEqual(self.port.type, self.port.element.attrib['Type'])
 
     def test_type_write(self):
         """Attempting to modify port type should raise an exception."""
@@ -198,12 +196,19 @@ class PortStandard(unittest.TestCase):
 
     def test_address_read(self):
         """Confirm the current address is returned via the address attribute."""
-        self.assertEqual(self.port.address, '192.168.0.1')
+        self.assertEqual(self.port.address, self.port.element.attrib['Address'])
 
     def test_address_write(self):
         """Confirm correct attribute is updated when setting a new address."""
         self.port.address = '42'
         self.assertEqual(self.port.element.attrib['Address'], '42')
+
+
+class PortStandard(Port, unittest.TestCase):
+    """Tests for a non-safety module communication port."""
+    xml = r"""<Port Id="2" Address="192.168.0.1" Type="Ethernet" Upstream="false">
+<Bus/>
+</Port>"""
 
     def test_snn_read(self):
         """Confirm reading the SNN raises an exception."""
@@ -214,6 +219,23 @@ class PortStandard(unittest.TestCase):
         """Confirm writing the SNN raises an exception."""
         with self.assertRaises(TypeError):
             self.port.snn = 'foo'
+
+
+class PortSafety(Port, unittest.TestCase):
+    """Tests for a safety module communication port."""
+    xml = r"""<Port Id="1" Address="0" Type="ICP" Upstream="false" Width="2" SafetyNetwork="16#0000_1337_d00d_0100">
+<Bus Size="4"/>
+</Port>"""
+
+    def test_snn_read(self):
+        """Confirm reading the SNN."""
+        self.assertEqual(self.port.snn, '1337d00d0100')
+
+    def test_snn_write(self):
+        """Confirm writing the SNN correctly updates the XML attribute."""
+        self.port.snn = '0'
+        self.assertEqual(self.port.element.attrib['SafetyNetwork'],
+                         '16#0000_0000_0000_0000')
 
 
 class SafetyNetworkNumber(unittest.TestCase):
