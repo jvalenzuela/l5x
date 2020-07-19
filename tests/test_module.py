@@ -122,6 +122,63 @@ class ModuleStandard(unittest.TestCase):
             self.module.snn = 'foo'
 
 
+class ModuleSafetySingleSNN(unittest.TestCase):
+    """Tests for safety modules with a single SNN for the entire module."""
+    def setUp(self):
+        self.element = fixture.parse_xml("""<Module Name="Local" CatalogNumber="1756-L61S" Vendor="1" ProductType="14" ProductCode="67" Major="20" Minor="11" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="true"
+ SafetyNetwork="16#0000_4544_03d1_e91a">
+<EKey State="ExactMatch"/>
+<Ports>
+<Port Id="1" Address="0" Type="ICP" Upstream="false" Width="2">
+<Bus Size="10"/>
+</Port>
+</Ports>
+</Module>""")
+        self.module = module.Module(self.element)
+
+    def test_snn_read(self):
+        """Confirm reading the SNN yields the module's SNN."""
+        self.assertEqual(self.module.snn, '454403d1e91a')
+
+    def test_snn_write(self):
+        """Confirm writing the SNN correctly updates the XML attribute."""
+        self.module.snn = '0'
+        self.assertEqual(self.element.attrib['SafetyNetwork'],
+                         '16#0000_0000_0000_0000')
+
+
+class ModuleSafetyPortSNN(unittest.TestCase):
+    """
+    Tests for safety modules with per-port SNNs. These just confirm the
+    module itself has no SNN as the SNNs must be accessed via the port
+    instances, which are covered in separate unit tests.
+    """
+    def setUp(self):
+        element = fixture.parse_xml("""<Module Name="Local" CatalogNumber="1756-L83ES" Vendor="1" ProductType="14" ProductCode="213" Major="31" Minor="11" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="true"
+>
+<EKey State="Disabled"/>
+<Ports>
+<Port Id="1" Address="0" Type="ICP" Upstream="false" Width="2" SafetyNetwork="16#0000_1337_d00d_0100">
+<Bus Size="4"/>
+</Port>
+<Port Id="2" Type="Ethernet" Upstream="false" SafetyNetwork="16#0000_1337_d00d_0101">
+<Bus/>
+</Port>
+</Ports>
+</Module>""")
+        self.module = module.Module(element)
+
+    def test_snn_read(self):
+        """Confirm reading the SNN raises an exception."""
+        with self.assertRaises(TypeError):
+            self.module.snn
+
+    def test_snn_write(self):
+        """Confirm writing the SNN raises an exception."""
+        with self.assertRaises(TypeError):
+            self.module.snn = 'foo'
+
+
 class Port(unittest.TestCase):
     """Tests for a module communication port."""
     def setUp(self):
