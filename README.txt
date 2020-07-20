@@ -250,18 +250,31 @@ address of an Ethernet port, which is usually port 2:
 	'Ethernet'
 	>> prj.modules['ENBT'].ports[2].address = '192.168.0.1'
 
-Safety modules, including the controller, contain a read/write snn
-attribute for manipulating the module's safety network number.
-It evaluates to a 12-character string representing the hexadecimal
-safety network number; intervening underscores as seen with RSLogix
-are stripped away. Acceptable values to set a new number need not be
-zero padded and may contain intervening underscores, however, it must
+
+Safety Network Numbers
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Safety network numbers for safety modules, including the controller, can be
+accessed via the snn attribute of either the module or its ports.
+For modules with a single safety network number, such as safety I/O modules,
+the snn is an attribute of the module itself. Safety modules with multiple
+communication ports, such as controllers with integrated Ethernet ports,
+have multiple safety network numbers, which are attributes of its
+ports.
+
+Module and port safety network numbers use the same format: a twelve character
+string representing the hexadecimal safety network number; intervening
+underscores as seen with RSLogix are stripped away. Acceptable values to
+set a new number need not be zero padded and may contain intervening
+underscores, however, it must
 be a string yielding a hexadecimal number not exceeding 48 bits.
 
 ::
 
-	>>> prj.controller.snn
+	>>> prj.controller.snn # Controller with a single SNN.
 	'000011112222'
+	>>> prj.controller.ports[0].snn # Controller with multiple, port-specific SNNs.
+	'0123456789AB'
 	>>> prj.modules['safe_in'].snn
 	'AAAABBBBCCCC'
 	>>> prj.controller.snn = '42'
