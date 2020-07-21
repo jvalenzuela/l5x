@@ -70,6 +70,26 @@ class SafetyNetworkNumber(object):
             raise TypeError(msg)
 
 
+class NatAddress(AttributeDescriptor):
+    """Descriptor class for accessing port NAT addresses."""
+    def to_xml(self, port, new_address):
+        """
+        Override for the default converter method to enforce custom validations
+        specifc to NAT addresses.
+        """
+        # The port must already be configured for NAT, i.e. the NAT XML
+        # attribute must already exist.
+        if not self.name in port.element.attrib:
+            raise TypeError("Port {0}({1}) is not configured for NAT.".format(
+                port.element.attrib["Id"], port.element.attrib["Type"]))
+
+        # Disallow None as removing the NAT address is not permitted.
+        if not isinstance(new_address, str):
+            raise TypeError("NAT address must be a string.")
+
+        return new_address
+
+
 class Module(object):
     """Accessor object for a communication module."""
     snn = SafetyNetworkNumber()
@@ -83,6 +103,7 @@ class Module(object):
 class Port(object):
     """Accessor object for a module's port."""
     address = AttributeDescriptor('Address')
+    nat_address = NatAddress('NATActualAddress')
     type = AttributeDescriptor('Type', True)
     snn = SafetyNetworkNumber()
 

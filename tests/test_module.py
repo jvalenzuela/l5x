@@ -180,7 +180,7 @@ class ModuleSafetyPortSNN(unittest.TestCase):
 
 
 class Port(object):
-    """Base class with common test cases for both standard and safety ports."""
+    """Base class with common test cases for all port types."""
     def setUp(self):
         element = fixture.parse_xml(self.xml)
         self.port = module.Port(element)
@@ -219,6 +219,42 @@ class PortStandard(Port, unittest.TestCase):
         """Confirm writing the SNN raises an exception."""
         with self.assertRaises(TypeError):
             self.port.snn = 'foo'
+
+
+class PortNoNAT(Port, unittest.TestCase):
+    """Tests for ports that do not use network address translation."""
+    xml = r"""<Port Id="2" Address="192.168.0.1" Type="Ethernet" Upstream="false">
+<Bus/>
+</Port>"""
+
+    def test_nat_address_read(self):
+        """Confirm reading the NAT address returns None."""
+        self.assertIsNone(self.port.nat_address)
+
+    def test_nat_address_write(self):
+        """Confirm an exception is raised when writing the NAT address."""
+        with self.assertRaises(TypeError):
+            self.port.nat_address = 'foo'
+
+
+class PortNAT(Port, unittest.TestCase):
+    """Test for ports configured with network address translation."""
+    xml = r"""<Port Id="2" Address="192.168.0.1" Type="Ethernet" Upstream="true" NATActualAddress="10.0.0.1"/>"""
+
+    def test_nat_address_read(self):
+        """Confirm reading the NAT address returns the attribute value."""
+        self.assertEqual(self.port.nat_address,
+                         self.port.element.attrib['NATActualAddress'])
+
+    def test_nat_address_write(self):
+        """Confirm writing the NAT address updates the XML attribute."""
+        self.port.nat_address = 'foo'
+        self.assertEqual(self.port.element.attrib['NATActualAddress'], 'foo')
+
+    def test_nat_address_write_non_string(self):
+        """Confirm writing a non-string raises an exception."""
+        with self.assertRaises(TypeError):
+            self.port.nat_address = None
 
 
 class PortSafety(Port, unittest.TestCase):

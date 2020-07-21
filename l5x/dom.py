@@ -223,7 +223,7 @@ class AttributeDescriptor(object):
     def __set__(self, instance, value):
         if self.read_only is True:
             raise AttributeError('Attribute is read-only')
-        new_value = self.to_xml(value)
+        new_value = self.to_xml(instance, value)
         if new_value is not None:
             instance.element.attrib[self.name] = new_value
 
@@ -242,7 +242,7 @@ class AttributeDescriptor(object):
         """
         return str(value)
 
-    def to_xml(self, value):
+    def to_xml(self, instance, value):
         """Default converter for writing attribute string.
 
         Subclasses may implement custom conversions from user values

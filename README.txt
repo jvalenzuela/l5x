@@ -250,6 +250,22 @@ address of an Ethernet port, which is usually port 2:
 	'Ethernet'
 	>> prj.modules['ENBT'].ports[2].address = '192.168.0.1'
 
+Ports configured for network address translation(NAT) can access the NAT
+address through the nat_address attribute. NAT addresses can only be
+read or altered by the L5X module, not enabled or disabled.
+In other words, the port must first be configured for NAT by RSLogix
+before the NAT address can be accessed, and the L5X module can not be used
+to disable NAT.
+
+::
+
+	>> prj.modules['no_nat'].ports[2].nat_address # NAT not configured.
+	None
+	>> prj.modules['ENBT'].ports[2].nat_address
+	'10.0.0.1'
+	>> prj.modules['ENBT'].ports[2].nat_address = '192.168.0.1'
+
+
 
 Safety Network Numbers
 ~~~~~~~~~~~~~~~~~~~~~~~~~
