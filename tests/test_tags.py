@@ -1935,3 +1935,42 @@ class CommentLanguage(LanguageBase):
         comment = self.tag.element.findall(path)
         self.assertEqual(len(comment), 1)
         return comment[0]
+
+
+class AliasFor(unittest.TestCase):
+    """Tests for the alias_for attribute of alias tags."""
+    def setUp(self):
+        e = fixture.parse_xml(r"""<Tag Name="alias" TagType="Alias" Radix="Decimal" AliasFor="tag" ExternalAccess="Read/Write">
+<Comments>
+<Comment Operand=".0">
+<![CDATA[alias operand comment]]>
+</Comment>
+</Comments>
+</Tag>""")
+        self.tag = l5x.tag.Tag(e, None)
+
+    def test_alias_read(self):
+        """Confirm reading the alias_for attribute returns the correct value."""
+        self.assertEqual(self.tag.alias_for,
+                         self.tag.element.attrib['AliasFor'])
+
+    def test_alias_write(self):
+        """Confirm writing the alias updates the XML attribute."""
+        self.tag.alias_for = 'foo'
+        self.assertEqual(self.tag.element.attrib['AliasFor'], 'foo')
+
+    def test_remove_comments_on_alias_write(self):
+        """Confirm all comments are removed when the alias is changed."""
+        self.tag.alias_for = 'bar'
+        comments = self.tag.element.find('Comments')
+        self.assertIsNone(comments)
+
+    def test_write_non_string_alias(self):
+        """Confirm an exception is raised when writing a non-string alias."""
+        with self.assertRaises(TypeError):
+            self.tag.alias_for = 42
+
+    def test_write_empty_alias(self):
+        """Confirm an exception is raised when writing an empty alias string."""
+        with self.assertRaises(ValueError):
+            self.tag.alias_for = '  '

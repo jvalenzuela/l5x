@@ -79,6 +79,20 @@ class Tag(object):
     producer = ConsumeDescriptor('Producer')
     remote_tag = ConsumeDescriptor('RemoteTag')
 
+    def __new__(cls, element, lang):
+        """
+        Intercepts the creation of a new tag object to determine if
+        the target tag is an alias, in which case an alias tag object
+        is returned instead of a Tag.
+        """
+        if element.attrib['TagType'] == 'Alias':
+            alias = object.__new__(AliasTag)
+            alias.__init__(element, lang)
+            return alias
+
+        # Normal base tag; return an instance of this class.
+        return object.__new__(cls)
+
     def __init__(self, element, lang):
         self.element = element
         self.lang = lang
@@ -129,6 +143,41 @@ class Tag(object):
                     undecorated_data.append(e)
 
         [self.element.remove(e) for e in undecorated_data]
+
+
+class AliasFor(object):
+    """Descriptor class to access the AliasFor attribute."""
+    def __get__(self, tag, owner=None):
+        return tag.element.attrib['AliasFor']
+
+    def __set__(self, tag, value):
+        if not isinstance(value, str):
+            raise TypeError('Alias tag name must be a string.')
+        if not value.strip():
+            raise ValueError('Alias tag name must be a non-empty string.')
+        tag.element.attrib['AliasFor'] = value
+        self.remove_operand_comments(tag)
+
+    def remove_operand_comments(self, tag):
+        """Deletes any comments for the tag's operands.
+
+        This is done because the new alias target data type is unknown,
+        and comments from previous operands may not be valid for the
+        new tag.
+        """
+        comments = tag.element.find('Comments')
+        if comments is not None:
+            tag.element.remove(comments)
+
+
+class AliasTag(object):
+    """Handler for accessing alias tags."""
+    description = dom.ElementDescription()
+    alias_for = AliasFor()
+
+    def __init__(self, element, lang):
+        self.element = element
+        self.lang = lang
 
 
 class Comment(object):
