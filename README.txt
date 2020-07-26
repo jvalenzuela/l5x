@@ -226,6 +226,35 @@ separate variables before assigning a new shape.
         [[0, 0], [0, 0]]
 
 
+Alias Tags
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alias tags have two available attributes:
+
+description
+        Same as the description attribute of a regular tag.
+
+alias_for
+        A string containing the name of the tag the alias points to.
+        The L5X module does not ensure the target tag exists if the
+        alias_for attribute is altered. Changing the alias_for attribute
+        removes any operand comments the original alias contained. For example,
+        if the alias points to a timer and the alias contained a
+        comment for the PRE member, changing the alias to point to a new
+        tag will remove that comment even if the new tag is also a timer.
+        This does not apply to any comments in the target tags; only
+        the alias comments are affected.
+
+::
+
+        >> prj.controller.tags['alias'].description
+        'Tag description'
+        >> prj.controller.tags['alias'].alias_for = 'target_tag'
+
+No other attributes, such as value, are implemented for alias tags, nor
+can they be indexed to access members of the target data type.
+
+
 Modules
 -------------------------
 
