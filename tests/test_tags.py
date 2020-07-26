@@ -472,10 +472,6 @@ class TestREAL(Tag, unittest.TestCase):
     data_type = 'REAL'
     xml_value = 0.0
 
-    def initial_value(self):
-        """Creates an initial value element for the mock tag."""
-        return ElementTree.Element('DataValue', {'Value':'0.0'})
-
     def test_value_read(self):
         """Confirm reading the current value."""
         value = self.get_value_element()
