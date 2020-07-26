@@ -4,7 +4,6 @@ Module unit tests.
 
 from l5x import module
 from tests import fixture
-import xml.etree.ElementTree as ElementTree
 import unittest
 
 
