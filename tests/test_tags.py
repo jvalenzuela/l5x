@@ -83,10 +83,13 @@ class Tag(object):
         with self.assertRaises(TypeError):
             self.tag.description = 0
 
-    def test_data_type(self):
-        """Ensure data_type attribute is a read-only, non-empty string."""
-        self.assertIsInstance(self.tag.data_type, str)
-        self.assertGreater(len(self.tag.data_type), 0)
+    def test_data_type_read(self):
+        """Confirm reading the data type returns the correct attribute value."""
+        self.assertEqual(self.tag.data_type,
+                         self.tag.element.attrib['DataType'])
+
+    def test_data_type_write(self):
+        """Confirm an exception is raised when changing the data type."""
         with self.assertRaises(AttributeError):
             self.tag.data_type = 'fail'
 
@@ -163,10 +166,6 @@ class Data(unittest.TestCase):
 
 class Integer(Tag):
     """Base class for testing integer data types."""
-    def test_type(self):
-        """Verify correct data type string."""
-        self.assertEqual(self.tag.data_type, self.data_type)
-
     def test_length(self):
         """Test len() returns number of bits."""
         self.assertEqual(len(self.tag), self.bits)
@@ -387,7 +386,6 @@ class TestSINT(Integer, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'SINT'
     xml_value = 0
     bits = 8
     value_min = -128
@@ -402,7 +400,6 @@ class TestINT(Integer, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'INT'
     xml_value = 0
     bits = 16
     value_min = -32768
@@ -417,7 +414,6 @@ class TestDINT(Integer, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'DINT'
     xml_value = 0
     bits = 32
     value_min = -2147483648
@@ -433,7 +429,6 @@ class TestBOOL(Tag, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'BOOL'
     xml_value = 0
 
     def test_value_read(self):
@@ -469,7 +464,6 @@ class TestREAL(Tag, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'REAL'
     xml_value = 0.0
 
     def test_value_read(self):
@@ -509,7 +503,6 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'DINT'
     xml_value = [0, 0, 0]
 
     def test_shape(self):
@@ -687,7 +680,6 @@ class TestMultiDimensionalArray(Tag, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'DINT'
     xml_value = [
         [
             [1, 2, 3, 4],
@@ -848,7 +840,6 @@ class ArrayResizeAddDimension(ArrayResize, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'DINT'
     xml_value = [0, 1]
 
     def resize(self):
@@ -874,7 +865,6 @@ class ArrayResizeRemoveDimension(ArrayResize, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'DINT'
     xml_value = [
         [0, 1],
         [2, 3],
@@ -904,7 +894,6 @@ class ArrayResizeEnlarge(ArrayResize, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'DINT'
     xml_value = [
         [0, 1],
         [2, 3],
@@ -936,7 +925,6 @@ class ArrayResizeReduce(ArrayResize, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'DINT'
     xml_value = [
         [0, 1],
         [2, 3],
@@ -963,7 +951,6 @@ class ArrayResizeInvalid(Tag, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'DINT'
     xml_value = [1, 2, 3]
 
     def test_too_many_dimensions(self):
@@ -1012,7 +999,6 @@ class Structure(Tag, unittest.TestCase):
 </Data>
 </Tag>"""
 
-    data_type = 'TIMER'
     xml_value = {
         'PRE':-1,
         'ACC':-2,
@@ -1139,8 +1125,6 @@ class Compound(Tag, unittest.TestCase):
 </Structure>
 </Data>
 </Tag>"""
-
-    data_type = 'udt'
 
     def test_member_array_resize(self):
         """Ensure member arrays cannot be resized."""
