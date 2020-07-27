@@ -19,3 +19,10 @@ v1.3, August 12, 2018
 
 v1.4, October 14, 2018
  - Add support for multilingual tag comments.
+
+v1.5,
+ - Add access to NAT addresses.
+ - Add support for port-specific SNNs.
+ - Add support for changing tag aliases.
+ - Fix problems with empty CDATA sections, e.g. empty structured text lines.
+ - Switch internal XML handling to ElementTree.
