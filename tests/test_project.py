@@ -78,6 +78,13 @@ class CDATARemoval(unittest.TestCase):
         cdata = root.find('CDATAContent')
         self.assertIsNone(cdata.text)
 
+    def test_newline(self):
+        """Confirm a CDATA section containing a newline is converted."""
+        src = '<root>' + self.generate_cdata('\n') + '</root>'
+        root = self.convert_parse(src)
+        cdata = root.find('CDATAContent')
+        self.assertEqual(cdata.text, '\n')
+
     def convert_parse(self, src):
         """
         Passes the test string through CDATA removal and parses the
@@ -130,6 +137,12 @@ class CDATAInsertion(unittest.TestCase):
         """Confirm an empty element is converted to an empty CDATA section."""
         src = '<root>' + self.generate_cdata('') + '</root>'
         self.assert_empty_cdata(src)
+
+    def test_newline(self):
+        """Confirm an element containing a newline is converted."""
+        src = '<root>' + self.generate_cdata('\n') + '</root>'
+        root = self.convert_parse(src)
+        self.assert_cdata_content(root, '\n')
 
     def test_self_closing_empty(self):
         """Confirm a self-closing element yields to an empty CDATA section."""

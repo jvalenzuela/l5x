@@ -86,7 +86,8 @@ class Project(object):
             (?P<text>.*?) # Element content.
             \]\]>         # Closing CDATA sequence.
         """
-        return re.sub(pattern, self.cdata_element, doc, flags=re.VERBOSE)
+        return re.sub(pattern, self.cdata_element, doc,
+                      flags=re.VERBOSE | re.DOTALL)
 
     def cdata_element(self, match):
         """
@@ -115,7 +116,8 @@ class Project(object):
             # Also match empty, self-closing tags.
             <{0}\s*/>
         """.format(CDATA_TAG)
-        return re.sub(pattern, self.cdata_section, doc, flags=re.VERBOSE)
+        return re.sub(pattern, self.cdata_section, doc,
+                      flags=re.VERBOSE | re.DOTALL)
 
     def cdata_section(self, match):
         """
