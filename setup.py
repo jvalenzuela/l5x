@@ -8,7 +8,7 @@ setup(name='l5x',
       url='https://github.com/jvalenzuela/l5x',
       license='LICENSE.txt',
       description='RSLogix .L5X interface.',
-      long_description=open('README.txt').read(),
+      long_description=open('README.rst').read(),
       classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
