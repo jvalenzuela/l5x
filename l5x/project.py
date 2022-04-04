@@ -101,7 +101,7 @@ class Project(object):
     def convert_to_cdata_section(self, doc):
         """Replaces CDATA elements with CDATA sections.
 
-        This is used after writing a project to reinstall the CDATA sections
+        This is used before writing a project to reinstall the CDATA sections
         required by RSLogix.
         """
         # Regular expression pattern to locate CDATA elements.
