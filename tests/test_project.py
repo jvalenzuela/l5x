@@ -4,6 +4,7 @@ Unit tests for the top-level project module.
 
 import l5x
 import io
+import string
 import unittest
 from tests import fixture
 import xml.etree.ElementTree as ElementTree
@@ -227,3 +228,138 @@ class ContentElements(unittest.TestCase):
         mod = doc.createElement('Module')
         mod.setAttribute('Name', 'SpamModule')
         parent.appendChild(mod)
+
+
+class TagData(unittest.TestCase):
+    """Tests for the raw tag data interface object."""
+    def setUp(self):
+        """Create a dummy tag and data elements."""
+        self.tag_element = ElementTree.Element('Tag')
+
+        self.raw_data = ElementTree.SubElement(self.tag_element, 'Data')
+        self.raw_data.text = bytes([0, 0, 0]).hex(' ')
+
+        self.l5k_data = ElementTree.SubElement( self.tag_element, 'Data')
+        self.l5k_data.attrib['Format'] = 'L5K'
+
+        self.decorated_data = ElementTree.SubElement( self.tag_element, 'Data')
+        self.decorated_data.attrib['Format'] = 'Decorated'
+
+        self.test_object = l5x.project.TagData(self.tag_element)
+
+    def test_no_raw_data(self):
+        """Confirm an exception is raised if a no raw data element exists."""
+        self.tag_element.remove(self.raw_data)
+        with self.assertRaises(l5x.InvalidFile):
+            self.test_object.get_data()
+
+    def test_read_mutable(self):
+        """Confirm the returned data is mutable."""
+        data = self.test_object.get_data()
+        data[0] = 42
+
+    def test_read_hex_lowercase(self):
+        """Confirm hexadecimal lower-case is read correctly."""
+        expected = bytes([0xab, 0xcd, 0xef])
+        self.raw_data.text = expected.hex(' ').lower()
+        self.assertEqual(expected, self.test_object.get_data())
+
+    def test_read_hex_uppercase(self):
+        """Confirm hexadecimal upper-case is read correctly."""
+        expected = bytes([0xab, 0xcd, 0xef])
+        self.raw_data.text = expected.hex(' ').upper()
+        self.assertEqual(expected, self.test_object.get_data())
+
+    def test_read_whitespace_sep(self):
+        """Confirm all types of whitespace separators are read correctly."""
+        sep = string.whitespace
+        expected = bytes(range(len(sep) + 1))
+        hex_bytes = expected.hex(' ').split(' ')
+
+        # Reassemble the hexadecimal bytes with each of the separators.
+        s = hex_bytes[0]
+        for i in range(len(sep)):
+            s = sep[i].join((s, hex_bytes[i + 1]))
+        self.raw_data.text = s
+
+        self.assertEqual(expected, self.test_object.get_data())
+
+    def test_read_multiple(self):
+        """Confirm the same bytearray object is given for each read request."""
+        self.assertIs(self.test_object.get_data(), self.test_object.get_data())
+
+    def test_write_on_change(self):
+        """Confirm bytearray changes are written back to the data element."""
+        expected = self.test_object.get_data()
+        expected[0] = 42
+
+        self.test_object.flush()
+
+        actual = bytes.fromhex(self.raw_data.text)
+        self.assertEqual(expected, actual)
+
+    def test_write_on_enlarge(self):
+        """Confirm enlarging the bytearray gets written to the data element."""
+        expected = self.test_object.get_data()
+        expected.append(100)
+
+        self.test_object.flush()
+
+        actual = bytes.fromhex(self.raw_data.text)
+        self.assertEqual(expected, actual)
+
+    def test_write_on_shrink(self):
+        """Confirm shrinking the bytearray gets written to the data element."""
+        expected = self.test_object.get_data()
+        del expected[0]
+
+        self.test_object.flush()
+
+        actual = bytes.fromhex(self.raw_data.text)
+        self.assertEqual(expected, actual)
+
+    def test_no_write(self):
+        """Confirm no XML modification if the bytearray is not altered."""
+        expected = self.test_object.get_data()
+
+        self.test_object.flush()
+
+        actual = bytes.fromhex(self.raw_data.text)
+        self.assertEqual(expected, actual)
+
+        # Confirm formatted data elements remain.
+        for format in ['Decorated', 'L5K']:
+            e = self.tag_element.find("Data[@Format='{0}']".format(format))
+            self.assertIsNotNone(e)
+
+    def test_write_whitespace_sep(self):
+        """Confirm output separates bytes with whitespace."""
+        data = self.test_object.get_data()
+        data[0] += 1
+
+        self.test_object.flush()
+
+        hex_bytes = self.raw_data.text.split()
+        self.assertEqual(len(data), len(hex_bytes))
+
+    def test_write_uppercase(self):
+        """Confirm output generates upper-case hexadecimal."""
+        # Create some data values with alpha hexadecimal numerals.
+        data = self.test_object.get_data()
+        data[0] = 0xab
+
+        self.test_object.flush()
+
+        expected = self.raw_data.text.upper()
+        self.assertEqual(expected, self.raw_data.text)
+
+    def test_write_remove_formatted_data(self):
+        """Confirm formatted data elements are removed when writing."""
+        # Alter data to cause XML modification on flush.
+        data = self.test_object.get_data()
+        data[0] += 1
+
+        self.test_object.flush()
+
+        for e in self.tag_element.findall('Data'):
+            self.assertNotIn('Format', e.attrib)

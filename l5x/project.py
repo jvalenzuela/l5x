@@ -179,3 +179,107 @@ class Controller(Scope):
     # The safety network number is stored in the first module element,
     # not the Controller element.
     snn = SafetyNetworkNumber('Modules/Module')
+
+
+class TagData(object):
+    """
+    This object manages access to a single tag's data, which always uses the
+    raw, or unformatted, Data element. The raw data is chosen because it is
+    the only type that is always exported; RSLogix does not export formatted
+    data for some tags.
+
+    When data is requested, this object will generate a bytearray from the
+    XML content; all operations for reading and writing tag values are then
+    based solely on this bytearray. This object does not interpret the
+    data into any type; it only deals with raw XML data and resulting
+    bytearray.
+
+    This object will also write the bytearray back to the XML document
+    before the project is written out to an L5X file to capture any
+    modifications made to the tag's value.
+    """
+
+    def __init__(self, tag_element):
+        self.tag_element = tag_element
+
+    def get_data(self):
+        """Generates a bytearray from the tag's raw data element.
+
+        This will return the same bytearray object every time it is called
+        to ensure only one bytearray exists for a given tag. This is
+        important because it is possible for multiple objects to access
+        the tag's data via the bytearray returned by this method.
+        Maintaining a single bytearray ensures values remain consistent,
+        regardless of how many objects access the data.
+        """
+        # See if the data has already been parsed.
+        try:
+            self.data
+
+        # Read the data if it has not been previously parsed.
+        except AttributeError:
+            self.data = self._parse_data()
+
+        return self.data
+
+    def _parse_data(self):
+        """Creates a bytearray from the tag's raw data element."""
+        e = self._get_data_element()
+        return bytearray.fromhex(e.text)
+
+    def _get_data_element(self):
+        """Locates the element containing the tag's data in raw format."""
+        e = self.tag_element.find('Data')
+
+        # The raw data must be the first Data element.
+        if (e is None) or ('Format' in e.attrib):
+            raise InvalidFile('Raw data element not found.')
+
+        return e
+
+    def flush(self):
+        """Writes the bytearray back to the XML document.
+
+        The XML content is only updated if the bytearray was modified.
+        """
+        # See if a bytearray has been created from the raw data element.
+        try:
+            self.data
+
+        # Data does not need to be updated if it was never parsed into a
+        # bytearray, which means it was never accessed by the L5X module.
+        except AttributeError:
+            pass
+
+        else:
+            if self._data_has_changed():
+                self._write_data()
+
+                # Remove formatted data so it does not conflict with the
+                # new data.
+                self._remove_formatted_data()
+
+    def _data_has_changed(self):
+        """Determines if the tag data has been modified.
+
+        This is done by comparing the XML document's content with the
+        bytearray created when the raw data was parsed. The L5X module
+        only operates on the bytearray, while the XML content is not altered
+        until the project is written, so a difference between the two means
+        the bytearray has changed and the XML content is stale.
+        """
+        orig = self._parse_data()
+        return orig != self.data
+
+    def _write_data(self):
+        """Writes the bytearray back to the XML document."""
+        dst = self._get_data_element()
+
+        # It is not clear if RSLogix is case-sensitive for hexadecimal data,
+        # however, it exports upper-case, so this will do the same.
+        dst.text = self.data.hex(' ').upper()
+
+    def _remove_formatted_data(self):
+        """Deletes elements containing formatted data."""
+        formatted = self.tag_element.findall('Data[@Format]')
+        [self.tag_element.remove(e) for e in formatted]
