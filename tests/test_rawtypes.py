@@ -54,12 +54,6 @@ class Size(Base):
     then confirm the correct number of bytes have been altered.
     """
 
-    def test_BOOL(self):
-        """Confirm correct number of bytes to store BOOL type."""
-        x = rawtypes.BOOL.from_buffer(self.buf)
-        x.value = -1
-        self.assert_nonzero_bytes(1)
-
     def test_SINT(self):
         """Confirm correct number of bytes to store SINT type."""
         x = rawtypes.SINT.from_buffer(self.buf)

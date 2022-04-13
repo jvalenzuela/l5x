@@ -15,20 +15,6 @@ structure, e.g., TIMER.
 import ctypes
 
 
-class BOOL(ctypes.LittleEndianStructure):
-    """
-    An 8-bit integer is used here instead of c_bool to ensure it is
-    stored as a single byte. Higher-level objects handle validation to
-    ensure only 0 or 1 are stored.
-
-    Only stand-alone tags of type BOOL will use this class. BOOL members
-    within structures or arrays are packed into integers, which is handled
-    in higher-level objects, so this class does not include an alignment
-    attribute.
-    """
-    _fields_ = [('value', ctypes.c_int8)]
-
-
 class SINT(ctypes.LittleEndianStructure):
     align = 1
     _fields_ = [('value', ctypes.c_int8)]
