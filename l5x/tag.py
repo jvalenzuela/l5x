@@ -11,11 +11,11 @@ import xml.etree.ElementTree as ElementTree
 
 class Scope(object):
     """Container to hold a group of tags within a specific scope."""
-    def __init__(self, element, lang):
+    def __init__(self, element, prj, lang):
         self.element = element
         tag_element = element.find('Tags')
         self.tags = dom.ElementDict(tag_element, 'Name', Tag,
-                                    value_args=[lang])
+                                    value_args=[prj, lang])
 
 
 class TagDataDescriptor(object):
@@ -79,7 +79,7 @@ class Tag(object):
     producer = ConsumeDescriptor('Producer')
     remote_tag = ConsumeDescriptor('RemoteTag')
 
-    def __new__(cls, element, lang):
+    def __new__(cls, element, prj, lang):
         """
         Intercepts the creation of a new tag object to determine if
         the target tag is an alias, in which case an alias tag object
@@ -93,7 +93,7 @@ class Tag(object):
         # Normal base tag; return an instance of this class.
         return object.__new__(cls)
 
-    def __init__(self, element, lang):
+    def __init__(self, element, prj, lang):
         self.element = element
         self.lang = lang
         data_class = base_data_types.get(self.data_type, Structure)

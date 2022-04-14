@@ -251,24 +251,24 @@ class TagData(unittest.TestCase):
         """Confirm an exception is raised if a no raw data element exists."""
         self.tag_element.remove(self.raw_data)
         with self.assertRaises(l5x.InvalidFile):
-            self.test_object.get_data()
+            self.test_object.get_buffer()
 
     def test_read_mutable(self):
         """Confirm the returned data is mutable."""
-        data = self.test_object.get_data()
+        data = self.test_object.get_buffer()
         data[0] = 42
 
     def test_read_hex_lowercase(self):
         """Confirm hexadecimal lower-case is read correctly."""
         expected = bytes([0xab, 0xcd, 0xef])
         self.raw_data.text = expected.hex(' ').lower()
-        self.assertEqual(expected, self.test_object.get_data())
+        self.assertEqual(expected, self.test_object.get_buffer())
 
     def test_read_hex_uppercase(self):
         """Confirm hexadecimal upper-case is read correctly."""
         expected = bytes([0xab, 0xcd, 0xef])
         self.raw_data.text = expected.hex(' ').upper()
-        self.assertEqual(expected, self.test_object.get_data())
+        self.assertEqual(expected, self.test_object.get_buffer())
 
     def test_read_whitespace_sep(self):
         """Confirm all types of whitespace separators are read correctly."""
@@ -282,15 +282,15 @@ class TagData(unittest.TestCase):
             s = sep[i].join((s, hex_bytes[i + 1]))
         self.raw_data.text = s
 
-        self.assertEqual(expected, self.test_object.get_data())
+        self.assertEqual(expected, self.test_object.get_buffer())
 
     def test_read_multiple(self):
         """Confirm the same bytearray object is given for each read request."""
-        self.assertIs(self.test_object.get_data(), self.test_object.get_data())
+        self.assertIs(self.test_object.get_buffer(), self.test_object.get_buffer())
 
     def test_write_on_change(self):
         """Confirm bytearray changes are written back to the data element."""
-        expected = self.test_object.get_data()
+        expected = self.test_object.get_buffer()
         expected[0] = 42
 
         self.test_object.flush()
@@ -300,7 +300,7 @@ class TagData(unittest.TestCase):
 
     def test_write_on_enlarge(self):
         """Confirm enlarging the bytearray gets written to the data element."""
-        expected = self.test_object.get_data()
+        expected = self.test_object.get_buffer()
         expected.append(100)
 
         self.test_object.flush()
@@ -310,7 +310,7 @@ class TagData(unittest.TestCase):
 
     def test_write_on_shrink(self):
         """Confirm shrinking the bytearray gets written to the data element."""
-        expected = self.test_object.get_data()
+        expected = self.test_object.get_buffer()
         del expected[0]
 
         self.test_object.flush()
@@ -320,7 +320,7 @@ class TagData(unittest.TestCase):
 
     def test_no_write(self):
         """Confirm no XML modification if the bytearray is not altered."""
-        expected = self.test_object.get_data()
+        expected = self.test_object.get_buffer()
 
         self.test_object.flush()
 
@@ -334,7 +334,7 @@ class TagData(unittest.TestCase):
 
     def test_write_whitespace_sep(self):
         """Confirm output separates bytes with whitespace."""
-        data = self.test_object.get_data()
+        data = self.test_object.get_buffer()
         data[0] += 1
 
         self.test_object.flush()
@@ -345,7 +345,7 @@ class TagData(unittest.TestCase):
     def test_write_uppercase(self):
         """Confirm output generates upper-case hexadecimal."""
         # Create some data values with alpha hexadecimal numerals.
-        data = self.test_object.get_data()
+        data = self.test_object.get_buffer()
         data[0] = 0xab
 
         self.test_object.flush()
@@ -356,10 +356,63 @@ class TagData(unittest.TestCase):
     def test_write_remove_formatted_data(self):
         """Confirm formatted data elements are removed when writing."""
         # Alter data to cause XML modification on flush.
-        data = self.test_object.get_data()
+        data = self.test_object.get_buffer()
         data[0] += 1
 
         self.test_object.flush()
 
         for e in self.tag_element.findall('Data'):
             self.assertNotIn('Format', e.attrib)
+
+
+class ProjectTagData(unittest.TestCase):
+    """Unit tests for tag data buffer handling at the project level."""
+
+    def setUp(self):
+        self.prj = fixture.string_to_project(
+            r"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <RSLogix5000Content>
+              <Controller>
+                <Tags>
+                  <Tag Name="tag">
+                    <Data>00</Data>
+                  </Tag>
+                  <Tag Name="other_tag">
+                    <Data>ff</Data>
+                  </Tag>
+                </Tags>
+              </Controller>
+            </RSLogix5000Content>
+            """)
+
+        self.tag = self.prj.doc.find("Controller/Tags/Tag[@Name='tag']")
+
+    def test_content(self):
+        """Confirm the buffer has the correct data."""
+        data = self.prj.get_tag_data_buffer(self.tag)
+        self.assertEqual(bytearray(1), data)
+
+    def test_singleton(self):
+        """Confirm multiple requests for the same tag yield the same buffer."""
+        b1 = self.prj.get_tag_data_buffer(self.tag)
+        b2 = self.prj.get_tag_data_buffer(self.tag)
+        self.assertIs(b1, b2)
+
+    def test_update(self):
+        """Confirm modified data is flushed when the project is written."""
+        # Alter some tag data.
+        data = self.prj.get_tag_data_buffer(self.tag)
+        data[0] = 0x42
+        expected = bytearray(data)
+
+        # Write the project to a temporary buffer.
+        buf = io.BytesIO()
+        self.prj.write(buf)
+
+        # Parse the buffer and retrieve the target data element.
+        doc = ElementTree.parse(buf)
+        e = doc.find("Controller/Tags/Tag[@Name='tag']/Data")
+
+        # Verify the correct data value.
+        actual = bytearray.fromhex(e.text)
+        self.assertEqual(expected, actual)

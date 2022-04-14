@@ -42,11 +42,17 @@ class Project(object):
         except KeyError:
             lang = None
 
+        # Mapping of TagData objects keyed by XML tag element. This also
+        # serves to record all tag data buffers that have been created so
+        # they can be flushed when the project is written.
+        self._tag_data = {}
+
         ctl_element = self.doc.find('Controller')
-        self.controller = Controller(ctl_element, lang)
+        self.controller = Controller(ctl_element, self, lang)
 
         progs = ctl_element.find('Programs')
-        self.programs = ElementDict(progs, 'Name', Scope, value_args=[lang])
+        self.programs = ElementDict(progs, 'Name', Scope,
+                                    value_args=[self, lang])
 
         mods = ctl_element.find('Modules')
         self.modules = ElementDict(mods, 'Name', Module)
@@ -143,6 +149,9 @@ class Project(object):
 
     def write(self, filename):
         """Outputs the document to a new file."""
+        # Flush tag data.
+        [d.flush() for d in self._tag_data.values()]
+
         no_cdata = self.doc_to_string()
         with_cdata = self.convert_to_cdata_section(no_cdata)
 
@@ -170,6 +179,23 @@ class Project(object):
         buf = io.BytesIO()
         tree.write(buf, encoding='UTF-8', xml_declaration=True)
         return buf.getvalue().decode('UTF-8')
+
+    def get_tag_data_buffer(self, tag_element):
+        """Acquires a buffer containing a tag's raw data.
+
+        It is possible for multiple objects to access the same tag,
+        which would be problematic if each instance used its own
+        buffer since each could then have different values even though
+        they refer to the same tag. To migitage this, all tags acquire their
+        data buffers from this method, ensuring only a single buffer exists
+        for each tag.
+        """
+        try:
+            data = self._tag_data[tag_element]
+        except KeyError:
+            data = TagData(tag_element)
+            self._tag_data[tag_element] = data
+        return data.get_buffer()
 
 
 class Controller(Scope):
@@ -202,7 +228,7 @@ class TagData(object):
     def __init__(self, tag_element):
         self.tag_element = tag_element
 
-    def get_data(self):
+    def get_buffer(self):
         """Generates a bytearray from the tag's raw data element.
 
         This will return the same bytearray object every time it is called
