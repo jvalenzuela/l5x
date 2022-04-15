@@ -38,3 +38,33 @@ class ArrayDetect(unittest.TestCase):
         e = ElementTree.Element('Member')
         e.attrib['Dimension'] = '1'
         self.assertTrue(array.is_array(e))
+
+
+class ParseDim(unittest.TestCase):
+    """Unit tests for parsing dimension attributes."""
+
+    def test_tag(self):
+        """Verify a top-level tag's dimensions."""
+
+        # Tags may have between 1 and 3 dimensions, inclusive.
+        for size in range(1, 4):
+            expected = tuple([x + 1 for x in range(size)])
+            e = ElementTree.Element('Tag')
+            e.attrib['Dimensions'] = self._dim_str(expected)
+            ar = type('TestArray', (array.Base, ), {'element': e})
+            self.assertEqual(expected, ar.get_dim())
+
+    def test_udt(self):
+        """Verify a UDT member's dimension."""
+
+        # UDT's may only have a single dimension.
+        expected = (5, )
+
+        e = ElementTree.Element('Member')
+        e.attrib['Dimension'] = self._dim_str(expected)
+        ar = type('TestArray', (array.Base, ), {'element': e})
+        self.assertEqual(expected, ar.get_dim())
+
+    def _dim_str(self, dim):
+        """Generates an attribute string from a given set of dimensions."""
+        return ' '.join([str(x) for x in reversed(dim)])
