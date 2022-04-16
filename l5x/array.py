@@ -3,6 +3,9 @@ This module contains items for implementing tag arrays, both for top-level
 tags and UDT array members.
 """
 
+import functools
+import operator
+
 
 def is_array(element):
     """Determines if a given element defines an array."""
@@ -42,3 +45,54 @@ class Base(object):
         dims.reverse()
 
         return tuple(dims)
+
+
+class RawSize(object):
+    """
+    Descriptor class to compute the number of raw data bytes required to
+    store the array when incorporated into a UDT.
+    """
+
+    def __get__(self, instance, cls):
+        # Compute the storage necessary for all elements.
+        dim = cls.get_dim()
+        num_elements = functools.reduce(operator.mul, dim)
+        element_size = num_elements * cls.member_type.raw_size
+
+        # Array sizes are rounded up to a 32-bit boundry.
+        tail_pad = (4 - (element_size % 4)) % 4
+
+        return element_size + tail_pad
+
+
+class Array(Base):
+    """Base class for arrays of all types except BOOL."""
+
+    raw_size = RawSize()
+
+
+class BoolRawSize(object):
+    """
+    Descriptor class to compute the raw storage size of a BOOL array that
+    is part of a UDT.
+
+    Since BOOLs are always packed into blocks of 4 bytes(32 bits), the raw
+    size is simply the number of bytes. Integer division is also ok because
+    the number of bits is always an integer multiple of 8.
+    """
+
+    def __get__(self, instance, cls):
+        dim = cls.get_dim()
+        return dim[0] // 8
+
+
+class BoolArray(Base):
+    """Base class for arrays of BOOL.
+
+    BOOL arrays do not store their elements separately, but rather pack
+    them into bytes where each BOOL member is an alias to a single bit,
+    i.e, BOOL[32] is 4 bytes, not 32. Also, BOOL arrays are restricted to a
+    single dimension that is an integer multiple of 32.
+    """
+
+    raw_size = BoolRawSize()

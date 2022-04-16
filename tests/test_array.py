@@ -68,3 +68,56 @@ class ParseDim(unittest.TestCase):
     def _dim_str(self, dim):
         """Generates an attribute string from a given set of dimensions."""
         return ' '.join([str(x) for x in reversed(dim)])
+
+
+class RawSize(unittest.TestCase):
+    """Unit tests for computing raw data sizes of non-BOOL arrays."""
+
+    def _define_array(self, member_size, dim):
+        """Creates a mock array class with a given member size and dimension."""
+        ar_attrib = {}
+
+        # Create the XML element with dimensions.
+        element = ElementTree.Element('TestElement')
+        element.attrib['Dimensions'] = ' '.join([str(x) for x in dim])
+        ar_attrib['element'] = element
+
+        # Define a dummy data type with the desired raw size.
+        ar_attrib['member_type'] = type('Dummy', (object, ),
+                                        {'raw_size': member_size})
+
+        return type('TestArray', (array.Array, ), ar_attrib)
+
+    def test_single(self):
+        """Validate the size of a single-dimensional array."""
+        ar = self._define_array(4, (4, ))
+        self.assertEqual(16, ar.raw_size)
+
+    def test_multi(self):
+        """Validate the size of a multi-dimensional array."""
+        ar = self._define_array(4, (2, 2, 2))
+        self.assertEqual(32, ar.raw_size)
+
+    def test_no_pad(self):
+        """Validate the size of an array that does not require a tail pad."""
+        ar = self._define_array(2, (16, ))
+        self.assertEqual(32, ar.raw_size)
+
+    def test_pad(self):
+        """Validate the size of an array that requires tail padding."""
+        # Iterate through sizes 5-8, which should all be padded to 8 bytes.
+        for i in range(5, 9):
+            ar = self._define_array(1, (i, ))
+            self.assertEqual(8, ar.raw_size)
+
+
+class BoolRawSize(unittest.TestCase):
+    """Unit tests for computing the raw data size of BOOL arrays."""
+
+    def test_bool(self):
+        """Validate the size of a BOOL array."""
+        element = ElementTree.Element('TestElement')
+        ar = type('TestArray', (array.BoolArray, ), {'element': element})
+        for d in [32, 64]:
+            element.attrib['Dimensions'] = str(d)
+            self.assertEqual(d // 8, ar.raw_size)
