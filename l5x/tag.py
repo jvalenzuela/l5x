@@ -18,22 +18,6 @@ class Scope(object):
                                     value_args=[prj, lang])
 
 
-class TagDataDescriptor(object):
-    """Descriptor class to dispatch attribute access to a data object.
-
-    Used by Tag objects to pass access to a specific attribute on to the
-    Data element which handles the implementation.
-    """
-    def __init__(self, attr):
-        self.attr = attr
-
-    def __get__(self, tag, owner=None):
-        return getattr(tag.data, self.attr)
-
-    def __set__(self, tag, value):
-        setattr(tag.data, self.attr, value)
-
-
 class ConsumeDescriptor(object):
     """Descriptor class for accessing consumed tag properties."""
     def __init__(self, attr):
@@ -69,15 +53,43 @@ class ConsumeDescriptor(object):
         return tag.element.find('ConsumeInfo')
 
 
-class Tag(object):
-    """Base class for a single tag."""
-    description = dom.ElementDescription(['ConsumeInfo'])
+class Data(object):
+    """
+    Base class for subclasses that handle the two ways data can be
+    instantiated:
+
+    1. As a top-level tag. The term top-level is used here to indicate the
+       data is the complete tag; it does not refer to the tag's scope,
+       controller or program. Depending on the data type, a top-level tag
+       may contain members, which are handled by case 2.
+
+    2. As a member of a composite data type. This includes array items
+       and structure(UDT) members. These can be nested to any depth where
+       one member contains additional members, such as would occur if a UDT
+       with an array member. All member instances are ultimately part of one
+       top-level tag instance, described in case 1.
+
+    These two subclasses only handle details on how the data is instantiated;
+    they do not define any specifics regarding the type of data. They must
+    be combined with other mixin classes which define an actual data type
+    or array; the resulting class is then instantiated to represent an
+    actual piece of data.
+    """
+
     data_type = dom.AttributeDescriptor('DataType', True)
-    value = TagDataDescriptor('value')
-    shape = TagDataDescriptor('shape')
-    names = TagDataDescriptor('names')
+
+
+class Tag(Data):
+    """Mixin class for data instantiated as a top-level tag."""
+
+    description = dom.ElementDescription(['ConsumeInfo'])
     producer = ConsumeDescriptor('Producer')
     remote_tag = ConsumeDescriptor('RemoteTag')
+
+    # Operands are only used to identify comments for submembers, not
+    # top-level tags, so this is defined as an empty string for all
+    # tag instances.
+    operand = ''
 
     def __new__(cls, element, prj, lang):
         """
@@ -96,53 +108,12 @@ class Tag(object):
     def __init__(self, element, prj, lang):
         self.element = element
         self.lang = lang
-        data_class = base_data_types.get(self.data_type, Structure)
-        self.data = data_class(self.get_data_element(), self)
+        self.raw_data = prj.get_tag_data_buffer(element)
 
-    def get_data_element(self):
-        """Returns the decorated data XML element.
-
-        This is always the sole element contained with the decorated Data
-        element.
-        """
-        data = self.element.find("Data[@Format='Decorated']/*")
-
-        if data is None:
-            name = self.element.attrib['Name']
-            raise RuntimeError("Decoded data content not found for {0} tag. "
-                               "Ensure Encode Source Protected Content option "
-                               "is disabled when saving L5X.".format(name))
-
-        return data
-
-    def __getitem__(self, key):
-        """
-        Indices are passed to the data object to access members of compound
-        data types.
-        """
-        return self.data[key]
-
-    def __len__(self):
-        """Dispatches len queries to the base data type object."""
-        return len(self.data)
-
-    def clear_raw_data(self):
-        """Removes any data elements other than decorated.
-        
-        Called anytime a data value is set to avoid conflicts with
-        modified decorated data elements.
-        """
-        undecorated_data = []
-        for e in self.element.iterfind('Data'):
-            try:
-                format = e.attrib['Format']
-            except KeyError:
-                undecorated_data.append(e)
-            else:
-                if format != 'Decorated':
-                    undecorated_data.append(e)
-
-        [self.element.remove(e) for e in undecorated_data]
+    @property
+    def tag(self):
+        """Self-reference for operations that need the parent tag attribute."""
+        return self
 
 
 class AliasFor(object):
@@ -295,75 +266,19 @@ class Comment(object):
         return element
 
 
-class Data(object):
-    """Base class for objects providing access to tag values and comments."""
+class Member(Data):
+    """Mixin class for data that is part of a composite data type."""
+
     description = Comment()
 
-    def __new__(cls, *args, **kwds):
-        """
-        Intercepts creation of a new data object if the XML element
-        indicates it is an array, in which case an array access object
-        is created instead for the given data type.
-        """
-        if args[0].tag.startswith('Array'):
-
-            # Two array accessor types are possible depending on if the
-            # the array is a structure member.
-            if args[0].tag == ('ArrayMember'):
-                array_type = ArrayMember
-            else:
-                array_type = Array
-
-            array = object.__new__(array_type)
-            array_args = [cls]
-            array_args.extend(args)
-            array.__init__(*array_args, **kwds)
-            return array
-
-        # Non-array tags return a instance of the original type; an explicit
-        # call to __init__ is not required as the returned instance
-        # is the original class.
-        else:
-            return object.__new__(cls)
-
-    def __init__(self, element, tag, parent=None):
-        self.element = element
+    def __init__(self, tag, raw_data, operand, **kwargs):
         self.tag = tag
-        self.parent = parent
-        self.build_operand()
+        self.raw_data = raw_data
+        self.operand = operand
 
-    def build_operand(self):
-        """Constructs the identifier for comment operands.
-
-        A tag's top-level data type has no parent and does not require
-        an operand; it's description is placed in the dedicated Description
-        element. These objects get an empty operand string for child
-        members to use.
-
-        Operands for sub-members are formed by appending their name
-        to their parent's operand. Names are converted to upper-case
-        because Logix uses only capital letters in operand attributes
-        for some reason.
-        """
-        if self.parent is None:
-            self.operand = ''
-        else:
-            # One of two possible XML attributes determine how this data is
-            # identified.
-            try:
-                # Array members use the Index attribute, which is appended to
-                # the operand string without an additional separator; the
-                # enclosing square brackets are included in the attribute
-                # value.
-                operand = self.element.attrib['Index']
-                sep = ''
-            except KeyError:
-                # All other operands use the Name attribute, which is
-                # separated from other operands by a dot.
-                operand = self.element.attrib['Name']
-                sep = '.'
-                
-            self.operand = sep.join((self.parent.operand, operand.upper()))
+        # Additional keyword arguments as required by the specific type
+        # are assigned as attributes.
+        [setattr(self, key, value) for key, value in kwargs.items()]
 
 
 class IntegerValue(object):
