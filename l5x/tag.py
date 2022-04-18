@@ -4,7 +4,6 @@ Objects implementing tag access.
 
 from l5x import dom
 import copy
-import ctypes
 import itertools
 import xml.etree.ElementTree as ElementTree
 
@@ -281,149 +280,6 @@ class Member(Data):
         [setattr(self, key, value) for key, value in kwargs.items()]
 
 
-class IntegerValue(object):
-    """Descriptor class for accessing an integer's value."""
-    def __get__(self, instance, owner=None):
-        return int(instance.element.attrib['Value'])
-
-    def __set__(self, instance, value):
-        """Sets a new value."""
-        if (not isinstance(value, int)) or isinstance(value, bool):
-            raise TypeError('Value must be an integer')
-        if (value < instance.value_min) or (value > instance.value_max):
-            raise ValueError('Value out of range')
-        instance.element.attrib['Value'] = str(value)
-        instance.tag.clear_raw_data()
-
-
-class Integer(Data):
-    """Base class for integer data types.
-
-    In addition to the usual value and description access, integer indices
-    are used for bit-level references.
-    """
-    value = IntegerValue()
-
-    def __getitem__(self, bit):
-        """Gets an object to access a single bit."""
-        self.validate_bit_number(bit)
-        return Bit(self.element, self.tag, self, bit)
-
-    def validate_bit_number(self, bit):
-        """Verifies a given bit index is within range."""
-        if not isinstance(bit, int):
-            raise TypeError('Bit indices must be integers.')
-        if (bit < 0) or (bit >= self.bits):
-            raise IndexError('Bit index out of range')
-
-    def __len__(self):
-        """Returns the width of the integer."""
-        return self.bits
-
-
-class SINT(Integer):
-    """Base class for 8-bit signed integers."""
-    bits = 8
-    ctype = ctypes.c_int8
-    value_min = -128
-    value_max = 127
-
-
-class INT(Integer):
-    """Base class for 16-bit signed integers."""
-    bits = 16
-    ctype = ctypes.c_int16
-    value_min = -32768
-    value_max = 32767
-
-
-class DINT(Integer):
-    """Base class for 32-bit signed integers."""
-    bits = 32
-    ctype = ctypes.c_int32
-    value_min = -2147483648
-    value_max = 2147483647
-
-
-class BitValue(object):
-    """Descriptor class for values of individual integer bits.
-
-    Bit access utilizes exact-width, signed ctype integers for
-    bit-level operations which are then translated back to the parent
-    integer's value. This ensures correct results when the sign bit
-    is accessed.
-    """
-    def __get__(self, bit, owner=None):
-        cvalue = self.get_ctype(bit)
-        if cvalue.value & bit.mask.value:
-            return 1
-        else:
-            return 0
-
-    def __set__(self, bit, bit_value):
-        if not isinstance(bit_value, int):
-            raise TypeError('Bit values must be integers')
-        elif (bit_value < 0) or (bit_value > 1):
-            raise ValueError('Bit values may only be 0 or 1')
-
-        cvalue = self.get_ctype(bit)
-        if bit_value:
-            cvalue.value |= bit.mask.value
-        else:
-            cvalue.value &= ~bit.mask.value
-        bit.parent.value = int(cvalue.value)
-
-    def get_ctype(self, bit):
-        """Returns the parent integer's value as a ctype."""
-        return bit.parent.ctype(bit.parent.value)
-
-
-class Bit(Data):
-    """Provides access to individual bits within an integer."""
-    value = BitValue()
-    description = Comment()
-
-    def __init__(self, element, tag, parent, bit):
-        self.bit = bit
-        Data.__init__(self, element, tag, parent)
-        self.mask = parent.ctype(1 << bit)
-
-    def build_operand(self):
-        """Method override to create an operand based on the bit number."""
-        self.operand = '.'.join((self.parent.operand, str(self.bit)))
-
-
-class BOOL(Data):
-    """Tag access for BOOL data types."""
-    value = IntegerValue()
-    value_min = 0
-    value_max = 1
-
-
-class RealValue(object):
-    """Descriptor class for accessing REAL values."""
-    def __get__(self, instance, owner=None):
-        return float(instance.element.attrib['Value'])
-
-    def __set__(self, instance, value):
-        if not isinstance(value, float):
-            raise TypeError('Value must be a float')
-
-        # Check for NaN and infinite values.
-        try:
-            value.as_integer_ratio()
-        except (OverflowError, ValueError):
-            raise ValueError('NaN and infinite values are not supported')
-            
-        instance.element.attrib['Value'] = str(value)
-        instance.tag.clear_raw_data()
-
-
-class REAL(Data):
-    """Tag access for REAL data types."""
-    value = RealValue()
-
-
 class StructureValue(object):
     """Descriptor class for accessing multiple structure values.
 
@@ -659,10 +515,3 @@ class ArrayMember(Array):
     one-dimensional.
     """
     description = Comment()
-
-    
-base_data_types = {'SINT':SINT,
-                   'INT':INT,
-                   'DINT':DINT,
-                   'BOOL':BOOL,
-                   'REAL':REAL}
