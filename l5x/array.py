@@ -3,6 +3,7 @@ This module contains items for implementing tag arrays, both for top-level
 tags and UDT array members.
 """
 
+from l5x import tag
 import functools
 import operator
 
@@ -19,6 +20,43 @@ def is_array(element):
         is_array = int(element.attrib['Dimension']) != 0
 
     return is_array
+
+
+def define_new(element, data_type):
+    """Creates a class to access an array defined by a given XML element.
+
+    This is called in two cases:
+
+    1. During the creation of a top-level array tag.
+    2. When defining an array structure member.
+    """
+
+    # Select the appropriate array base class.
+    if element.attrib['DataType'] == 'BOOL':
+        base_cls = BoolArray
+    else:
+        base_cls = Array
+
+    # The new class name is an arbitrary combination of relevant fields.
+    name = ' '.join(['Array', element.tag, element.attrib['Name']])
+
+    new_cls = type(name, (base_cls, ), {'element':element})
+    set_member_type(new_cls, data_type)
+    return new_cls
+
+
+def set_member_type(array_cls, data_type):
+    """Creates a class to represent the members of a given array."""
+
+    # Like the parent array class, the new class name is arbitrary.
+    name = ' '.join([array_cls.__name__, 'Member',])
+
+    bases = (tag.Member, data_type)
+
+    # Array members reference the same element that defines the array itself.
+    attrib =  {'element':array_cls.element}
+
+    array_cls.member_type = type(name, bases, attrib)
 
 
 class Base(object):
