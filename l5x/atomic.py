@@ -87,10 +87,6 @@ class Integer(Base):
         if (bit < 0) or (bit >= self.bits):
             raise IndexError('Bit index out of range')
 
-    def __len__(self):
-        """Returns the width of the integer."""
-        return self.bits
-
     def _get_bit_operand(self, bit):
         """Builds a string to identify a given bit's comment.
 
