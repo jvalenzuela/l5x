@@ -199,41 +199,6 @@ class TestBOOL(Tag, unittest.TestCase):
                 self.tag.value = x
 
 
-class TestREAL(Tag, unittest.TestCase):
-    """REAL type tests."""
-    src_xml = """<Tag Name="real" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read/Write">
-<Data>00 00 00 00</Data>
-<Data Format="Decorated">
-<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
-</Data>
-</Tag>"""
-
-    xml_value = 0.0
-
-    def test_value_read(self):
-        """Confirm reading the current value."""
-        value = self.get_value_element()
-        value.attrib['Value'] = str(math.pi)
-        self.assertAlmostEqual(self.tag.value, math.pi)
-
-    def test_value_write(self):
-        """Confirm writing a new value."""
-        self.tag.value = math.e
-        value = self.get_value_element()
-        self.assertAlmostEqual(float(value.attrib['Value']), math.e)
-
-    def test_value_invalid_type(self):
-        """Confirm an exception is raised when writing a non-float value."""
-        with self.assertRaises(TypeError):
-            self.tag.value = 'not a float'
-
-    def test_invalid_values(self):
-        """Ensure NaN and infinite values raise an exception."""
-        for value in ['NaN', 'inf']:
-            with self.assertRaises(ValueError):
-                self.tag.value = float(value)
-
-
 class TestSingleDimensionalArray(Tag, unittest.TestCase):
     """Single-dimensional array tests."""
     src_xml = """<Tag Name="array" TagType="Base" DataType="DINT" Dimensions="3" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
