@@ -45,7 +45,7 @@ class AsTag(Common, unittest.TestCase):
         prj = type('prj', (object, ),
                    {'get_tag_data_buffer': lambda x : self.buf})
 
-        tag_type = type('TestBool', (atomic.BOOL, tag.Tag), {})
+        tag_type = type('TestBool', (tag.Tag, atomic.BOOL), {})
 
         return tag_type(element, prj, None)
 
@@ -95,10 +95,10 @@ class AsMember(Common, unittest.TestCase):
         element = ElementTree.Element('Member')
         element.attrib['DataType'] = 'BOOL'
 
-        member_type = type('TestType', (atomic.BOOL, tag.Member),
+        member_type = type('TestType', (tag.Member, atomic.BOOL),
                            {'element':element})
 
-        return member_type(None, self.buf, '', bit=bit)
+        return member_type(None, self.buf, '', bit)
 
     @iterate_member_bits
     def test_value_read_zero(self, bit):

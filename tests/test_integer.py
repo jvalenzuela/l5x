@@ -168,7 +168,7 @@ class AsTag(Integer):
         element.attrib['TagType'] = 'Base'
         element.attrib['DataType'] = self.raw_type.__name__
         prj = type('prj', (object, ), {'get_tag_data_buffer': lambda x : buf})
-        i_type = type('TestTag', (self.dtype, tag.Tag), {})
+        i_type = type('TestTag', (tag.Tag, self.dtype), {})
         self.test_int = i_type(element, prj, None)
 
 
@@ -179,7 +179,7 @@ class AsMember(Integer):
         buf = self.create_buf()
         element = ElementTree.Element('Member')
         element.attrib['DataType'] = self.raw_type.__name__
-        int_type = type('TestInt', (self.dtype, tag.Member),
+        int_type = type('TestInt', (tag.Member, self.dtype),
                         {'element':element})
         self.test_int = int_type(None, buf, '')
 
@@ -269,6 +269,6 @@ class BitOperand(unittest.TestCase):
         """Creates a test bit object."""
         buf = bytearray(1)
         element = ElementTree.Element('Tag')
-        int_type = type('TestTag', (atomic.SINT, tag.Member), {})
+        int_type = type('TestTag', (tag.Member, atomic.SINT), {})
         int_tag = int_type(None, buf, int_name)
         return int_tag[bit]

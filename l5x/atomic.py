@@ -78,7 +78,7 @@ class Integer(Base):
         buf = BOOL.get_bit_buffer(self.raw_data, bit)
         operand = self._get_bit_operand(bit)
         raw_bit = BOOL.get_bit_position(bit)
-        return IntegerBit(self.tag, buf, operand, bit=raw_bit)
+        return IntegerBit(self.tag, buf, operand, raw_bit)
 
     def _validate_bit_number(self, bit):
         """Verifies a given bit index."""
@@ -204,11 +204,12 @@ class BOOL(Base):
     # contribute to the enclosing data type's raw data size.
     raw_size = 0
 
-    # Default for top-level tag instances where the bit is not provided;
-    # in those cases the raw data byte always uses bit 0. Instances that
-    # are part of a larger structure or array will mask this with an instance
-    # attribute.
-    bit = 0
+    def __init__(self, bit=0):
+        """
+        The default bit position is for top-level tag instances where the bit
+        is not provided; in those cases the raw data byte always uses bit 0.
+        """
+        self.bit = bit
 
     @staticmethod
     def get_bit_buffer(buffer, bit):
@@ -230,7 +231,7 @@ class BOOL(Base):
         return self._mask
 
 
-class IntegerBit(BOOL, tag.Member):
+class IntegerBit(tag.Member, BOOL):
     """Class for accessing individual bits within an integer.
 
     This is a specialization of BOOL because integer bits are an implicit
