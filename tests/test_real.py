@@ -55,7 +55,7 @@ class AsTag(Base, unittest.TestCase):
         element.attrib['TagType'] = 'Base'
         element.attrib['DataType'] = 'REAL'
         prj = type('prj', (object, ), {'get_tag_data_buffer': lambda x : buf})
-        real_type = type('TestTag', (atomic.REAL, tag.Tag), {})
+        real_type = type('TestTag', (tag.Tag, atomic.REAL), {})
         self.test_real = real_type(element, prj, None)
 
 
@@ -66,6 +66,6 @@ class AsMember(Base, unittest.TestCase):
         buf = self.create_buf()
         element = ElementTree.Element('Member')
         element.attrib['DataType'] = 'REAL'
-        real_type = type('TestReal', (atomic.REAL, tag.Member),
+        real_type = type('TestReal', (tag.Member, atomic.REAL),
                         {'element':element})
         self.test_real = real_type(None, buf, '')

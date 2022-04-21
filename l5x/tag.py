@@ -109,6 +109,12 @@ class Tag(Data):
         self.lang = lang
         self.raw_data = prj.get_tag_data_buffer(element)
 
+        # Call the constructor for the mixin class handling the data type.
+        # The mixin class's __init__ method must define default values for
+        # any parameters because none are provided when instantiated as a
+        # top-level tag.
+        super().__init__()
+
     @property
     def tag(self):
         """Self-reference for operations that need the parent tag attribute."""
@@ -270,14 +276,14 @@ class Member(Data):
 
     description = Comment()
 
-    def __init__(self, tag, raw_data, operand, **kwargs):
+    def __init__(self, tag, raw_data, operand, *args):
         self.tag = tag
         self.raw_data = raw_data
         self.operand = operand
 
-        # Additional keyword arguments as required by the specific type
-        # are assigned as attributes.
-        [setattr(self, key, value) for key, value in kwargs.items()]
+        # Pass any additional arguments to the mixin class specific to the
+        # data type being constructed.
+        super().__init__(*args)
 
 
 class StructureValue(object):
