@@ -164,41 +164,6 @@ class Data(unittest.TestCase):
         self.assertEqual(submember.operand, '[42][0]')
 
 
-class TestBOOL(Tag, unittest.TestCase):
-    """BOOL type tests."""
-    src_xml = """<Tag Name="bool" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
-<Data>00</Data>
-<Data Format="Decorated">
-<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
-</Data>
-</Tag>"""
-
-    xml_value = 0
-
-    def test_value_read(self):
-        """Confirm reading the current value."""
-        value = self.get_value_element()
-        value.attrib['Value'] = '1'
-        self.assertEqual(self.tag.value, 1)
-
-    def test_value_write(self):
-        """Confirm writing a new value."""
-        self.tag.value = 1
-        value = self.get_value_element()
-        self.assertEqual(int(value.attrib['Value']), 1)
-
-    def test_value_invalid_type(self):
-        """Confirm an exception is raised when writing a non-integer value."""
-        with self.assertRaises(TypeError):
-            self.tag.value = False
-
-    def test_out_of_range_value(self):
-        """Test exception when setting values other than 0 or 1."""
-        for x in [-1, 2]:
-            with self.assertRaises(ValueError):
-                self.tag.value = x
-
-
 class TestSingleDimensionalArray(Tag, unittest.TestCase):
     """Single-dimensional array tests."""
     src_xml = """<Tag Name="array" TagType="Base" DataType="DINT" Dimensions="3" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
