@@ -3,6 +3,7 @@ This module contains items for implementing tag arrays, both for top-level
 tags and UDT array members.
 """
 
+from l5x import (atomic, tag)
 import functools
 import operator
 
@@ -41,6 +42,8 @@ def define_new(element, data_type):
 
     new_cls = type(name, (base_cls, ), {'element':element})
     set_member_type(new_cls, data_type)
+    set_subarray_type(new_cls, element)
+
     return new_cls
 
 
@@ -58,8 +61,117 @@ def set_member_type(array_cls, data_type):
     array_cls.member_type = type(name, bases, attrib)
 
 
+def set_subarray_type(array_cls, element):
+    """Defines a type that can be instantiated to handle a subarray."""
+    # A subarray type is not required for single-dimensional arrays.
+    if len(new_cls.get_dim()) == 1:
+        return
+
+    # The subarray class name is arbitrary.
+    name = ' '.join(['Subarray', element.tag, element.attrib['Name']])
+
+    array_cls.subarray_type = type(name, (Subarray, array_cls), {})
+
+
+class Value(object):
+    """Descriptor class for accessing array values.
+
+    This handles the value of an array or subarray as a whole, not
+    values of individual members, which are handled by instances of the
+    member type.
+    """
+    def __get__(self, array, owner=None):
+        return [array[i].value for i in range(array.shape[array.which_dim])]
+
+    def __set__(self, array, value):
+        if not isinstance(value, list):
+            raise TypeError('Value must be a list')
+        if len(value) > array.shape[array.which_dim]:
+            raise IndexError('Source list is too large')
+
+        for i in range(len(value)):
+            array[i].value = value[i]
+
+
+class Shape(object):
+    """Descriptor class to access an array's dimensions."""
+
+    def __get__(self, array, owner=None):
+        return array.get_dim()
+
+
 class Base(object):
     """Base class for all array types."""
+
+    value = Value()
+    shape = Shape()
+
+    def __init__(self, subarray_dim=()):
+        self.subarray_dim = subarray_dim
+
+    def __getitem__(self, index):
+        """Returns an object targeting the given index.
+
+        This will be one of two types:
+
+        1. If the accumulated indices plus this index as sufficient to
+           satisfy all dimensions, then the an object representing a
+           single member will be returned.
+
+        2. If all dimensions have not yet been specified, an array object
+           will be created representing a subarray containing the
+           as-yet unspecified indices.
+        """
+        if not isinstance(index, int):
+            raise TypeError('Array indices must be integers')
+
+        if (index < 0) or (index >= self.shape[self.which_dim]):
+            raise IndexError('Array index out of range')
+
+        new_dim = list(self.subarray_dim)
+        new_dim.insert(0, index)
+
+        # Return a member object if the given index plus subarray indices
+        # satisfies all dimensions.
+        if len(new_dim) == len(self.shape):
+            return get_member_object(index)
+
+        # Return a subarray if the accumulated indices do not yet satisfy
+        # all dimensions.
+        else:
+            buf = self.get_buffer(index)
+            operand = self.get_operand()
+            return self.subarray_type(self.tag, buf, operand, tuple(new_dim))
+
+    @property
+    def which_dim(self):
+        """
+        Determines which dimension the next index will be applied to.
+
+        For example, if the parent array is three-dimensional array, and the
+        first dimension has been given to create this subarray, the next
+        index will be applied to shape[1].
+        """
+        return len(self.shape) - len(self.subarray_dim) - 1
+
+    def get_operand(self, index):
+        """Builds a string identifying an element at a given index.
+
+        This is used to identify comments applied to individual elements.
+        """
+        dim = list(self.subarray_dim)
+
+        # Dimensions are supplied in logical order, i.e., Dim0 is dim[0],
+        # however, they need to be reversed here because they are displayed
+        # with the most-significant dimension first.
+        dim.reverse()
+
+        # Add the given index as the least-significant dimension.
+        dim.append(index)
+
+        dim_str = ','.join([str(d) for d in dim])]
+
+        return "[{0}]".format(dim_str)
 
     @classmethod
     def get_dim(cls):
@@ -107,6 +219,38 @@ class Array(Base):
 
     raw_size = RawSize()
 
+    def get_member_object(self, index):
+        """Instantiates a member object for a given index."""
+        buf = self.get_buffer(index)
+        operand = self.get_operand(index)
+        return self.member_type(self.tag, buf, operand)
+
+    def get_buffer(self, index):
+        """Creates a buffer containing the raw data for a given index.
+
+        The resulting buffer is not necessarily a single element, but rather
+        all the elements contained by the array defined by the existing
+        subarray indices. For example, if this object is a 2x2 array, the
+        subarray indices are empty, then given index contains 2 elements:
+        [index,0] and [index,1].
+        """
+        # The number of dimensions currently consumed are those present
+        # in parent arrays plus the one represented by the given index.
+        num_dim = len(self.subarray_dim) + 1
+
+        # Determine which dimensions remain unspecified.
+        remaining_dim = self.shape[:-num_dim]
+
+        # Compute the size of the buffer represented by the given index,
+        # which is the product of all unspecified dimensions and the
+        # base type size.
+        num_bytes = functools.reduce(operator.mul, remainining_dim,
+                                     self.member_type.raw_size)
+
+        start = num_bytes * index
+        end = start + num_bytes
+        return memoryview(self.raw_data)[start:end]
+
 
 class BoolRawSize(object):
     """
@@ -115,7 +259,7 @@ class BoolRawSize(object):
 
     Since BOOLs are always packed into blocks of 4 bytes(32 bits), the raw
     size is simply the number of bytes. Integer division is also ok because
-    the number of bits is always an integer multiple of 8.
+    the number of BOOLs is always an integer multiple of 8.
     """
 
     def __get__(self, instance, cls):
@@ -133,3 +277,43 @@ class BoolArray(Base):
     """
 
     raw_size = BoolRawSize()
+
+    def get_member_object(self, index):
+        """Creates a BOOL object targeting a given index."""
+        buf = atomic.BOOL.get_bit_buffer(index)
+        bit = atomic.BOOL.get_bit_position(index)
+        operand = self.get_operand(index)
+        return self.member_type(self.tag, buf, operand, bit)
+
+
+class SubarrayDescription(object):
+    """Descriptor class for subarray descriptions.
+
+    Raises an exception for an attempts to access descriptions because
+    RSLogix does not support commenting subarrays; only individual elements
+    may have descriptions.
+    """
+    e = TypeError
+    msg = 'Descriptions for subarrays are not supported'
+
+    def __get__(self, array, owner=None):
+        raise self.e(self.msg)
+
+    def __set__(self, array, value):
+        raise self.e(self.msg)
+
+
+class Subarray(tag.Member):
+    """Mixin class representing a portion of an array.
+
+    Subarray objects are created when a multidimensional array is indexed,
+    but the given indices do not yet satisfy all the array's dimensions.
+    For example, consider a tag array defined with the dimensions [5, 4, 3],
+    tag[0] would be a subarray with the dimensions [4, 3].
+
+    This class is concrete by subclassing tag.Member because subarrays are
+    never top-level tags.
+    """
+
+    # Override for the superclass description attribute.
+    description = SubarrayDescription()
