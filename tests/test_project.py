@@ -3,6 +3,7 @@ Unit tests for the top-level project module.
 """
 
 import l5x
+from l5x import atomic
 import io
 import string
 import unittest
@@ -416,3 +417,30 @@ class ProjectTagData(unittest.TestCase):
         # Verify the correct data value.
         actual = bytearray.fromhex(e.text)
         self.assertEqual(expected, actual)
+
+
+class DataType(unittest.TestCase):
+    """Unit tests for data type lookup."""
+
+    def setUp(self):
+        self.prj = fixture.string_to_project(
+            r"""<RSLogix5000Content><Controller/></RSLogix5000Content>""")
+
+    def _create_element(self, datatype):
+        """Creates a mock XML element with a given data type."""
+        e = ElementTree.Element('TestElement')
+        e.attrib['DataType'] = datatype
+        return e
+
+    def test_atomic(self):
+        """Confirm atomic data types return the correct class."""
+        types = ['SINT', 'INT', 'DINT', 'LINT', 'BOOL', 'REAL']
+        for t in types:
+            e = self._create_element(t)
+            self.assertIs(getattr(atomic, t), self.prj.get_data_type(e))
+
+    def test_undefined(self):
+        """Confirm an undefined data type raises an exception."""
+        e = self._create_element('spam')
+        with self.assertRaises(NotImplementedError):
+            self.prj.get_data_type(e)

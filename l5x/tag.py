@@ -102,7 +102,13 @@ class Tag(Data):
             return alias
 
         # Normal base tag; return an instance of this class.
-        return object.__new__(cls)
+        else:
+            data_type = prj.get_data_type(element)
+            name = ' '.join(('Tag', element.attrib['Name']))
+            tag_cls = type(name, (cls, data_type), {})
+            tag = object.__new__(tag_cls)
+            tag.__init__(element, prj, lang)
+            return tag
 
     def __init__(self, element, prj, lang):
         self.element = element

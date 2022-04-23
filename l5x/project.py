@@ -10,6 +10,7 @@ __get__() method. In this way the application can process L5X projects
 without worrying about low-level XML handling.
 """
 
+from .atomic import (SINT, INT, DINT, LINT, BOOL, REAL)
 from .dom import (CDATA_TAG, ElementDict, AttributeDescriptor)
 from .module import (Module, SafetyNetworkNumber)
 from .tag import Scope
@@ -41,6 +42,8 @@ class Project(object):
             lang = self.doc.attrib['CurrentLanguage']
         except KeyError:
             lang = None
+
+        self._load_data_types()
 
         # Mapping of TagData objects keyed by XML tag element. This also
         # serves to record all tag data buffers that have been created so
@@ -196,6 +199,31 @@ class Project(object):
             data = TagData(tag_element)
             self._tag_data[tag_element] = data
         return data.get_buffer()
+
+    def _load_data_types(self):
+        """Builds the set of all defined data types."""
+        # Start with atomic data types.
+        self._data_types = {
+            'SINT':SINT,
+            'INT':INT,
+            'DINT':DINT,
+            'LINT':LINT,
+            'BOOL':BOOL,
+            'REAL':REAL
+            }
+
+    def get_data_type(self, element):
+        """Returns a mixin class to handle the data of a given XML element.
+
+        The provided element may be a top-level tag or structure member.
+        """
+        name = element.attrib['DataType']
+
+        try:
+            return self._data_types[name]
+        except KeyError:
+            raise NotImplementedError(
+                "Data type not implemented: {0}".format(name))
 
 
 class Controller(Scope):
