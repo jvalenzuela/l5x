@@ -66,3 +66,29 @@ def create_project(*populate):
     xml_str = root.toxml('UTF-8').decode('UTF-8')
     buf = io.StringIO(xml_str)
     return l5x.Project(buf)
+
+
+def create_tag_element(datatype, name='TestTag', data=1, dim=()):
+    """ """
+    element = ElementTree.Element('Tag')
+    element.attrib['Name'] = name
+    element.attrib['DataType'] = datatype
+    element.attrib['TagType'] = 'Base'
+
+    if dim:
+        dim_str = ' '.join([str(d) for d in reversed(dim)])
+        element.attrib['Dimensions'] = dim_str
+
+    data = ElementTree.SubElement(element, 'Data')
+    data.text = bytearray(data).hex(' ')
+
+    return element
+
+
+def create_member_element(datatype, name='TestMember', dim=(0,)):
+    """ """
+    element = ElementTree.Element('Member')
+    element.attrib['Name'] = name
+    element.attrib['DataType'] = datatype
+    element.attrib['Dimension'] = str(dim[0])
+    return element

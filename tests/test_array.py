@@ -2,7 +2,8 @@
 Unit tests for the array module.
 """
 
-from l5x import array
+from l5x import (array, atomic, tag)
+from tests import fixture
 import xml.etree.ElementTree as ElementTree
 import unittest
 
@@ -121,3 +122,72 @@ class BoolRawSize(unittest.TestCase):
         for d in [32, 64]:
             element.attrib['Dimensions'] = str(d)
             self.assertEqual(d // 8, ar.raw_size)
+
+
+class ShapeRead(object):
+    """Unit tests for reading the shape attribute."""
+
+    def test_shape_type(self):
+        """Confirm the returned shape is a tuple."""
+        self.assertIsInstance(self.array.shape, tuple)
+
+    def test_dimension_type(self):
+        """Confirm members of the shape tuple are integers."""
+        for d in self.array.shape:
+            self.assertIsInstance(d, int)
+
+    def test_dim_value(self):
+        """Confirm all dimension members match the definition."""
+        self.assertEqual(self.dim, self.array.shape)
+
+
+class ShapeReadTag(ShapeRead):
+    """ """
+
+    def setUp(self):
+        """ """
+        prj = fixture.create_project()
+        element = fixture.create_tag_element(self.data_type, dim=self.dim)
+        self.array = tag.Tag(element, prj, None)
+
+
+class ShapeReadMember(ShapeRead):
+    """ """
+
+    def setUp(self):
+        prj = fixture.create_project()
+        element = fixture.create_member_element(self.data_type, dim=self.dim)
+        base = prj.get_data_type(element)
+        member_type = type('test', (tag.Member, base), {})
+        self.array = member_type(None, None, None)
+
+    
+class ShapeReadNonBoolTagSingle(ShapeReadTag, unittest.TestCase):
+
+    data_type = 'SINT'
+    dim = (8,)
+
+
+class ShapeReadNonBoolTagMulti(ShapeReadTag, unittest.TestCase):
+
+    data_type = 'SINT'
+    dim = (5, 4, 3)
+
+
+class ShapeReadNonBoolMember(ShapeReadMember, unittest.TestCase):
+
+    data_type = 'SINT'
+    dim = (8,)
+
+
+class ShapeReadBoolTag(ShapeReadTag, unittest.TestCase):
+
+    data_type = 'BOOL'
+    dim = (32,)
+
+
+class ShapeReadBoolMember(ShapeReadMember, unittest.TestCase):
+
+    data_type = 'BOOL'
+    dim = (32,)
+    

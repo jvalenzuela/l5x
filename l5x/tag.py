@@ -2,7 +2,7 @@
 Objects implementing tag access.
 """
 
-from l5x import dom
+from l5x import (array, dom)
 import copy
 import itertools
 import xml.etree.ElementTree as ElementTree
@@ -102,7 +102,13 @@ class Tag(Data):
             return alias
 
         # Normal base tag; return an instance of this class.
-        return object.__new__(cls)
+        else:
+            data_type = prj.get_data_type(element)
+            name = ' '.join(('Tag', element.attrib['Name']))
+            tag_cls = type(name, (cls, data_type), {})
+            tag = object.__new__(tag_cls)
+            tag.__init__(element, prj, lang)
+            return tag
 
     def __init__(self, element, prj, lang):
         self.element = element
@@ -338,41 +344,6 @@ class Structure(Data):
         return self.members[member]
 
 
-class ArrayValue(object):
-    """Descriptor class for accessing multiple values in an array."""
-    def __get__(self, array, owner=None):
-        dim = len(array.shape) - len(array.address) - 1
-        return [array[i].value for i in range(array.shape[dim])]
-
-    def __set__(self, array, value):
-        if not isinstance(value, list):
-            raise TypeError('Value must be a list')
-        if len(value) > array.shape[len(array.shape) - len(array.address) - 1]:
-            raise IndexError('Source list is too large')
-
-        for i in range(len(value)):
-            array[i].value = value[i]
-
-        array.tag.clear_raw_data()
-
-
-class ArrayDescription(Comment):
-    """Descriptor class array descriptions.
-
-    Raises an exception for an attempts to access descriptions because
-    RSLogix does not support commenting subarrays; only individual elements
-    may have descriptions.
-    """
-    e = TypeError
-    msg = 'Descriptions for subarrays are not supported'
-
-    def __get__(self, array, owner=None):
-        raise self.e(self.msg)
-
-    def __set__(self, array, value):
-        raise self.e(self.msg)
-
-
 class ArrayShape(object):
     """Descriptor class to acquire an array's dimensions."""
     def __get__(self, array, owner=None):
@@ -411,9 +382,9 @@ class ArrayShape(object):
 
 class Array(Data):
     """Access object for arrays of any data type."""
-    value = ArrayValue()
-    description = ArrayDescription()
-    shape = ArrayShape()
+#    value = ArrayValue()
+#    description = ArrayDescription()
+#    shape = ArrayShape()
 
     def __init__(self, data_class, element, tag, parent=None, address=[]):
         Data.__init__(self, element, tag, parent)
