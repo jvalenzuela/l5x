@@ -121,3 +121,16 @@ class BoolRawSize(unittest.TestCase):
         for d in [32, 64]:
             element.attrib['Dimensions'] = str(d)
             self.assertEqual(d // 8, ar.raw_size)
+
+
+class Index(object):
+    """ """
+    pass
+
+
+class AsTag(Index, unittest.TestCase):
+    """ """
+
+    def create_array(self, dim):
+        """ """
+        
