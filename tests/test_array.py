@@ -2,7 +2,8 @@
 Unit tests for the array module.
 """
 
-from l5x import array
+from l5x import (array, tag)
+from tests import fixture
 import xml.etree.ElementTree as ElementTree
 import unittest
 
@@ -121,3 +122,95 @@ class BoolRawSize(unittest.TestCase):
         for d in [32, 64]:
             element.attrib['Dimensions'] = str(d)
             self.assertEqual(d // 8, ar.raw_size)
+
+
+class ShapeRead(object):
+    """Superclass defining test methods for reading the shape attribute."""
+
+    def test_shape_type(self):
+        """Confirm the returned shape is a tuple."""
+        self.assertIsInstance(self.array.shape, tuple)
+
+    def test_dimension_type(self):
+        """Confirm members of the shape tuple are integers."""
+        [self.assertIsInstance(d, int) for d in self.array.shape]
+
+    def test_dim_value(self):
+        """Confirm all dimension members match the definition."""
+        self.assertEqual(self.dim, self.array.shape)
+
+
+class ShapeReadTag(ShapeRead):
+    """
+    Superclass for tests reading the shape attribute of a top-level
+    array tag.
+    """
+
+    def setUp(self):
+        prj = fixture.create_project()
+        element = fixture.create_tag_element(self.data_type, dim=self.dim)
+        self.array = tag.Tag(element, prj, None)
+
+
+class ShapeReadMember(ShapeRead):
+    """
+    Superclass for tests reading the shape attribute of an array member
+    of a structured data type.
+    """
+
+    def setUp(self):
+        prj = fixture.create_project()
+        element = fixture.create_member_element(self.data_type, dim=self.dim)
+        base = prj.get_data_type(element)
+        member_type = type('test', (tag.Member, base), {})
+        self.array = member_type(None, None, None)
+
+
+class ShapeReadNonBoolTagSingle(ShapeReadTag, unittest.TestCase):
+    """
+    Unit tests for reading the shape attribute of a single-dimensional
+    array of a non-BOOL data type as a top-level tag.
+    """
+
+    data_type = 'SINT'
+    dim = (8,)
+
+
+class ShapeReadNonBoolTagMulti(ShapeReadTag, unittest.TestCase):
+    """
+    Unit tests for reading the shape attribute of a multi-dimensional array
+    of a non-BOOL data type as a top-level tag.
+    """
+
+    data_type = 'SINT'
+    dim = (5, 4, 3)
+
+
+class ShapeReadBoolTag(ShapeReadTag, unittest.TestCase):
+    """
+    Unit tests for reading the shape attribute of a BOOL array as a top-level
+    tag.
+    """
+
+    data_type = 'BOOL'
+    dim = (32,)
+
+
+class ShapeReadNonBoolMember(ShapeReadMember, unittest.TestCase):
+    """
+    Unit tests for reading the shape attribute of a structure array member
+    of a non-BOOL data type.
+    """
+
+    data_type = 'SINT'
+    dim = (8,)
+
+
+class ShapeReadBoolMember(ShapeReadMember, unittest.TestCase):
+    """
+    Unit tests for reading the shape attribute of a structure BOOL array
+    member.
+    """
+
+    data_type = 'BOOL'
+    dim = (32,)

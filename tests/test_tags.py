@@ -178,10 +178,6 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
 </Tag>"""
 
     xml_value = [0, 0, 0]
-
-    def test_shape(self):
-        """Ensure shape is a tuple with the correct dimensions.."""
-        self.assertEqual(self.tag.shape, (3,))
             
     def test_index_type(self):
         """Ensure non-integer indices raise an exception."""
@@ -366,12 +362,6 @@ class TestMultiDimensionalArray(Tag, unittest.TestCase):
             [21, 22, 23, 24]
         ]
     ]
-
-    def test_shape_values(self):
-        """Verify correct dimension values."""
-        self.assertEqual(self.tag.shape[0], len(self.src_value[0][0]))
-        self.assertEqual(self.tag.shape[1], len(self.src_value[0]))
-        self.assertEqual(self.tag.shape[2], len(self.src_value))
 
     def test_value_read(self):
         """Verify reading values for each dimension."""

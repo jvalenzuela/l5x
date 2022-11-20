@@ -14,6 +14,7 @@ from .atomic import (SINT, INT, DINT, LINT, BOOL, REAL)
 from .dom import (CDATA_TAG, ElementDict, AttributeDescriptor)
 from .module import (Module, SafetyNetworkNumber)
 from .tag import Scope
+from l5x import array
 import io
 import re
 import xml.etree.ElementTree as ElementTree
@@ -220,10 +221,17 @@ class Project(object):
         name = element.attrib['DataType']
 
         try:
-            return self._data_types[name]
+            data_type = self._data_types[name]
         except KeyError:
             raise NotImplementedError(
                 "Data type not implemented: {0}".format(name))
+
+        # Return an array class tailored for a given data type if the element
+        # defines an array.
+        if array.is_array(element):
+            return array.define_new(element, data_type)
+
+        return data_type
 
 
 class Controller(Scope):

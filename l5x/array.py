@@ -59,8 +59,17 @@ def set_member_type(array_cls, data_type):
     array_cls.member_type = type(name, bases, attrib)
 
 
+class Shape(object):
+    """Descriptor class to access an array's dimensions."""
+
+    def __get__(self, array, owner=None):
+        return array.get_dim()
+
+
 class Base(object):
     """Base class for all array types."""
+
+    shape = Shape()
 
     @classmethod
     def get_dim(cls):
