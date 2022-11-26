@@ -214,3 +214,83 @@ class ShapeReadBoolMember(ShapeReadMember, unittest.TestCase):
 
     data_type = 'BOOL'
     dim = (32,)
+
+
+class IndexSingleDimensionTag(unittest.TestCase):
+    """Tests for indexing a single-dimensional array as a top-level tag."""
+
+    def setUp(self):
+        prj = fixture.create_project()
+        element = fixture.create_tag_element('SINT', data=[0] * 3, dim=(3,))
+        self.array = tag.Tag(element, prj, None)
+
+    def test_invalid_type(self):
+        """Ensure non-integer indices raise an exception."""
+        with self.assertRaises(TypeError):
+            self.array['spam']
+
+    def test_negative(self):
+        """Ensure negative indices raise an exception."""
+        with self.assertRaises(IndexError):
+            self.array[-1]
+
+    def test_out_of_range(self):
+        """Ensure indices beyond the end of the array raise an exception."""
+        with self.assertRaises(IndexError):
+            self.array[3]
+
+    def test_valid_range(self):
+        """Ensure indices within the array are accepted."""
+        [self.array[i] for i in range(3)]
+
+
+class IndexMultiDimensionTag(unittest.TestCase):
+    """Tests for indexing a multi-dimensional array as a top-level tag."""
+
+    def setUp(self):
+        prj = fixture.create_project()
+        element = fixture.create_tag_element('SINT', data=[0] * 60,
+                                             dim=(3, 4, 5))
+        self.array = tag.Tag(element, prj, None)
+
+    def test_invalid_type(self):
+        """Ensure non-integer indices raise an exception."""
+        with self.assertRaises(TypeError):
+            self.array['spam']
+        for i in range(5):
+            with self.assertRaises(TypeError):
+                self.array[i]['spam']
+            for j in range(4):
+                with self.assertRaises(TypeError):
+                    self.array[i][j]['spam']
+
+    def test_negative(self):
+        """Ensure negative indices raise an exception."""
+        with self.assertRaises(IndexError):
+            self.array[-1]
+        for i in range(5):
+            with self.assertRaises(IndexError):
+                self.array[i][-1]
+            for j in range(4):
+                with self.assertRaises(IndexError):
+                    self.array[i][j][-1]
+
+    def test_out_of_range(self):
+        """Ensure indices beyond the end of the array raise an exception."""
+        with self.assertRaises(IndexError):
+            self.array[5]
+        for i in range(3):
+            with self.assertRaises(IndexError):
+                self.array[i][4]
+            for j in range(4):
+                with self.assertRaises(IndexError):
+                    self.array[i][j][3]
+
+    def test_valid_range(self):
+        """Ensure indices within the array are accepted."""
+        for i in range(5):
+            self.array[i]
+            for j in range(4):
+                self.array[i][j]
+                for k in range(3):
+                    self.array[i][j][k]

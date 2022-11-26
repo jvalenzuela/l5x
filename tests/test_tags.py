@@ -178,17 +178,6 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
 </Tag>"""
 
     xml_value = [0, 0, 0]
-            
-    def test_index_type(self):
-        """Ensure non-integer indices raise an exception."""
-        with self.assertRaises(TypeError):
-            self.tag['not an int']
-            
-    def test_index_range(self):
-        """Ensure negative and indices beyond the end raise exceptions."""
-        for i in [-1, self.tag.shape[0]]:
-            with self.assertRaises(IndexError):
-                self.tag[i]
 
     def test_value_read(self):
         """Confirm reading the top-level value returns a list of values."""
