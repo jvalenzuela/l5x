@@ -4,8 +4,30 @@ Unit tests for the array module.
 
 from l5x import (array, tag)
 from tests import fixture
+import io
+import itertools
 import xml.etree.ElementTree as ElementTree
 import unittest
+
+
+class BaseTag(object):
+    """Base class for creating mock tag arrays."""
+
+    def create_array_tag(self, datatype, dim, data):
+        """Creates a mock top-level array tag."""
+        self.element = fixture.create_tag_element(datatype, data=data, dim=dim)
+        self.prj = fixture.create_project()
+        self.array = tag.Tag(self.element, self.prj, None)
+
+    def get_array_raw_data(self):
+        """Returns the array's raw data content."""
+        # The project must be written to flush the modified raw data buffer
+        # back to the XML document.
+        buf = io.BytesIO()
+        self.prj.write(buf)
+
+        data_element = self.element.find('Data')
+        return list(bytes.fromhex(data_element.text))
 
 
 class ArrayDetect(unittest.TestCase):
@@ -294,3 +316,470 @@ class IndexMultiDimensionTag(unittest.TestCase):
                 self.array[i][j]
                 for k in range(3):
                     self.array[i][j][k]
+
+
+class MemberValueAtomicSingleDimensionTag(BaseTag):
+    """
+    Mixin class defining tests for reading and writing single member values of
+    a single-dimensional array of atomic data types.
+    """
+
+    dim = (3,)
+
+    def test_read_data_type(self):
+        """Confirm the correct type when reading element values."""
+        self.create_array_tag(self.data_type, self.dim, self.raw_data)
+        for i in range(self.dim[0]):
+            self.assertIsInstance(self.array[i].value, type(self.values[i]))
+
+    def test_read_data_value(self):
+        """Confirm the correct value when reading element values."""
+        self.create_array_tag(self.data_type, self.dim, self.raw_data)
+        for i in range(self.dim[0]):
+            self.assertEqual(self.array[i].value, self.values[i])
+
+    def test_write_data(self):
+        """Confirm writing values properly updates the raw data."""
+        # Initialize raw data of all zeros.
+        self.create_array_tag(self.data_type, self.dim,
+                              [0] * len(self.raw_data))
+
+        # Write values to every element.
+        for i in range(self.dim[0]):
+            self.array[i].value = self.values[i]
+
+        # Verify resulting raw data.
+        raw = self.get_array_raw_data()
+        self.assertEqual(raw, self.raw_data)
+
+    def test_write_invalid_type(self):
+        """Confirm writing the wrong value type raises an exception."""
+        self.create_array_tag(self.data_type, self.dim,
+                              [0] * len(self.raw_data))
+        for i in range(self.dim[0]):
+            with self.assertRaises(TypeError):
+                if isinstance(self.values[0], float):
+                    self.array[i].value = int(0)
+                else:
+                    self.array[i].value = float(0)
+
+
+class MemberValueAtomicMultiDimensionTag(BaseTag):
+    """
+    Mixin class defining tests for reading and writing single member values of
+    a multi-dimensional array of atomic data types.
+    """
+
+    dim = (2, 3, 4)
+
+    def test_read_data_type(self):
+        """Confirm the correct type when reading element values."""
+        self.create_array_tag(self.data_type, self.dim,
+                              [0] * len(self.raw_data))
+        for i, j, k in self.iter_dim():
+            self.assertIsInstance(self.array[k][j][i].value,
+                                  type(self.values[k][j][i]))
+
+    def test_read_data_value(self):
+        """Confirm the correct value when reading element values."""
+        self.create_array_tag(self.data_type, self.dim, self.raw_data)
+        for i, j, k in self.iter_dim():
+            self.assertEqual(self.array[k][j][i].value, self.values[k][j][i])
+
+    def test_write_data(self):
+        """Confirm writing values properly updates the raw data."""
+        # Initialize a target array of zeros.
+        self.create_array_tag(self.data_type, self.dim,
+                              [0] * len(self.raw_data))
+
+        # Write to every member value.
+        for i, j, k in self.iter_dim():
+            self.array[k][j][i].value = self.values[k][j][i]
+
+        # Confirm the raw data buffer matches.
+        raw = self.get_array_raw_data()
+        self.assertEqual(raw, self.raw_data)
+
+    def iter_dim(self):
+        """Generates an iterator of all possible dimensions."""
+        return itertools.product(*[range(i) for i in self.dim])
+
+
+class SintSingleDimension(object):
+    """Mixin class providing mock data for a single-dimensional SINT array."""
+
+    data_type = 'SINT'
+    raw_data = list(range(1 * 3))
+    values = [0, 1, 2]
+
+
+class SintMultiDimension(object):
+    """Mixin class providing mock data for a multi-dimensional SINT array."""
+
+    data_type = 'SINT'
+    raw_data = list(range(1 * 2 * 3 * 4))
+    values = [
+        [
+            [0, 1],
+            [2, 3],
+            [4, 5]
+        ],
+        [
+            [6, 7],
+            [8, 9],
+            [10, 11]
+        ],
+        [
+            [12, 13],
+            [14, 15],
+            [16, 17]
+        ],
+        [
+            [18, 19],
+            [20, 21],
+            [22, 23]
+        ]
+    ]
+
+
+class IntSingleDimension(object):
+    """Mixin class providing mock data for a single-dimensional INT array."""
+
+    data_type = 'INT'
+    raw_data = list(range(2 * 3))
+    values = [0x0100, 0x0302, 0x0504]
+
+
+class IntMultiDimension(object):
+    """Mixin class providing mock data for a multi-dimensional INT array."""
+
+    data_type = 'INT'
+    raw_data = list(range(2 * 2 * 3 * 4))
+    values = [
+        [
+            [256, 770],
+            [1284, 1798],
+            [2312, 2826]
+        ],
+        [
+            [3340, 3854],
+            [4368, 4882],
+            [5396, 5910]
+        ],
+        [
+            [6424, 6938],
+            [7452, 7966],
+            [8480, 8994]
+        ],
+        [
+            [9508, 10022],
+            [10536, 11050],
+            [11564, 12078]
+        ]
+    ]
+
+
+class DintSingleDimension(object):
+    """Mixin class providing mock data for a single-dimensional DINT array."""
+
+    data_type = 'DINT'
+    raw_data = list(range(4 * 3))
+    values = [50462976, 117835012, 185207048]
+
+
+class DintMultiDimension(object):
+    """Mixin class providing mock data for a multi-dimensional DINT array."""
+
+    data_type = 'DINT'
+    raw_data = list(range(4 * 2 * 3 * 4))
+    values = [
+        [
+            [50462976, 117835012],
+            [185207048, 252579084],
+            [319951120, 387323156]
+        ],
+        [
+            [454695192, 522067228],
+            [589439264, 656811300],
+            [724183336, 791555372]
+        ],
+        [
+            [858927408, 926299444],
+            [993671480, 1061043516],
+            [1128415552, 1195787588]
+        ],
+        [
+            [1263159624, 1330531660],
+            [1397903696, 1465275732],
+            [1532647768, 1600019804]
+        ]
+    ]
+
+
+class LintSingleDimension(object):
+    """Mixin class providing mock data for a single-dimensional LINT array."""
+
+    data_type = 'LINT'
+    raw_data = list(range(8 * 3))
+    values = [506097522914230528, 1084818905618843912, 1663540288323457296]
+
+
+class LintMultiDimension(object):
+    """Mixin class providing mock data for a multi-dimensional LINT array."""
+
+    data_type = 'LINT'
+    raw_data = list(range(8 * 2 * 3 * 4))
+    values = [
+        [
+            [506097522914230528, 1084818905618843912],
+            [1663540288323457296, 2242261671028070680],
+            [2820983053732684064, 3399704436437297448]
+        ],
+        [
+            [3978425819141910832, 4557147201846524216],
+            [5135868584551137600, 5714589967255750984],
+            [6293311349960364368, 6872032732664977752]
+        ],
+        [
+            [7450754115369591136, 8029475498074204520],
+            [8608196880778817904, 9186918263483431288],
+            [-8681104427521506944, -8102383044816893560]
+        ],
+        [
+            [-7523661662112280176, -6944940279407666792],
+            [-6366218896703053408, -5787497513998440024],
+            [-5208776131293826640, -4630054748589213256]
+        ]
+    ]
+
+
+# The values in the following REAL data classes were chosen for the
+# following reasons:
+#
+# 1. They represent a set of unique, floating-point values, so each array
+#    member can be positively identified.
+# 2. The floating-point values are exact integers for easy equality testing.
+# 3. They have unique, non-zero, non-repeating raw data bytes.
+
+class RealSingleDimension(object):
+    """Mixin class providing mock data for a single-dimensional REAL array."""
+
+    data_type = 'REAL'
+    raw_data = [
+        0x40, 0xDA, 0x23, 0x48, 0x80, 0xDA,
+        0x23, 0x48, 0xC0, 0xDA, 0x23, 0x48
+    ]
+    values = [167785.0, 167786.0, 167787.0]
+
+
+class RealMultiDimension(object):
+    """Mixin class providing mock data for a multi-dimensional REAL array."""
+
+    data_type = 'REAL'
+    raw_data = [
+        0x40, 0xDA, 0x23, 0x48, 0x80, 0xDA, 0x23, 0x48, 0xC0, 0xDA, 0x23,
+        0x48, 0x40, 0xDB, 0x23, 0x48, 0x80, 0xDB, 0x23, 0x48, 0xC0, 0xDB,
+        0x23, 0x48, 0x40, 0xDC, 0x23, 0x48, 0x80, 0xDC, 0x23, 0x48, 0xC0,
+        0xDC, 0x23, 0x48, 0x40, 0xDD, 0x23, 0x48, 0x80, 0xDD, 0x23, 0x48,
+        0xC0, 0xDD, 0x23, 0x48, 0x40, 0xDE, 0x23, 0x48, 0x80, 0xDE, 0x23,
+        0x48, 0xC0, 0xDE, 0x23, 0x48, 0x40, 0xDF, 0x23, 0x48, 0x80, 0xDF,
+        0x23, 0x48, 0xC0, 0xDF, 0x23, 0x48, 0x40, 0xE0, 0x23, 0x48, 0x80,
+        0xE0, 0x23, 0x48, 0xC0, 0xE0, 0x23, 0x48, 0x40, 0xE1, 0x23, 0x48,
+        0x80, 0xE1, 0x23, 0x48, 0xC0, 0xE1, 0x23, 0x48
+    ]
+    values = [
+        [
+            [167785.0, 167786.0],
+            [167787.0, 167789.0],
+            [167790.0, 167791.0]
+        ],
+        [
+            [167793.0, 167794.0],
+            [167795.0, 167797.0],
+            [167798.0, 167799.0]
+        ],
+        [
+            [167801.0, 167802.0],
+            [167803.0, 167805.0],
+            [167806.0, 167807.0]
+        ],
+        [
+            [167809.0, 167810.0],
+            [167811.0, 167813.0],
+            [167814.0, 167815.0]
+        ]
+    ]
+
+
+class SintMemberValueSingleDimension(
+        MemberValueAtomicSingleDimensionTag,
+        SintSingleDimension,
+        unittest.TestCase):
+    """
+    Composite class testing single member value access to a single-dimensional
+    array of SINTs.
+    """
+    pass
+
+
+class SintMemberValueMultiDimension(
+        MemberValueAtomicMultiDimensionTag,
+        SintMultiDimension,
+        unittest.TestCase):
+    """
+    Composite class testing single member value access to a multi-dimensional
+    array of SINTs.
+    """
+    pass
+
+
+class IntMemberValueSingleDimension(
+        MemberValueAtomicSingleDimensionTag,
+        IntSingleDimension,
+        unittest.TestCase):
+    """
+    Composite class testing single member value access to a single-dimensional
+    array of INTs.
+    """
+    pass
+
+
+class IntMemberValueMultiDimension(
+        MemberValueAtomicMultiDimensionTag,
+        IntMultiDimension,
+        unittest.TestCase):
+    """
+    Composite class testing single member value access to a multi-dimensional
+    array of INTs.
+    """
+    pass
+
+
+class DintMemberValueSingleDimension(
+        MemberValueAtomicSingleDimensionTag,
+        DintSingleDimension,
+        unittest.TestCase):
+    """
+    Composite class testing single member value access to a single-dimensional
+    array of DINTs.
+    """
+    pass
+
+
+class DintMemberValueMultiDimension(
+        MemberValueAtomicMultiDimensionTag,
+        DintMultiDimension,
+        unittest.TestCase):
+    """
+    Composite class testing single member value access to a multi-dimensional
+    array of DINTs.
+    """
+    pass
+
+
+class LintMemberValueSingleDimension(
+        MemberValueAtomicSingleDimensionTag,
+        LintSingleDimension,
+        unittest.TestCase):
+    """
+    Composite class testing single member value access to a single-dimensional
+    array of LINTs.
+    """
+    pass
+
+
+class LintMemberValueMultiDimension(
+        MemberValueAtomicMultiDimensionTag,
+        LintMultiDimension,
+        unittest.TestCase):
+    """
+    Composite class testing single member value access to a multi-dimensional
+    array of LINTs.
+    """
+    pass
+
+
+class RealMemberValueSingleDimension(
+        MemberValueAtomicSingleDimensionTag,
+        RealSingleDimension,
+        unittest.TestCase):
+    """
+    Composite class testing single member value access to a single-dimensional
+    array of REALs.
+    """
+    pass
+
+
+class RealMemberValueMultiDimension(
+        MemberValueAtomicMultiDimensionTag,
+        RealMultiDimension,
+        unittest.TestCase):
+    """
+    Composite class testing single member value access to a multi-dimensional
+    array of REALs.
+    """
+    pass
+
+
+class MemberValueBool(BaseTag, unittest.TestCase):
+    """Tests for accessing the value of a single member in a BOOL array."""
+
+    dim = (64,)
+
+    def test_read_type(self):
+        """Confirm the correct type of value is read."""
+        data = [0] * 8
+        self.create_array_tag('BOOL', self.dim, data)
+        for i in range(self.dim[0]):
+            self.assertIsInstance(self.array[i].value, int)
+
+    def test_read_value(self):
+        """Confirm the correct value is read."""
+        for i in range(self.dim[0]):
+            # Create a data buffer with only one bit set to 1.
+            data = [0] * 8
+            data[i // 8] = 1 << i % 8
+            self.create_array_tag('BOOL', self.dim, data)
+
+            # Check the value of every member.
+            for j in range(self.dim[0]):
+                expected = 1 if i == j else 0
+                self.assertEqual(expected, self.array[j].value)
+
+    def test_write_one(self):
+        """Confirm writing a one value correctly updates the raw data."""
+        for i in range(self.dim[0]):
+            data = [0] * 8
+            self.create_array_tag('BOOL', self.dim, data)
+            self.array[i].value = 1
+            raw = self.get_array_raw_data()
+            data[i // 8] = 1 << i % 8
+            self.assertEqual(data, raw)
+
+    def test_write_zero(self):
+        """Confirm writing a zero value correctly updates the raw data."""
+        for i in range(self.dim[0]):
+            data = [0xff] * 8
+            self.create_array_tag('BOOL', self.dim, data)
+            self.array[i].value = 0
+            raw = self.get_array_raw_data()
+            data[i // 8] &= ~(1 << i % 8)
+            self.assertEqual(data, raw)
+
+    def test_write_invalid_range(self):
+        """Confirm writing an integer other than 0 or 1 raises an exception."""
+        for i in range(self.dim[0]):
+            data = [0] * 8
+            self.create_array_tag('BOOL', self.dim, data)
+            with self.assertRaises(ValueError):
+                self.array[i].value = -1
+            with self.assertRaises(ValueError):
+                self.array[i].value = 2
+
+    def test_write_invalid_type(self):
+        """Confirm writing an incorrect data type raises an exception."""
+        data = [0] * 8
+        self.create_array_tag('BOOL', self.dim, data)
+        for i in range(self.dim[0]):
+            with self.assertRaises(TypeError):
+                self.array[i].value = 'spam'

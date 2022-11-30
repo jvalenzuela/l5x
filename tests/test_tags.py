@@ -187,14 +187,6 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
             element.attrib['Value'] = str(new[i])
         self.assertEqual(self.tag.value, new)
 
-    def test_element_value_read(self):
-        """Confirm reading a single value."""
-        for i in range(self.tag.shape[0]):
-            value = i + 10
-            element = self.get_value_element(i)
-            element.attrib['Value'] = str(value)
-            self.assertEqual(self.tag[i].value, value)
-
     def test_value_write(self):
         """Confirm setting a new value to all elements with a list."""
         new = [100 + i for i in range(self.tag.shape[0])]
@@ -220,14 +212,6 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
         """Confirm an exception is raised when setting the value to a list that is too long."""
         with self.assertRaises(IndexError):
             self.tag.value = [0] * (self.tag.shape[0] + 1)
-
-    def test_element_value_write(self):
-        """Confirm writing a single element."""
-        for i in range(self.tag.shape[0]):
-            new_value = i * 2
-            self.tag[i].value = new_value
-            element = self.get_value_element(i)
-            self.assertEqual(new_value, int(element.attrib['Value']))
 
     def test_invalid_value_type(self):
         """Test setting value to a non-list raises an exception."""
@@ -269,11 +253,6 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
         self.tag[0].description = None
         desc = self.get_comment(0)
         self.assertIsNone(desc)
-
-    def test_element_value_raw_data(self):
-        """Ensure setting a single element clears undecorated data."""
-        self.tag[0].value = 0
-        self.assert_no_raw_data_element()
 
     def get_value_element(self, index):
         """Finds the element containing an element value."""
@@ -361,12 +340,6 @@ class TestMultiDimensionalArray(Tag, unittest.TestCase):
 
             for j in range(len(self.tag.value[i])):
                 self.assertEqual(self.tag.value[i][j], self.src_value[i][j])
-
-    def test_value_write_single(self):
-        """Verify writing a single element value."""
-        self.src_value[1][2][3] = 123
-        self.tag[1][2][3].value = 123
-        self.assert_element_values()
 
     def test_value_write_subarray(self):
         """Verify writing a subarray value."""
