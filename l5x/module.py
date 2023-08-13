@@ -92,6 +92,7 @@ class NatAddress(AttributeDescriptor):
 
 class Module(object):
     """Accessor object for a communication module."""
+    inhibited = AttributeDescriptor('Inhibited')
     snn = SafetyNetworkNumber()
 
     def __init__(self, element):

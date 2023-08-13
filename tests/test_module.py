@@ -92,6 +92,9 @@ class ModuleStandard(unittest.TestCase):
 </Module>""")
         self.module = module.Module(element)
 
+    def test_inhibited_read(self):
+        self.assertEqual(self.module.inhibited, 'false')
+
     def test_port_names_read(self):
         """Ensure names returns a list of port IDs."""
         self.assertEqual(set(self.module.ports.names), set((1, 2)))

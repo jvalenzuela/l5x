@@ -267,6 +267,14 @@ attribute.
 	>> prj.modules.names
 	['Controller', 'DOUT1', 'ENBT']
 
+
+Each module can get or set the inhibited/uninhibited status by the inhibited
+attribute.
+
+::
+	>> prj.modules['ENBT'].inhibited
+	false
+
 Each module is comprised of a set of communication ports identified by
 a unique integer. Ports feature a read-only type attribute to query the
 interface type and a read-write address attribute to get or set the
