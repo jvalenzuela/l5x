@@ -307,3 +307,47 @@ class SafetyNetworkNumber(unittest.TestCase):
         self.module.snn = '0000_1111_2222'
         self.assertEqual(self.module.element.attrib['SafetyNetwork'],
                          '16#0000_0000_1111_2222')
+
+
+class Inhibit(unittest.TestCase):
+    """Tests for the module inhibit attribute."""
+
+    def setUp(self):
+        element = fixture.parse_xml(r'<Module Name="Local"/>')
+        self.module = module.Module(element)
+
+    def test_read(self):
+        """Confirm reading the attribute yields the correct values.
+
+        assertIs() is used here instead of assertTrue() and assertFalse()
+        to ensure the value is actually a boolean type, rather than an
+        expression that can be converted to a boolean.
+        """
+        self._set_inhibit('true')
+        self.assertIs(self.module.inhibited, True)
+
+        self._set_inhibit('false')
+        self.assertIs(self.module.inhibited, False)
+
+    def test_write(self):
+        """Confirm writing valid values yields correct XML values."""
+        self.module.inhibited = True
+        self.assertEqual(self._get_inhibit(), 'true')
+
+        self.module.inhibited = False
+        self.assertEqual(self._get_inhibit(), 'false')
+
+    def test_write_invalid(self):
+        """Confirm exception when writing non-boolean values."""
+        not_bool = [0, 1, 'true', 'false', None]
+        for value in not_bool:
+            with self.assertRaises(TypeError, msg=value):
+                self.module.inhibited = value
+
+    def _set_inhibit(self, value):
+        """Sets the inhibited XML attribute to a given value."""
+        self.module.element.attrib['Inhibited'] = value
+
+    def _get_inhibit(self):
+        """Retrieves the inhibited XML attribute value."""
+        return self.module.element.attrib['Inhibited']
