@@ -90,9 +90,29 @@ class NatAddress(AttributeDescriptor):
         return new_address
 
 
+class Inhibited(AttributeDescriptor):
+    """Descriptor class for the module inhibit attribute.
+
+    Handles conversions between the XML attribute string and boolean values.
+    """
+
+    def from_xml(self, raw):
+        """Converts the XML attribute string into a boolean value."""
+        return True if raw == 'true' else False
+
+    def to_xml(self, unused, value):
+        """Converts a boolean value into an XML attribute string."""
+        if not isinstance(value, bool):
+            raise TypeError("Module inhibit value must be a bool.")
+
+        # Boolean attribute values are in lower-case.
+        return str(value).lower()
+
+
 class Module(object):
     """Accessor object for a communication module."""
     snn = SafetyNetworkNumber()
+    inhibited = Inhibited('Inhibited')
 
     def __init__(self, element):
         self.element = element
