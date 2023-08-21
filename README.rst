@@ -295,7 +295,7 @@ to disable NAT.
 	>> prj.modules['ENBT'].ports[2].nat_address = '192.168.0.1'
 
 A module's connection inhibit selection can be read or altered with the
-inhibit attribute:
+inhibited attribute:
 
 ::
 
