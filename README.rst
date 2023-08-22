@@ -10,9 +10,9 @@ dealing with raw XML.
 Getting Started
 -------------------------
 
-All access to .L5X data is through a top-level Project object, instantiated
+All access to .L5X data is through a top-level ``Project`` object, instantiated
 by passing a filename to the constructor. If the project is to be modified
-the write method writes the updated data back to a file for importing into
+the ``write`` method writes the updated data back to a file for importing into
 RSLogix. Typical execution flow is as follows:
 
 ::
@@ -28,15 +28,15 @@ RSLogix. Typical execution flow is as follows:
 Controller
 -------------------------
 
-The controller attribute of a project has the following attributes:
+The ``controller`` attribute of a project has the following attributes:
 
-tags:
+``tags``
 	A tag scope containing controller tags; see Tags_.
 
 
-comm_path:
+``comm_path``
 	Permits reading and modifying the controller's communication path.
-	Setting to None will delete the communication path.
+	Setting to ``None`` will delete the communication path.
 
 ::
 
@@ -44,14 +44,14 @@ comm_path:
 	>>> prj.controller.comm_path
 	'AB_ETHIP-1\\192.168.1.10\\Backplane\\0'
 
-snn:
+``snn``
 	Safety network number; see Modules_ for details.
 
 
 Programs
 -------------------------
 
-A project's programs attribute contains a names attribute that evaluates
+A project's ``programs`` attribute contains a ``names`` attribute that evaluates
 to an iterable of program names, members of which can be used as indices to
 access program-scoped tags.
 
@@ -65,11 +65,11 @@ access program-scoped tags.
 Tags
 -------------------------
 
-The top-level project contains tag scope objects, such as controller or
-programs, which provide access to their respective tags. Indexing a scope
+The top-level project contains tag scope objects, such as ``controller`` or
+``programs``, which provide access to their respective tags. Indexing a scope
 object with a tag's name will return a tag object providing access to the
 various properties of the tag. An iterable of tag names can also be acquired
-from a scope's names attribute.
+from a scope's ``names`` attribute.
 
 ::
 
@@ -79,10 +79,10 @@ from a scope's names attribute.
 
 All tag objects have at least the following attributes:
 
-data_type
+``data_type``
 	A string describing the tag's data type, such as DINT or TIMER.
 
-value
+``value``
 	The tag's complete value, the type of which varies based on the
         tag's type. For base data types this will be a single value, such
         as an integer, however, container objects are utilized for compound
@@ -90,11 +90,11 @@ value
 	details. This attribute can be read to acquire the current value
 	or written to set a new value.
 
-description
+``description``
 	The tag's top-level comment. See data type specific
         documentation for data types which support commenting subelements
 	such as individual array members or integer bits. In addition to
-        normal read/write activities, setting this attribute to None will
+        normal read/write activities, setting this attribute to ``None`` will
         delete any existing comment.
 
         Recent versions of RSLogix have implemented maintaining comments and
@@ -105,10 +105,10 @@ description
 
 Consumed tags include these additional read/write attributes:
 
-producer
+``producer``
 	Name of the producing controller.
 
-remote_tag
+``remote_tag``
 	Remote tag name.
 
 
@@ -156,7 +156,7 @@ members are accessed using the member's name as an index as follows:
 	prj.controller.tags['timer']['PRE'].value = 100
 	prj.controller.tags['timer']['DN'].description = 'done bit'
 
-An iterable set of member identifiers is available with the names attribute:
+An iterable set of member identifiers is available with the ``names`` attribute:
 
 ::
 
@@ -185,7 +185,7 @@ own bracket as opposed to the comma-separated style of RSLogix.
 	>>> prj.controller.tags['multi_dim_array'][2][5].description
 	'This is multi_dim_array[2,5]'
 
-The value of entire array is available through the value attribute using
+The value of entire array is available through the ``value`` attribute using
 lists. Multidimensional arrays use lists of lists and arrays of complex data
 types are supported, for example an array of UDTs is a list of dicts.
 
@@ -197,10 +197,10 @@ types are supported, for example an array of UDTs is a list of dicts.
 	[[0, 1], [2, 3], [4, 5]]
 	
 
-An array's dimensions may be read with the shape attribute, which returns
+An array's dimensions may be read with the ``shape`` attribute, which returns
 a tuple containing the size of each dimension. The following example shows
 output for a tag of type DINT[4,3,2]. Note the tuple's reversed display order
-as the number of elements in DimX is placed in shape[X].
+as the number of elements in Dim\ *X* is placed in shape[*X*].
 
 ::
 
@@ -208,14 +208,14 @@ as the number of elements in DimX is placed in shape[X].
 	(2, 3, 4)
 
 
-Arrays may also be resized by assigning the shape attribute to a new set
+Arrays may also be resized by assigning the ``shape`` attribute to a new set
 of dimensions. Keep in mind the reversed appearance of dimensions described
-above. Specifying a shape tuple of (x, y, z) will yield an array sized as
-if Dim0=x, Dim1=y, and Dim2=z were used in the Logix tag dialog. Also the
+above. Specifying a ``shape`` tuple of (*x*, *y*, *z*) will yield an array sized as
+if Dim0=\ *x*, Dim1=\ *y*, and Dim2=\ *z* were used in the Logix tag dialog. Also the
 array's element values and descriptions are undefined following a resize
-operation, even if the new shape is a subset of the original. If original
+operation, even if the new ``shape`` is a subset of the original. If original
 content needs to be retained across a resize, it should be copied to
-separate variables before assigning a new shape.
+separate variables before assigning a new ``shape``.
 
 ::
 
@@ -231,13 +231,13 @@ Alias Tags
 
 Alias tags have two available attributes:
 
-description
+``description``
         Same as the description attribute of a regular tag.
 
-alias_for
+``alias_for``
         A string containing the name of the tag the alias points to.
         The L5X module does not ensure the target tag exists if the
-        alias_for attribute is altered. Changing the alias_for attribute
+        ``alias_for`` attribute is altered. Changing the ``alias_for`` attribute
         removes any operand comments the original alias contained. For example,
         if the alias points to a timer and the alias contained a
         comment for the PRE member, changing the alias to point to a new
@@ -251,15 +251,15 @@ alias_for
         'Tag description'
         >> prj.controller.tags['alias'].alias_for = 'target_tag'
 
-No other attributes, such as value, are implemented for alias tags, nor
+No other attributes, such as ``value``, are implemented for alias tags, nor
 can they be indexed to access members of the target data type.
 
 
 Modules
 -------------------------
 
-The project's modules attribute provides access to modules defined in the
-I/O Configuration tree. A list of modules can be obtained with the names
+The project's ``modules`` attribute provides access to modules defined in the
+I/O Configuration tree. A list of modules can be obtained with the ``names``
 attribute.
 
 ::
@@ -268,8 +268,8 @@ attribute.
 	['Controller', 'DOUT1', 'ENBT']
 
 Each module is comprised of a set of communication ports identified by
-a unique integer. Ports feature a read-only type attribute to query the
-interface type and a read-write address attribute to get or set the
+a unique integer. Ports feature a read-only ``type`` attribute to query the
+interface type and a read-write ``address`` attribute to get or set the
 type-specific address. A typical example for manipulating the IP
 address of an Ethernet port, which is usually port 2:
 
@@ -280,7 +280,7 @@ address of an Ethernet port, which is usually port 2:
 	>> prj.modules['ENBT'].ports[2].address = '192.168.0.1'
 
 Ports configured for network address translation(NAT) can access the NAT
-address through the nat_address attribute. NAT addresses can only be
+address through the ``nat_address`` attribute. NAT addresses can only be
 read or altered by the L5X module, not enabled or disabled.
 In other words, the port must first be configured for NAT by RSLogix
 before the NAT address can be accessed, and the L5X module can not be used
@@ -295,7 +295,7 @@ to disable NAT.
 	>> prj.modules['ENBT'].ports[2].nat_address = '192.168.0.1'
 
 A module's connection inhibit selection can be read or altered with the
-inhibited attribute:
+``inhibited`` attribute:
 
 ::
 
@@ -308,9 +308,9 @@ Safety Network Numbers
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Safety network numbers for safety modules, including the controller, can be
-accessed via the snn attribute of either the module or its ports.
+accessed via the ``snn`` attribute of either the module or its ports.
 For modules with a single safety network number, such as safety I/O modules,
-the snn is an attribute of the module itself. Safety modules with multiple
+the ``snn`` is an attribute of the module itself. Safety modules with multiple
 communication ports, such as controllers with integrated Ethernet ports,
 have multiple safety network numbers, which are attributes of its
 ports.
