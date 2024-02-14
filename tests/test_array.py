@@ -405,6 +405,63 @@ class MemberValueAtomicMultiDimensionTag(BaseTag):
         return itertools.product(*[range(i) for i in self.dim])
 
 
+class ArrayValueAtomicSingleDimensionTag(BaseTag):
+    """
+    Mixin class defining tests for reading and writing the composite
+    value of a single-dimensional array of atomic data types.
+    """
+
+    dim = (3,)
+
+    def test_read_data_type(self):
+        """Confirm reading the value yields a list."""
+        self.create_array_tag(self.data_type, self.dim, self.raw_data)
+        self.assertIsInstance(self.array.value, list)
+
+    def test_read_data_value(self):
+        """Confirm reading the value yields the correct values."""
+        self.create_array_tag(self.data_type, self.dim, self.raw_data)
+        self.assertEqual(self.array.value, self.values)
+
+    def test_write_all_data(self):
+        """
+        Confirm writing a list containing all members properly updates
+        the raw data.
+        """
+        # Initialize a target array of ones.
+        self.create_array_tag(self.data_type, self.dim,
+                              [0xff] * len(self.raw_data))
+        self.array.value = self.values
+        raw = self.get_array_raw_data()
+        self.assertEqual(raw, self.raw_data)
+
+    def test_write_too_long(self):
+        """
+        Confirm writing a list larger than the array size raises an exception.
+        """
+        self.create_array_tag(self.data_type, self.dim, self.raw_data)
+        with self.assertRaises(IndexError):
+            self.array.value = [0] * (self.dim[0] + 1)
+
+    def test_write_invalid_type(self):
+        """Confirm writing a non-list value raises an exception."""
+        self.create_array_tag(self.data_type, self.dim, self.raw_data)
+        with self.assertRaises(TypeError):
+            self.array.value = set(self.values)
+
+    def test_write_invalid_member_type(self):
+        """
+        Confirm writing a list containing a member of the wrong type
+        raises an exception.
+        """
+        self.create_array_tag(self.data_type, self.dim, self.raw_data)
+        for i in range(self.dim[0]):
+            value = [0] * self.dim[0]
+            value[i] = 'spam'
+            with self.assertRaises(TypeError):
+                self.array.value = value
+
+
 class SintSingleDimension(object):
     """Mixin class providing mock data for a single-dimensional SINT array."""
 
@@ -633,6 +690,17 @@ class SintMemberValueMultiDimension(
     pass
 
 
+class SintArrayValueSingleDimension(
+        ArrayValueAtomicSingleDimensionTag,
+        SintSingleDimension,
+        unittest.TestCase):
+    """
+    Composite class testing array value access to a single-dimensional
+    array of SINTs.
+    """
+    pass
+
+
 class IntMemberValueSingleDimension(
         MemberValueAtomicSingleDimensionTag,
         IntSingleDimension,
@@ -655,6 +723,16 @@ class IntMemberValueMultiDimension(
     pass
 
 
+class IntArrayValueSingleDimension(
+        ArrayValueAtomicSingleDimensionTag,
+        IntSingleDimension,
+        unittest.TestCase):
+    """
+    Composite class testing array value access to a single-dimensional
+    array of INTs.
+    """
+
+
 class DintMemberValueSingleDimension(
         MemberValueAtomicSingleDimensionTag,
         DintSingleDimension,
@@ -672,6 +750,17 @@ class DintMemberValueMultiDimension(
         unittest.TestCase):
     """
     Composite class testing single member value access to a multi-dimensional
+    array of DINTs.
+    """
+    pass
+
+
+class DintArrayValueSingleDimension(
+        ArrayValueAtomicSingleDimensionTag,
+        DintSingleDimension,
+        unittest.TestCase):
+    """
+    Composite class testing array value access to a single-dimensional
     array of DINTs.
     """
     pass
@@ -699,6 +788,17 @@ class LintMemberValueMultiDimension(
     pass
 
 
+class LintArrayValueSingleDimension(
+        ArrayValueAtomicSingleDimensionTag,
+        LintSingleDimension,
+        unittest.TestCase):
+    """
+    Composite class testing array value access to a single-dimensional
+    array of LINTs.
+    """
+    pass
+
+
 class RealMemberValueSingleDimension(
         MemberValueAtomicSingleDimensionTag,
         RealSingleDimension,
@@ -716,6 +816,17 @@ class RealMemberValueMultiDimension(
         unittest.TestCase):
     """
     Composite class testing single member value access to a multi-dimensional
+    array of REALs.
+    """
+    pass
+
+
+class RealArrayValueSingleDimension(
+        ArrayValueAtomicSingleDimensionTag,
+        RealSingleDimension,
+        unittest.TestCase):
+    """
+    Composite class testing array value access to a single-dimensional
     array of REALs.
     """
     pass
