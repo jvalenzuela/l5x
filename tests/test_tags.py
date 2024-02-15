@@ -208,16 +208,6 @@ class TestSingleDimensionalArray(Tag, unittest.TestCase):
                 value = 0
             self.assertEqual(value, int(element.attrib['Value']))
 
-    def test_value_write_too_long(self):
-        """Confirm an exception is raised when setting the value to a list that is too long."""
-        with self.assertRaises(IndexError):
-            self.tag.value = [0] * (self.tag.shape[0] + 1)
-
-    def test_invalid_value_type(self):
-        """Test setting value to a non-list raises an exception."""
-        with self.assertRaises(TypeError):
-            self.tag.value = 'not a list'
-
     def test_element_description_read(self):
         """Test reading an existing element description."""
         desc = 'some comment'

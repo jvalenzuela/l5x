@@ -319,6 +319,74 @@ class IndexMultiDimensionTag(unittest.TestCase):
                     self.array[i][j][k]
 
 
+class WriteValueErrors(BaseTag, unittest.TestCase):
+    """Exception tests for writing invalid values."""
+
+    def test_single_dimensional_member_invalid_type(self):
+        """
+        Confirm an exception is raised when writing an invalid type to
+        the value of a member in a single-dimensional array.
+        """
+        self.create_array_tag('SINT', (3,), [0] * 3)
+        with self.assertRaises(TypeError):
+            self.array[0].value = 'not an int'
+
+    def test_multi_dimensional_member_invalid_type(self):
+        """
+        Confirm an exception is raised when writing an invalid type to
+        the value of a member in a multi-dimensional array.
+        """
+        self.create_array_tag('SINT', (3, 3), [0] * 9)
+        with self.assertRaises(TypeError):
+            self.array[1][1].value = 'not an int'
+
+    def test_single_dimensional_non_list(self):
+        """
+        Confirm an exception is raised when writing a non-list to
+        the entire value of a single-dimensional array.
+        """
+        self.create_array_tag('SINT', (3,), [0] * 3)
+        with self.assertRaises(TypeError):
+            self.array.value = set([1, 2, 3])
+
+    def test_multi_dimensional_non_list_top(self):
+        """
+        Confirm an exception is raised when writing a non-list to
+        the top-level value of a multi-dimensional array.
+        """
+        self.create_array_tag('SINT', (2, 2), [0] * 4)
+        with self.assertRaises(TypeError):
+            self.array.value = set([1, 2])
+
+    def test_multi_dimensional_non_list_member(self):
+        """
+        Confirm an exception is raised when writing a list containing
+        a non-list member to a multi-dimensional array.
+        """
+        self.create_array_tag('SINT', (2, 2), [0] * 4)
+        with self.assertRaises(TypeError):
+            self.array.value = [[0, 0], set([1, 2])]
+
+    def test_single_dimensional_too_long(self):
+        """
+        Confirm an exception is raised when writing a list exceeding
+        the array size of a single-dimensional array.
+        """
+        self.create_array_tag('SINT', (3,), [0] * 3)
+        with self.assertRaises(IndexError):
+            self.array.value = [0] * 4
+
+    def test_multi_dimensional_too_long(self):
+        """
+        Confirm an exception is raised when writing a nested list
+        containing one member exceeding the array size of a
+        multi-dimensional array.
+        """
+        self.create_array_tag('SINT', (2, 2), [0] * 4)
+        with self.assertRaises(IndexError):
+            self.array.value = [[0, 0], [0, 0, 0]]
+
+
 class MemberValueAtomicSingleDimensionTag(BaseTag):
     """
     Mixin class defining tests for reading and writing single member values of
@@ -352,17 +420,6 @@ class MemberValueAtomicSingleDimensionTag(BaseTag):
         # Verify resulting raw data.
         raw = self.get_array_raw_data()
         self.assertEqual(raw, self.raw_data)
-
-    def test_write_invalid_type(self):
-        """Confirm writing the wrong value type raises an exception."""
-        self.create_array_tag(self.data_type, self.dim,
-                              [0] * len(self.raw_data))
-        for i in range(self.dim[0]):
-            with self.assertRaises(TypeError):
-                if isinstance(self.values[0], float):
-                    self.array[i].value = int(0)
-                else:
-                    self.array[i].value = float(0)
 
 
 class MemberValueAtomicMultiDimensionTag(BaseTag):
@@ -435,32 +492,6 @@ class ArrayValueAtomicSingleDimensionTag(BaseTag):
         self.array.value = self.values
         raw = self.get_array_raw_data()
         self.assertEqual(raw, self.raw_data)
-
-    def test_write_too_long(self):
-        """
-        Confirm writing a list larger than the array size raises an exception.
-        """
-        self.create_array_tag(self.data_type, self.dim, self.raw_data)
-        with self.assertRaises(IndexError):
-            self.array.value = [0] * (self.dim[0] + 1)
-
-    def test_write_invalid_type(self):
-        """Confirm writing a non-list value raises an exception."""
-        self.create_array_tag(self.data_type, self.dim, self.raw_data)
-        with self.assertRaises(TypeError):
-            self.array.value = set(self.values)
-
-    def test_write_invalid_member_type(self):
-        """
-        Confirm writing a list containing a member of the wrong type
-        raises an exception.
-        """
-        self.create_array_tag(self.data_type, self.dim, self.raw_data)
-        for i in range(self.dim[0]):
-            value = [0] * self.dim[0]
-            value[i] = 'spam'
-            with self.assertRaises(TypeError):
-                self.array.value = value
 
 
 class ArrayValueAtomicMultiDimensionTag(BaseTag):
