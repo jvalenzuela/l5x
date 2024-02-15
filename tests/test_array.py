@@ -4,6 +4,7 @@ Unit tests for the array module.
 
 from l5x import (array, tag)
 from tests import fixture
+import copy
 import io
 import itertools
 import xml.etree.ElementTree as ElementTree
@@ -462,6 +463,45 @@ class ArrayValueAtomicSingleDimensionTag(BaseTag):
                 self.array.value = value
 
 
+class ArrayValueAtomicMultiDimensionTag(BaseTag):
+    """
+    Mixin class defining tests for reading and writing the composite
+    value of a multi-dimensional array of atomic data types.
+    """
+
+    dim = (2, 3, 4)
+
+    def test_read_data_type(self):
+        """
+        Confirm reading the value yields a list for every dimension
+        except the last.
+        """
+        self.create_array_tag(self.data_type, self.dim, self.raw_data)
+        value = self.array.value
+        self.assertIsInstance(value, list)
+        for i in range(self.dim[0]):
+            self.assertIsInstance(value[i], list)
+            for j in range(self.dim[1]):
+                self.assertIsInstance(value[i][j], list)
+
+    def test_read_member_values(self):
+        """Confirm reading correct values for all list elements."""
+        self.create_array_tag(self.data_type, self.dim, self.raw_data)
+        self.assertEqual(self.array.value, self.values)
+
+    def test_write_all_data(self):
+        """
+        Confirm writing nested lists containing all members properly
+        updates the raw data.
+        """
+        # Initialize a target array of ones.
+        self.create_array_tag(self.data_type, self.dim,
+                              [0xff] * len(self.raw_data))
+        self.array.value = self.values
+        raw = self.get_array_raw_data()
+        self.assertEqual(raw, self.raw_data)
+
+
 class SintSingleDimension(object):
     """Mixin class providing mock data for a single-dimensional SINT array."""
 
@@ -701,6 +741,17 @@ class SintArrayValueSingleDimension(
     pass
 
 
+class SintArrayValueMultiDimension(
+        ArrayValueAtomicMultiDimensionTag,
+        SintMultiDimension,
+        unittest.TestCase):
+    """
+    Composite class testing array value access to a multi-dimensional
+    array of SINTs.
+    """
+    pass
+
+
 class IntMemberValueSingleDimension(
         MemberValueAtomicSingleDimensionTag,
         IntSingleDimension,
@@ -733,6 +784,17 @@ class IntArrayValueSingleDimension(
     """
 
 
+class IntArrayValueMultiDimension(
+        ArrayValueAtomicMultiDimensionTag,
+        IntMultiDimension,
+        unittest.TestCase):
+    """
+    Composite class testing array value access to a multi-dimensional
+    array of INTs.
+    """
+    pass
+
+
 class DintMemberValueSingleDimension(
         MemberValueAtomicSingleDimensionTag,
         DintSingleDimension,
@@ -761,6 +823,17 @@ class DintArrayValueSingleDimension(
         unittest.TestCase):
     """
     Composite class testing array value access to a single-dimensional
+    array of DINTs.
+    """
+    pass
+
+
+class DintArrayValueMultiDimension(
+        ArrayValueAtomicMultiDimensionTag,
+        DintMultiDimension,
+        unittest.TestCase):
+    """
+    Composite class testing array value access to a multi-dimensional
     array of DINTs.
     """
     pass
@@ -799,6 +872,17 @@ class LintArrayValueSingleDimension(
     pass
 
 
+class LintArrayValueMultiDimension(
+        ArrayValueAtomicMultiDimensionTag,
+        LintMultiDimension,
+        unittest.TestCase):
+    """
+    Composite class testing array value access to a multi-dimensional
+    array of LINTs.
+    """
+    pass
+
+
 class RealMemberValueSingleDimension(
         MemberValueAtomicSingleDimensionTag,
         RealSingleDimension,
@@ -827,6 +911,17 @@ class RealArrayValueSingleDimension(
         unittest.TestCase):
     """
     Composite class testing array value access to a single-dimensional
+    array of REALs.
+    """
+    pass
+
+
+class RealArrayValueMultiDimension(
+        ArrayValueAtomicMultiDimensionTag,
+        RealMultiDimension,
+        unittest.TestCase):
+    """
+    Composite class testing array value access to a multi-dimensional
     array of REALs.
     """
     pass

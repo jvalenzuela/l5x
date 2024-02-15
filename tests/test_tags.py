@@ -331,38 +331,10 @@ class TestMultiDimensionalArray(Tag, unittest.TestCase):
         ]
     ]
 
-    def test_value_read(self):
-        """Verify reading values for each dimension."""
-        self.assertEqual(self.tag.value, self.src_value)
-
-        for i in range(len(self.tag.value)):
-            self.assertEqual(self.tag.value[i], self.src_value[i])
-
-            for j in range(len(self.tag.value[i])):
-                self.assertEqual(self.tag.value[i][j], self.src_value[i][j])
-
     def test_value_write_subarray(self):
         """Verify writing a subarray value."""
         self.src_value[0][0] = [1000, 1001, 1002, 1003]
         self.tag[0][0].value = [1000, 1001, 1002, 1003]
-        self.assert_element_values()
-
-    def test_value_write_all(self):
-        """Verify writing a nested list to the top-level value."""
-        new_values = [
-            [
-                [-1, -2, -3, -4],
-                [-5, -6, -7, -8],
-                [-9, -10, -11, -12]
-            ],
-            [
-                [-13, -14, -15, -16],
-                [-17, -18, -19, -20],
-                [-21, -22, -23, -24]
-            ]
-        ]
-        self.src_value = new_values
-        self.tag.value = new_values
         self.assert_element_values()
 
     def assert_element_values(self):
