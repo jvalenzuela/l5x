@@ -344,41 +344,6 @@ class Structure(Data):
         return self.members[member]
 
 
-class ArrayValue(object):
-    """Descriptor class for accessing multiple values in an array."""
-    def __get__(self, array, owner=None):
-        dim = len(array.shape) - len(array.address) - 1
-        return [array[i].value for i in range(array.shape[dim])]
-
-    def __set__(self, array, value):
-        if not isinstance(value, list):
-            raise TypeError('Value must be a list')
-        if len(value) > array.shape[len(array.shape) - len(array.address) - 1]:
-            raise IndexError('Source list is too large')
-
-        for i in range(len(value)):
-            array[i].value = value[i]
-
-        array.tag.clear_raw_data()
-
-
-class ArrayDescription(Comment):
-    """Descriptor class array descriptions.
-
-    Raises an exception for an attempts to access descriptions because
-    RSLogix does not support commenting subarrays; only individual elements
-    may have descriptions.
-    """
-    e = TypeError
-    msg = 'Descriptions for subarrays are not supported'
-
-    def __get__(self, array, owner=None):
-        raise self.e(self.msg)
-
-    def __set__(self, array, value):
-        raise self.e(self.msg)
-
-
 class ArrayShape(object):
     """Descriptor class to acquire an array's dimensions."""
     def __get__(self, array, owner=None):
@@ -417,8 +382,6 @@ class ArrayShape(object):
 
 class Array(Data):
     """Access object for arrays of any data type."""
-    value = ArrayValue()
-    description = ArrayDescription()
     shape = ArrayShape()
 
     def __init__(self, data_class, element, tag, parent=None, address=[]):
