@@ -113,7 +113,8 @@ class Tag(Data):
     def __init__(self, element, prj, lang):
         self.element = element
         self.lang = lang
-        self.raw_data = prj.get_tag_data_buffer(element)
+        self.raw_data = self._get_raw_data()
+        self._remove_formatted_data()
 
         # Call the constructor for the mixin class handling the data type.
         # The mixin class's __init__ method must define default values for
@@ -125,6 +126,41 @@ class Tag(Data):
     def tag(self):
         """Self-reference for operations that need the parent tag attribute."""
         return self
+
+    def _get_raw_data(self):
+        """Acquires a bytearray representing the tag's Data element."""
+        data_element = self.element.find('Data')
+
+        # The raw data must be the first Data element.
+        if (data_element is None) or ('Format' in data_element.attrib):
+            raise InvalidFile('Raw data element not found.')
+
+        # Return an existing bytearray if one has already been created for
+        # this tag by another Tag instance.
+        if isinstance(data_element.text, bytearray):
+            data = data_element.text
+
+        # Create a new bytearray if this tag has not yet been accessed,
+        # i.e., it's text attribute still contains a string of hex. The
+        # resulting bytearray is also stored back into the element's text
+        # attribute, ensuring all Tag instances accessing this tag share
+        # common data. This is made possible by the fact that ElementTree
+        # Element objects permit storage of arbitrary objects in the text
+        # attribute, which will be a bytearray in this case.
+        else:
+            data = bytearray.fromhex(data_element.text)
+            data_element.text = data
+
+        return data
+
+    def _remove_formatted_data(self):
+        """Deletes elements containing formatted data.
+
+        Only the raw data element is used by the L5X module, for both reads
+        and writes, so formatted data elements are removed to ensure they
+        don't contain conflicting values.
+        """
+        [self.element.remove(e) for e in self.element.findall('Data[@Format]')]
 
 
 class AliasFor(object):
