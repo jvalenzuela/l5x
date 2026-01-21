@@ -82,14 +82,17 @@ class Tag(object):
     def __new__(cls, element, lang):
         """
         Intercepts the creation of a new tag object to determine if
-        the target tag is an alias, in which case an alias tag object
-        is returned instead of a Tag.
+        the target tag is an alias or message, in which case 
+        the appropriate tag object is returned instead of a Tag.
         """
         if element.attrib['TagType'] == 'Alias':
             alias = object.__new__(AliasTag)
             alias.__init__(element, lang)
             return alias
-
+        elif element.attrib['DataType'] == 'MESSAGE':
+            message = object.__new__(MessageTag)
+            message.__init__(element, lang)
+            return message
         # Normal base tag; return an instance of this class.
         return object.__new__(cls)
 
@@ -179,6 +182,25 @@ class AliasTag(object):
         self.element = element
         self.lang = lang
 
+class MessageTag(object):
+    """Handler for accessing message tags."""
+    description = dom.ElementDescription()
+    
+    def __init__(self, element, lang):
+        self.element = element
+        self.message_parameters = self.get_message_parameters()
+        self.lang = lang
+
+    def get_message_parameters(self):
+        """Returns the Message Parameter XML element from the Message Tag"""
+        data = self.element.find("Data[@Format='Message']/MessageParameters")
+
+        if data is None:
+            name = self.element.attrib['Name']
+            raise RuntimeError("Decoded data content not found for {0} tag. "
+                "Ensure Encode Source Protected Content option "
+                "is disabled when saving L5X.".format(name))
+        return data.attrib
 
 class Comment(object):
     """Descriptor class for accessing descriptions of individual tag members.
