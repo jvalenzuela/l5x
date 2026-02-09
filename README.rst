@@ -255,6 +255,31 @@ No other attributes, such as value, are implemented for alias tags, nor
 can they be indexed to access members of the target data type.
 
 
+Message Tags
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+While message tags are outwardly similar to `Structures`_,
+message tags have only ``description`` and ``parameters`` attributes;
+they do not contain any other attributes, such as
+``value`` or ``names``. The ``parameters`` attribute provides access to
+settings found in the ``MSG`` instruction configuration dialog, presented
+as a dictionary with both keys and values as strings. This dictionary must
+be modified in-place to alter the L5X project, i.e., change the values of
+existing keys; do not assign the ``parameters`` attribute to a different value.
+
+::
+
+        >> prj.controller.tags['msgtag'].parameters['MessageType']
+        'CIP Data Table Read'
+        >> prj.controller.tags['msgtag'].parameters['RemoteElement'] = 'srctag'
+
+The set of available parameters varies based on the configured message type,
+and some keys to not exactly match the names displayed in the ``MSG``
+instruction configuration dialog, so the recommended approach is to create
+the initial configuration with RSLogix, then use the L5X package to examine
+and alter existing parameters.
+
+
 Modules
 -------------------------
 
