@@ -188,7 +188,7 @@ class MessageTag(object):
     
     def __init__(self, element, lang):
         self.element = element
-        self.message_parameters = self.get_message_parameters()
+        self.parameters = self.get_message_parameters()
         self.lang = lang
 
     def get_message_parameters(self):
