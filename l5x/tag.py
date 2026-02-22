@@ -194,12 +194,6 @@ class MessageTag(object):
     def get_message_parameters(self):
         """Returns the Message Parameter XML element from the Message Tag"""
         data = self.element.find("Data[@Format='Message']/MessageParameters")
-
-        if data is None:
-            name = self.element.attrib['Name']
-            raise RuntimeError("Decoded data content not found for {0} tag. "
-                "Ensure Encode Source Protected Content option "
-                "is disabled when saving L5X.".format(name))
         return data.attrib
 
 class Comment(object):
