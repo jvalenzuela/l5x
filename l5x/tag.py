@@ -182,19 +182,27 @@ class AliasTag(object):
         self.element = element
         self.lang = lang
 
+
+class MessageParameters(object):
+    """Descriptor class for accessing message tag parameters."""
+
+    def __get__(self, tag, cls):
+        data = tag.element.find("Data[@Format='Message']/MessageParameters")
+        return data.attrib
+
+    def __set__(self, tag, value):
+        raise RuntimeError("Assigning a value directly to the message tag parameters attribute is not supported; the dictionary returned by this attribute must be modified in-place to adjust message tag parameters.")
+
+
 class MessageTag(object):
     """Handler for accessing message tags."""
     description = dom.ElementDescription()
+    parameters = MessageParameters()
     
     def __init__(self, element, lang):
         self.element = element
-        self.parameters = self.get_message_parameters()
         self.lang = lang
 
-    def get_message_parameters(self):
-        """Returns the Message Parameter XML element from the Message Tag"""
-        data = self.element.find("Data[@Format='Message']/MessageParameters")
-        return data.attrib
 
 class Comment(object):
     """Descriptor class for accessing descriptions of individual tag members.
