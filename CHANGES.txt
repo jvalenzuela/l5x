@@ -26,3 +26,5 @@ v1.5,
  - Add support for changing tag aliases.
  - Fix problems with empty CDATA sections, e.g. empty structured text lines.
  - Switch internal XML handling to ElementTree.
+
+ adapt the ElementDict class to handle scenarios where the XML child elements don't have a unique attribute to use as a key for dictionary-like access

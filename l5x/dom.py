@@ -256,8 +256,13 @@ class AttributeDescriptor(object):
 class ElementDictNames(object):
     """Descriptor class to get a list of an ElementDict's members."""
     def __get__(self, instance, owner=None):
-        return [instance.key_type(e.attrib[instance.key_attr])
-                for e in instance.parent.iterfind('*')]
+        if hasattr(instance, 'key_attr'):
+            return [instance.key_type(e.attrib[instance.key_attr])
+                    for e in instance.parent.iterfind('*')]
+        elif hasattr(instance, '_elements'):
+            return list(instance._elements.keys())
+        else:
+            return []  # Return an empty list if neither key_attr nor _elements is found
 
     def __set__(self, instance, owner=None):
         """Raises an exception upon an attempt to modify; this is read-only."""
@@ -308,3 +313,36 @@ class ElementDict(object):
         except TypeError:
             type_name = element.attrib[self.type_attr]
             return self.value_type.get(type_name, self.dfl_type)(*args)
+
+
+class ElementIndexDict(object):
+    """Container for accessing XML elements using their index as the key."""
+    names = ElementDictNames()  # Add the descriptor
+
+    def __init__(self, parent, value_type, type_attr=None, dfl_type=None, value_args=[]):
+        self.parent = parent
+        self.value_type = value_type
+        self.type_attr = type_attr
+        self.dfl_type = dfl_type
+        self.value_args = value_args
+        self._elements = {i: self.create_value_object(e)
+                           for i, e in enumerate(self.parent.iterfind('*'))}
+
+    def __getitem__(self, index):
+        """Access elements by their index."""
+        return self._elements[index]
+
+    def create_value_object(self, element):
+        """Instantiates an object returned as the value."""
+        args = [element]
+        args.extend(self.value_args)
+
+        try:
+            return self.value_type(*args)
+        except TypeError:
+            type_name = element.attrib.get(self.type_attr, None)
+            return self.value_type.get(type_name, self.dfl_type)(*args)
+
+    def find_by_attribute(self, attr_name, attr_value):
+        """Find elements matching a specific attribute value."""
+        return [item for item in self._elements if item.element.get(attr_name) == attr_value]

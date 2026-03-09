@@ -2,7 +2,7 @@
 Objects implementing tag access.
 """
 
-from l5x import dom
+from . import dom
 import copy
 import ctypes
 import itertools

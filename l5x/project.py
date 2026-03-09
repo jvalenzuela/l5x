@@ -10,7 +10,7 @@ __get__() method. In this way the application can process L5X projects
 without worrying about low-level XML handling.
 """
 
-from .dom import (CDATA_TAG, ElementDict, AttributeDescriptor)
+from .dom import (CDATA_TAG, ElementDict, ElementIndexDict, AttributeDescriptor)
 from .module import (Module, SafetyNetworkNumber)
 from .tag import Scope
 import io
@@ -49,7 +49,8 @@ class Project(object):
         self.programs = ElementDict(progs, 'Name', Scope, value_args=[lang])
 
         mods = ctl_element.find('Modules')
-        self.modules = ElementDict(mods, 'Name', Module)
+        self.modules = ElementIndexDict(mods, Module)
+        # self.modules = ElementDict(mods, 'Name', Module)
 
     def parse(self, filename):
         """Parses the source project."""
