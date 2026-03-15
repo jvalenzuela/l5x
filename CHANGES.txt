@@ -26,3 +26,9 @@ v1.5,
  - Add support for changing tag aliases.
  - Fix problems with empty CDATA sections, e.g. empty structured text lines.
  - Switch internal XML handling to ElementTree.
+
+v1.6,
+ - Add support for inhibiting modules.
+
+v1.7,
+ - Add support for changing message tag parameters.
